@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver 災情新聞搜尋頁">
+  <title>災情新聞 | Disaster Oliver</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-page="news">
+  <header class="site-header">
+    <a class="brand" href="../index.html" aria-label="Disaster Oliver 首頁">
+      <span class="brand-mark">DO</span>
+      <span class="brand-text">Disaster Oliver</span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="news.html">災情新聞</a>
+      <a href="../index.html#map">Map</a>
+      <a href="../index.html#assistant">AI Assistant</a>
+      <a href="../index.html#dashboard">Dashboard</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero" aria-labelledby="news-title">
+      <p class="eyebrow">Live Disaster News</p>
+      <h1 id="news-title">災情新聞搜尋</h1>
+      <p>
+        讀取目前 Google Sheet / Apps Script 中的災情新聞資料，提供關鍵字搜尋、來源篩選與定位資料檢視。
+      </p>
+    </section>
+
+    <section class="news-toolbar" aria-label="新聞搜尋工具">
+      <label class="field">
+        <span>關鍵字</span>
+        <input id="news-search" type="search" placeholder="搜尋標題、來源、縣市">
+      </label>
+      <label class="field">
+        <span>來源</span>
+        <select id="source-filter">
+          <option value="">全部來源</option>
+        </select>
+      </label>
+      <label class="check-field">
+        <input id="located-only" type="checkbox">
+        <span>只顯示有定位資料</span>
+      </label>
+      <button class="button button-primary" id="refresh-news" type="button">重新整理</button>
+    </section>
+
+    <section class="news-summary" aria-label="新聞統計">
+      <div class="metric">
+        <span>News</span>
+        <strong id="news-count">--</strong>
+      </div>
+      <div class="metric">
+        <span>Located</span>
+        <strong id="located-count">--</strong>
+      </div>
+      <div class="metric">
+        <span>Sources</span>
+        <strong id="source-count">--</strong>
+      </div>
+      <div class="metric">
+        <span>Status</span>
+        <strong id="news-status">Loading</strong>
+      </div>
+    </section>
+
+    <section class="news-layout">
+      <div class="news-list-panel">
+        <div class="section-heading">
+          <p class="eyebrow">Results</p>
+          <h2>新聞列表</h2>
+        </div>
+        <div id="news-list" class="news-list-live" aria-live="polite"></div>
+      </div>
+
+      <aside class="news-detail-panel" aria-labelledby="detail-title">
+        <div class="section-heading">
+          <p class="eyebrow">Preview</p>
+          <h2 id="detail-title">定位資料</h2>
+        </div>
+        <div id="news-detail" class="detail-card">
+          <p>選取一則新聞後，這裡會顯示座標、縣市與來源資訊。</p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>Disaster Oliver</span>
+    <span>災情新聞搜尋</span>
+  </footer>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>

@@ -32,6 +32,10 @@ disaster-oliver/
 
 ## Roadmap
 
+## Current Modules
+
+- `pages/news.html`: 災情新聞搜尋頁，讀取 Google Apps Script API 顯示目前 Google Sheet 新聞資料。
+
 ### Phase 1
 
 - 新聞蒐集

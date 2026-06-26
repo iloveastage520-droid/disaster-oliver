@@ -544,6 +544,58 @@
         #radar-toggle:disabled { background: #888; cursor: wait; }
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
         #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; }
+        .news-card.active,
+        .timeline-item.active {
+            background: #e7f1ff;
+            border-color: #2476c7;
+            box-shadow: 0 0 0 2px rgba(36, 118, 199, 0.14);
+        }
+        @media (max-width: 820px) {
+            #sidebar {
+                top: auto;
+                right: 0;
+                bottom: 0;
+                width: auto;
+                height: 38vh;
+                max-height: 360px;
+                padding: 10px;
+                border-right: 0;
+                border-top: 2px solid #333;
+            }
+            #sidebar h3 { font-size: 16px; margin-bottom: 4px; }
+            #sidebar h4,
+            .cctv-grid { display: none; }
+            .summary { font-size: 12px; margin-bottom: 6px; }
+            .news-list { gap: 6px; }
+            .news-card {
+                grid-template-columns: 28px 72px 1fr;
+                padding: 7px;
+            }
+            .news-image {
+                width: 72px;
+                height: 54px;
+            }
+            .news-title { font-size: 13px; }
+            .news-time,
+            .news-meta { font-size: 11px; }
+            #timeline { display: none; }
+            #radar-control {
+                left: 10px;
+                right: 10px;
+                bottom: calc(38vh + 10px);
+                max-width: none;
+                flex-wrap: wrap;
+            }
+            #map {
+                left: 0;
+                bottom: 38vh;
+            }
+        }
+        @media (max-width: 480px) {
+            #sidebar { height: 42vh; }
+            #radar-control { bottom: calc(42vh + 10px); }
+            #map { bottom: 42vh; }
+        }
     </style>
     <script>
         const newsFocusPoints = {"1": [22.999728, 120.227028], "2": [23.987159, 121.601571], "3": [22.551976, 120.54876], "4": [25.037519, 121.563679], "5": [25.127603, 121.739183], "6": [24.838722, 121.017724], "7": [24.838722, 121.017724], "8": [24.838722, 121.017724], "9": [24.80395, 120.964687], "10": [24.993628, 121.30098], "11": [24.904722, 120.997222], "12": [22.551976, 120.54876], "13": [25.037519, 121.563679], "14": [24.80395, 120.964687], "15": [24.838722, 121.017724], "16": [24.80395, 120.964687], "17": [24.838722, 121.017724], "18": [24.80395, 120.964687]};
@@ -554,16 +606,31 @@
             const mapKeys = Object.keys(window).filter((key) => key.startsWith("map_"));
             return mapKeys.length ? window[mapKeys[0]] : null;
         }
+        function setActiveNewsItem(newsId) {
+            document.querySelectorAll(".news-card, .timeline-item").forEach((item) => {
+                const id = String(newsId);
+                const inlineHandler = item.getAttribute("onclick") || "";
+                item.classList.toggle("active", item.dataset.newsId === id || inlineHandler.includes(`'${id}'`));
+            });
+        }
+        function refreshMapAfterPanelMove(map) {
+            setTimeout(() => map.invalidateSize(), 80);
+        }
         function focusNews(newsId) {
             const map = currentLeafletMap();
             if (!map) return;
+            setActiveNewsItem(newsId);
             const bounds = newsFocusBounds[newsId];
             if (bounds) {
                 map.fitBounds(bounds, { padding: [24, 24] });
+                refreshMapAfterPanelMove(map);
                 return;
             }
             const point = newsFocusPoints[newsId];
-            if (point) map.setView(point, 15);
+            if (point) {
+                map.setView(point, 15);
+                refreshMapAfterPanelMove(map);
+            }
         }
         async function ensureRadarLayer() {
             if (radarLayer) return radarLayer;
@@ -619,6 +686,7 @@
         const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
+        let liveSheetMarkers = {};
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -736,7 +804,7 @@
             if (summary) summary.textContent = `來源：Google Sheet。共 ${items.length} 個定位點；重新整理頁面會重新讀取 Sheet。`;
             if (newsList) {
                 newsList.innerHTML = items.map((item, index) => `
-                    <button class="news-card" onclick="focusNews('${item.id}')">
+                    <button class="news-card" data-news-id="${item.id}" onclick="focusNews('${item.id}')">
                         <span class="news-index" style="background:${item.color}">${index + 1}</span>
                         <span class="news-title">${liveEscape(item.title)}</span>
                         <span class="news-time">${liveEscape(item.published_at)}</span>
@@ -746,7 +814,7 @@
             }
             if (timelineTrack) {
                 timelineTrack.innerHTML = items.map((item) => `
-                    <button class="timeline-item" onclick="focusNews('${item.id}')" style="--source-color: ${item.color}">
+                    <button class="timeline-item" data-news-id="${item.id}" onclick="focusNews('${item.id}')" style="--source-color: ${item.color}">
                         <span class="timeline-dot"></span>
                         <span class="timeline-time">${liveEscape(item.published_at)}</span>
                         <span class="timeline-source">${liveEscape(item.source)}</span>
@@ -791,6 +859,7 @@
             if (liveSheetLayer) map.removeLayer(liveSheetLayer);
             liveSheetLayer = L.layerGroup().addTo(map);
             liveSheetFocusPoints = {};
+            liveSheetMarkers = {};
             items.forEach((item) => {
                 liveSheetFocusPoints[item.id] = item.point;
                 const popup = `
@@ -801,17 +870,25 @@
                     ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}<br>
                     ${item.point[0]}, ${item.point[1]}
                 `;
-                L.marker(item.point, {
+                const marker = L.marker(item.point, {
                     icon: L.divIcon({
                         html: `<div class="news-marker news-location-marker" style="background:${item.color}"><span class="news-marker-source">${liveEscape(item.source)}</span></div>`,
                         iconSize: [64, 28],
                         iconAnchor: [32, 14]
                     })
                 }).bindTooltip(`${item.id}. ${item.source} / ${item.title}`).bindPopup(popup).addTo(liveSheetLayer);
+                liveSheetMarkers[item.id] = marker;
             });
             window.focusNews = function(newsId) {
+                setActiveNewsItem(newsId);
                 const point = liveSheetFocusPoints[newsId];
-                if (point) map.setView(point, 13);
+                const marker = liveSheetMarkers[newsId];
+                if (point) {
+                    const zoom = window.matchMedia("(max-width: 820px)").matches ? 12 : 13;
+                    map.setView(point, zoom);
+                    refreshMapAfterPanelMove(map);
+                    if (marker) setTimeout(() => marker.openPopup(), 140);
+                }
             };
             replaceLiveSidebar(items);
             map.setView(items[0].point, 10);

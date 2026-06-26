@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="refresh" content="3600">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_45fcc9a5acd8ea8e0b2d5abc64c03d3b {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+    <div id="sidebar">
+        <h3>多媒體新聞定位地圖</h3>
+        <div class="summary">來源：UDN、Yahoo新聞、中央社 CNA、公視新聞網PNN、客新聞 HakkaNews、遠見雜誌、鏡週刊Mirror Media。共 18 則新聞，可點擊新聞定位到地圖。每 1 小時自動重新整理。</div>
+        <div class="news-list">
+            <button class="news-card" onclick="focusNews('1')">
+                <span class="news-index" style="background:#555555">1</span>
+                
+                <span class="news-title">豪雨侵襲台南多處工業區、市場淹水 經發局全員勘災助產業復原 - UDN</span>
+                <span class="news-time">2026-6-26 下午 18:31分</span>
+                <span class="news-meta">UDN / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('2')">
+                <span class="news-index" style="background:#555555">2</span>
+                
+                <span class="news-title">米克拉颱風挾帶豪雨，各縣市淹水現況？花蓮又有新堰塞湖 - 遠見雜誌</span>
+                <span class="news-time">2026-6-26 下午 17:58分</span>
+                <span class="news-meta">遠見雜誌 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('3')">
+                <span class="news-index" style="background:#555555">3</span>
+                
+                <span class="news-title">豪雨不斷屏東農損嚴重 縣府爭取天然災害救助全品項免勘 - UDN</span>
+                <span class="news-time">2026-6-26 下午 17:10分</span>
+                <span class="news-meta">UDN / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('4')">
+                <span class="news-index" style="background:#555555">4</span>
+                
+                <span class="news-title">劇烈豪雨作業解除台北氣象站6月累積雨量可能創同期新高| 生活 - 中央社 CNA</span>
+                <span class="news-time">2026-6-26 下午 17:05分</span>
+                <span class="news-meta">中央社 CNA / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('5')">
+                <span class="news-index" style="background:#555555">5</span>
+                
+                <span class="news-title">米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 16:51分</span>
+                <span class="news-meta">Yahoo新聞 / 基隆市</span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('6')">
+                <span class="news-index" style="background:#555555">6</span>
+                
+                <span class="news-title">米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 16:51分</span>
+                <span class="news-meta">Yahoo新聞 / 基隆市</span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('7')">
+                <span class="news-index" style="background:#555555">7</span>
+                
+                <span class="news-title">新竹縣市多處積淹水 竹北女性受困車內死亡 - 公視新聞網PNN</span>
+                <span class="news-time">2026-6-26 下午 16:36分</span>
+                <span class="news-meta">公視新聞網PNN / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('8')">
+                <span class="news-index" style="background:#555555">8</span>
+                
+                <span class="news-title">快訊／新竹縣大雨釀災！BMW倒插水中「49歲女困車滅頂」農民巡田失聯 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 15:44分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('9')">
+                <span class="news-index" style="background:#555555">9</span>
+                
+                <span class="news-title">米克拉颱風6/26交通異動一次看：台鐵竹中=竹東中斷啟動公路接駁、新竹市公車部分停駛 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 15:40分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('10')">
+                <span class="news-index" style="background:#555555">10</span>
+                
+                <span class="news-title">暴雨狂灌！桃園中壢現「噴泉」、平鎮路邊機車慘泡水 北部淹水奇象曝 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 15:13分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('11')">
+                <span class="news-index" style="background:#555555">11</span>
+                
+                <span class="news-title">竹縣豪大雨釀淹水 竹北、新豐各有1民眾失聯 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 15:02分</span>
+                <span class="news-meta">Yahoo新聞 / 新豐鄉</span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('12')">
+                <span class="news-index" style="background:#555555">12</span>
+                
+                <span class="news-title">台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 14:22分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('13')">
+                <span class="news-index" style="background:#555555">13</span>
+                
+                <span class="news-title">台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</span>
+                <span class="news-time">2026-6-26 下午 14:22分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('14')">
+                <span class="news-index" style="background:#555555">14</span>
+                
+                <span class="news-title">不斷更新／全台26日停班課一次看！豪雨擴大影響　新竹市12點後停班停課 - 鏡週刊Mirror Media</span>
+                <span class="news-time">2026-06-26 下午 14:17分</span>
+                <span class="news-meta">鏡週刊Mirror Media / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('15')">
+                <span class="news-index" style="background:#555555">15</span>
+                
+                <span class="news-title">不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</span>
+                <span class="news-time">2026-06-26 下午 13:00分</span>
+                <span class="news-meta">客新聞 HakkaNews / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('16')">
+                <span class="news-index" style="background:#555555">16</span>
+                
+                <span class="news-title">不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</span>
+                <span class="news-time">2026-06-26 下午 13:00分</span>
+                <span class="news-meta">客新聞 HakkaNews / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('17')">
+                <span class="news-index" style="background:#555555">17</span>
+                
+                <span class="news-title">停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</span>
+                <span class="news-time">2026-06-26 下午 12:55分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            
+            <button class="news-card" onclick="focusNews('18')">
+                <span class="news-index" style="background:#555555">18</span>
+                
+                <span class="news-title">停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</span>
+                <span class="news-time">2026-06-26 下午 12:55分</span>
+                <span class="news-meta">Yahoo新聞 / </span>
+            </button>
+            </div>
+        <div class="cctv-grid" style="display:none"></div>
+    </div>
+    <div id="timeline">
+        <div class="timeline-header">新聞時間軸</div>
+        <div class="timeline-track">
+            <button class="timeline-item" onclick="focusNews('17')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-06-26 下午 12:55分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('18')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-06-26 下午 12:55分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('15')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-06-26 下午 13:00分</span>
+                <span class="timeline-source">客新聞 HakkaNews</span>
+                <span class="timeline-title">不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('16')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-06-26 下午 13:00分</span>
+                <span class="timeline-source">客新聞 HakkaNews</span>
+                <span class="timeline-title">不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('14')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-06-26 下午 14:17分</span>
+                <span class="timeline-source">鏡週刊Mirror Media</span>
+                <span class="timeline-title">不斷更新／全台26日停班課一次看！豪雨擴大影響　新竹市12點後停班停課 - 鏡週刊Mirror Media</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('12')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 14:22分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('13')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 14:22分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('11')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 15:02分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">竹縣豪大雨釀淹水 竹北、新豐各有1民眾失聯 - Yahoo新聞</span>
+                <span class="timeline-districts">新豐鄉</span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('10')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 15:13分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">暴雨狂灌！桃園中壢現「噴泉」、平鎮路邊機車慘泡水 北部淹水奇象曝 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('9')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 15:40分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">米克拉颱風6/26交通異動一次看：台鐵竹中=竹東中斷啟動公路接駁、新竹市公車部分停駛 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('8')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 15:44分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">快訊／新竹縣大雨釀災！BMW倒插水中「49歲女困車滅頂」農民巡田失聯 - Yahoo新聞</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('7')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 16:36分</span>
+                <span class="timeline-source">公視新聞網PNN</span>
+                <span class="timeline-title">新竹縣市多處積淹水 竹北女性受困車內死亡 - 公視新聞網PNN</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('5')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 16:51分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</span>
+                <span class="timeline-districts">基隆市</span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('6')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 16:51分</span>
+                <span class="timeline-source">Yahoo新聞</span>
+                <span class="timeline-title">米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</span>
+                <span class="timeline-districts">基隆市</span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('4')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 17:05分</span>
+                <span class="timeline-source">中央社 CNA</span>
+                <span class="timeline-title">劇烈豪雨作業解除台北氣象站6月累積雨量可能創同期新高| 生活 - 中央社 CNA</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('3')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 17:10分</span>
+                <span class="timeline-source">UDN</span>
+                <span class="timeline-title">豪雨不斷屏東農損嚴重 縣府爭取天然災害救助全品項免勘 - UDN</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('2')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 17:58分</span>
+                <span class="timeline-source">遠見雜誌</span>
+                <span class="timeline-title">米克拉颱風挾帶豪雨，各縣市淹水現況？花蓮又有新堰塞湖 - 遠見雜誌</span>
+                <span class="timeline-districts"></span>
+            </button>
+            
+            <button class="timeline-item" onclick="focusNews('1')" style="--source-color: #555555">
+                <span class="timeline-dot"></span>
+                <span class="timeline-time">2026-6-26 下午 18:31分</span>
+                <span class="timeline-source">UDN</span>
+                <span class="timeline-title">豪雨侵襲台南多處工業區、市場淹水 經發局全員勘災助產業復原 - UDN</span>
+                <span class="timeline-districts"></span>
+            </button>
+            </div>
+    </div>
+    <div id="radar-control">
+        <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">顯示雷達</button>
+        <span id="radar-status">未載入</span>
+    </div>
+    <style>
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 410px;
+            height: 100%;
+            overflow-y: auto;
+            background: #fff;
+            padding: 12px;
+            z-index: 9999;
+            border-right: 2px solid #333;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+        }
+        #sidebar h3 { margin: 0 0 8px; font-size: 20px; }
+        #sidebar h4 { margin: 16px 0 8px; font-size: 16px; }
+        .summary { color: #555; font-size: 13px; margin-bottom: 10px; }
+        .news-list { display: grid; gap: 8px; }
+        .news-card {
+            display: grid;
+            grid-template-columns: 28px 86px 1fr;
+            gap: 4px 8px;
+            width: 100%;
+            border: 1px solid #cfcfcf;
+            background: #f9f9f9;
+            padding: 8px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 6px;
+            font: inherit;
+        }
+        .news-card:hover { background: #eef6ff; border-color: #5f9ed8; }
+        .news-index {
+            grid-row: span 3;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            color: #fff;
+            background: #2b6cb0;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .news-image {
+            grid-row: span 3;
+            width: 86px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #e5e5e5;
+        }
+        .news-title { color: #111; font-size: 14px; line-height: 1.35; }
+        .news-time { color: #8a3d00; font-size: 12px; font-weight: 700; }
+        .news-meta { color: #666; font-size: 12px; }
+        .cctv-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+        .cctv-card {
+            flex: 1 1 48%;
+            background: #f8f8f8;
+            padding: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        .cctv-card img { margin-top: 4px; max-width: 100%; object-fit: cover; }
+        .news-marker {
+            display: grid;
+            place-items: center;
+            min-width: 44px;
+            height: 28px;
+            padding: 0 7px;
+            color: #fff;
+            background: #555;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            line-height: 1;
+        }
+        .news-marker-source { font-size: 16px; font-weight: 800; }
+        .news-location-marker {
+            opacity: 0.9;
+            outline: 2px solid rgba(255, 255, 255, 0.75);
+        }
+        #timeline {
+            position: fixed;
+            left: 410px;
+            right: 0;
+            bottom: 0;
+            height: 132px;
+            z-index: 9998;
+            background: rgba(255, 255, 255, 0.96);
+            border-top: 2px solid #333;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        .timeline-header {
+            height: 28px;
+            padding: 6px 12px 0;
+            color: #222;
+            font-size: 14px;
+            font-weight: 800;
+            box-sizing: border-box;
+        }
+        .timeline-track {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 8px 12px 12px;
+            box-sizing: border-box;
+        }
+        .timeline-item {
+            position: relative;
+            flex: 0 0 260px;
+            height: 76px;
+            border: 1px solid #d0d0d0;
+            border-top: 4px solid var(--source-color);
+            background: #fff;
+            color: #111;
+            padding: 7px 8px 7px 18px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 6px;
+            font: inherit;
+            box-sizing: border-box;
+        }
+        .timeline-item:hover { background: #f4f8ff; border-color: var(--source-color); }
+        .timeline-dot {
+            position: absolute;
+            left: 7px;
+            top: 12px;
+            width: 7px;
+            height: 7px;
+            background: var(--source-color);
+            border-radius: 50%;
+        }
+        .timeline-time { display: block; color: #744000; font-size: 12px; font-weight: 800; }
+        .timeline-source { display: inline-block; color: var(--source-color); font-size: 12px; font-weight: 800; margin-right: 6px; }
+        .timeline-title {
+            display: block;
+            margin-top: 2px;
+            color: #111;
+            font-size: 13px;
+            line-height: 1.25;
+            max-height: 32px;
+            overflow: hidden;
+        }
+        .timeline-districts {
+            display: block;
+            margin-top: 2px;
+            color: #666;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #radar-control {
+            position: fixed;
+            left: 426px;
+            bottom: 144px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #bbb;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+        }
+        #radar-toggle {
+            border: 0;
+            border-radius: 4px;
+            background: #1f6feb;
+            color: #fff;
+            padding: 5px 9px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        #radar-toggle.active { background: #0f8f5f; }
+        #radar-toggle:disabled { background: #888; cursor: wait; }
+        #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
+        #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; }
+    </style>
+    <script>
+        const newsFocusPoints = {"1": [22.999728, 120.227028], "2": [23.987159, 121.601571], "3": [22.551976, 120.54876], "4": [25.037519, 121.563679], "5": [25.127603, 121.739183], "6": [24.838722, 121.017724], "7": [24.838722, 121.017724], "8": [24.838722, 121.017724], "9": [24.80395, 120.964687], "10": [24.993628, 121.30098], "11": [24.904722, 120.997222], "12": [22.551976, 120.54876], "13": [25.037519, 121.563679], "14": [24.80395, 120.964687], "15": [24.838722, 121.017724], "16": [24.80395, 120.964687], "17": [24.838722, 121.017724], "18": [24.80395, 120.964687]};
+        const newsFocusBounds = {};
+        let radarLayer = null;
+        let radarVisible = false;
+        function currentLeafletMap() {
+            const mapKeys = Object.keys(window).filter((key) => key.startsWith("map_"));
+            return mapKeys.length ? window[mapKeys[0]] : null;
+        }
+        function focusNews(newsId) {
+            const map = currentLeafletMap();
+            if (!map) return;
+            const bounds = newsFocusBounds[newsId];
+            if (bounds) {
+                map.fitBounds(bounds, { padding: [24, 24] });
+                return;
+            }
+            const point = newsFocusPoints[newsId];
+            if (point) map.setView(point, 15);
+        }
+        async function ensureRadarLayer() {
+            if (radarLayer) return radarLayer;
+            const status = document.getElementById("radar-status");
+            if (status) status.textContent = "載入中...";
+            const response = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+            const data = await response.json();
+            const frames = (data.radar && data.radar.past) ? data.radar.past : [];
+            if (!frames.length) throw new Error("No radar frames");
+            const latest = frames[frames.length - 1];
+            const tileUrl = `${data.host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`;
+            radarLayer = L.tileLayer(tileUrl, {
+                opacity: 0.58,
+                zIndex: 650,
+                attribution: "Radar &copy; RainViewer",
+                maxNativeZoom: 7,
+                maxZoom: 18
+            });
+            if (status) {
+                const radarTime = latest.time ? new Date(latest.time * 1000).toLocaleString("zh-TW", {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }) : "暫無";
+                status.textContent = `雷達：${radarTime}`;
+            }
+            return radarLayer;
+        }
+        async function toggleRadarOverlay() {
+            const map = currentLeafletMap();
+            const button = document.getElementById("radar-toggle");
+            const status = document.getElementById("radar-status");
+            if (!map) return;
+            try {
+                if (button) button.disabled = true;
+                const layer = await ensureRadarLayer();
+                if (radarVisible) {
+                    map.removeLayer(layer);
+                    radarVisible = false;
+                    if (button) button.classList.remove("active");
+                } else {
+                    layer.addTo(map);
+                    radarVisible = true;
+                    if (button) button.classList.add("active");
+                }
+            } catch (error) {
+                if (status) status.textContent = "雷達載入失敗";
+                console.error(error);
+            } finally {
+                if (button) button.disabled = false;
+            }
+        }
+        const liveSheetApiUrl = "https://script.google.com/macros/s/AKfycby2iT5glXEN116qYHqk9YXQmswkJ-kv_zPPfH2cso0GRYnxecXCJaUhs2WljhSpmmPV9g/exec";
+        const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
+        let liveSheetLayer = null;
+        let liveSheetFocusPoints = {};
+        function parseCsvRows(text) {
+            const rows = [];
+            let row = [];
+            let cell = "";
+            let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                const next = text[i + 1];
+                if (ch === '"') {
+                    if (inQuotes && next === '"') {
+                        cell += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (ch === "," && !inQuotes) {
+                    row.push(cell);
+                    cell = "";
+                } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
+                    if (ch === "\r" && next === "\n") i++;
+                    row.push(cell);
+                    if (row.some((value) => value !== "")) rows.push(row);
+                    row = [];
+                    cell = "";
+                } else {
+                    cell += ch;
+                }
+            }
+            row.push(cell);
+            if (row.some((value) => value !== "")) rows.push(row);
+            if (!rows.length) return [];
+            const headers = rows[0].map((value) => value.trim());
+            return rows.slice(1).map((values) => {
+                const item = {};
+                headers.forEach((header, index) => item[header] = values[index] || "");
+                return item;
+            });
+        }
+        async function loadSheetRows() {
+            if (liveSheetApiUrl) {
+                const apiUrl = liveSheetApiUrl + (liveSheetApiUrl.includes("?") ? "&" : "?") + "located=1&cacheBust=" + Date.now();
+                const response = await fetch(apiUrl);
+                const payload = await response.json();
+                if (payload && payload.ok && Array.isArray(payload.items)) return payload.items;
+            }
+            const response = await fetch(liveSheetCsvUrl + "&cacheBust=" + Date.now());
+            return parseCsvRows(await response.text());
+        }
+        function parseLatLon(value) {
+            const parts = String(value || "").split(/[,，]/).map((part) => part.trim());
+            if (parts.length !== 2) return null;
+            const lat = Number(parts[0]);
+            const lon = Number(parts[1]);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+            return [lat, lon];
+        }
+        function splitLiveMultiValue(value) {
+            return String(value || "").split(/[;\n\r|、；]+/).map((part) => part.trim()).filter(Boolean);
+        }
+        function parseLatLonList(value) {
+            const directPoint = parseLatLon(value);
+            if (directPoint) return [directPoint];
+            return splitLiveMultiValue(value).map(parseLatLon).filter(Boolean);
+        }
+        function pickLiveValue(values, index) {
+            if (index < values.length) return values[index];
+            return values.length === 1 ? values[0] : "";
+        }
+        function expandSheetRows(rows) {
+            const items = [];
+            rows.forEach((row, rowIndex) => {
+                const points = parseLatLonList(row.coordinate);
+                if (!points.length) return;
+                const districts = splitLiveMultiValue(row.matched_district);
+                const counties = splitLiveMultiValue(row.matched_county);
+                const source = row.source || "Google Sheet";
+                const count = Math.max(points.length, districts.length, counties.length, 1);
+                for (let index = 0; index < count; index++) {
+                    const point = index < points.length ? points[index] : (points.length === 1 ? points[0] : null);
+                    if (!point) continue;
+                    items.push({
+                        id: `${rowIndex + 1}-${index + 1}`,
+                        title: row.title || "",
+                        link: row.link || "",
+                        published_at: row.published_at || "",
+                        source,
+                        matched_district: pickLiveValue(districts, index),
+                        matched_county: pickLiveValue(counties, index),
+                        point,
+                        color: liveSourceColor(source)
+                    });
+                }
+            });
+            return items;
+        }
+        function liveSourceColor(source) {
+            let hash = 0;
+            for (const ch of String(source || "Google Sheet")) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+            const colors = ["#d71920", "#5f01d1", "#005bbb", "#00856f", "#b45309", "#0f766e", "#be123c"];
+            return colors[hash % colors.length];
+        }
+        function liveEscape(value) {
+            return String(value || "").replace(/[&<>"']/g, (ch) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[ch]));
+        }
+        function replaceLiveSidebar(items) {
+            const newsList = document.querySelector(".news-list");
+            const timelineTrack = document.querySelector(".timeline-track");
+            const summary = document.querySelector(".summary");
+            if (summary) summary.textContent = `來源：Google Sheet。共 ${items.length} 個定位點；重新整理頁面會重新讀取 Sheet。`;
+            if (newsList) {
+                newsList.innerHTML = items.map((item, index) => `
+                    <button class="news-card" onclick="focusNews('${item.id}')">
+                        <span class="news-index" style="background:${item.color}">${index + 1}</span>
+                        <span class="news-title">${liveEscape(item.title)}</span>
+                        <span class="news-time">${liveEscape(item.published_at)}</span>
+                        <span class="news-meta">${liveEscape(item.source)} / ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}</span>
+                    </button>
+                `).join("");
+            }
+            if (timelineTrack) {
+                timelineTrack.innerHTML = items.map((item) => `
+                    <button class="timeline-item" onclick="focusNews('${item.id}')" style="--source-color: ${item.color}">
+                        <span class="timeline-dot"></span>
+                        <span class="timeline-time">${liveEscape(item.published_at)}</span>
+                        <span class="timeline-source">${liveEscape(item.source)}</span>
+                        <span class="timeline-title">${liveEscape(item.title)}</span>
+                        <span class="timeline-districts">${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}</span>
+                    </button>
+                `).join("");
+            }
+        }
+        function clearStaticNewsUi() {
+            const newsList = document.querySelector(".news-list");
+            const timelineTrack = document.querySelector(".timeline-track");
+            const cctvGrid = document.querySelector(".cctv-grid");
+            const summary = document.querySelector(".summary");
+            if (summary) summary.textContent = "正在讀取 Google Sheet...";
+            if (newsList) newsList.innerHTML = "";
+            if (timelineTrack) timelineTrack.innerHTML = "";
+            if (cctvGrid) cctvGrid.innerHTML = "";
+        }
+        function clearStaticMarkers(map) {
+            const toRemove = [];
+            map.eachLayer((layer) => {
+                if (layer instanceof L.Marker || layer instanceof L.GeoJSON) toRemove.push(layer);
+            });
+            toRemove.forEach((layer) => map.removeLayer(layer));
+        }
+        async function loadSheetNewsLayer(retryCount = 0) {
+            const map = currentLeafletMap();
+            if (!map) {
+                if (retryCount < 20) setTimeout(() => loadSheetNewsLayer(retryCount + 1), 300);
+                return;
+            }
+            clearStaticNewsUi();
+            clearStaticMarkers(map);
+            const rows = await loadSheetRows();
+            const items = expandSheetRows(rows);
+            if (!items.length) {
+                const summary = document.querySelector(".summary");
+                if (summary) summary.textContent = "Google Sheet 目前沒有 coordinate 可定位資料。";
+                return;
+            }
+            if (liveSheetLayer) map.removeLayer(liveSheetLayer);
+            liveSheetLayer = L.layerGroup().addTo(map);
+            liveSheetFocusPoints = {};
+            items.forEach((item) => {
+                liveSheetFocusPoints[item.id] = item.point;
+                const popup = `
+                    <b>${liveEscape(item.source)}</b><br>
+                    ${liveEscape(item.published_at)}<br>
+                    <b>${liveEscape(item.title)}</b><br>
+                    <a href="${liveEscape(item.link)}" target="_blank">閱讀新聞</a><hr>
+                    ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}<br>
+                    ${item.point[0]}, ${item.point[1]}
+                `;
+                L.marker(item.point, {
+                    icon: L.divIcon({
+                        html: `<div class="news-marker news-location-marker" style="background:${item.color}"><span class="news-marker-source">${liveEscape(item.source)}</span></div>`,
+                        iconSize: [64, 28],
+                        iconAnchor: [32, 14]
+                    })
+                }).bindTooltip(`${item.id}. ${item.source} / ${item.title}`).bindPopup(popup).addTo(liveSheetLayer);
+            });
+            window.focusNews = function(newsId) {
+                const point = liveSheetFocusPoints[newsId];
+                if (point) map.setView(point, 13);
+            };
+            replaceLiveSidebar(items);
+            map.setView(items[0].point, 10);
+        }
+        setTimeout(loadSheetNewsLayer, 600);
+    </script>
+    
+    
+            <div class="folium-map" id="map_45fcc9a5acd8ea8e0b2d5abc64c03d3b" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_45fcc9a5acd8ea8e0b2d5abc64c03d3b = L.map(
+                "map_45fcc9a5acd8ea8e0b2d5abc64c03d3b",
+                {
+                    center: [22.999728, 120.227028],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 13,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6.addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var tile_layer_b2dec30d8489636c386d25ee31eb2f9f = L.tileLayer(
+                "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Google Maps",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_b2dec30d8489636c386d25ee31eb2f9f.addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var tile_layer_e8d031f61abaf74f18acde77a64c250f = L.tileLayer(
+                "https://mt1.google.com/vt/lyrs=s\u0026x={x}\u0026y={y}\u0026z={z}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Google Satellite",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_e8d031f61abaf74f18acde77a64c250f.addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var tile_layer_439550dd1fefee17d83fa52a4e2a4bea = L.tileLayer(
+                "https://mt1.google.com/vt/lyrs=y\u0026x={x}\u0026y={y}\u0026z={z}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Google Hybrid",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_439550dd1fefee17d83fa52a4e2a4bea.addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var marker_ae57aaea8e988736130b3939c8bb3176 = L.marker(
+                [22.999728, 120.227028],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_16e430f0f268bb72178d461d7aac7711 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eUDN\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_6db7c2920f1e5442f1b6518e30c32433 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_7d89b1f4bf945c6a4b7c47394509ff5a = $(`<div id="html_7d89b1f4bf945c6a4b7c47394509ff5a" style="width: 100.0%; height: 100.0%;"><b>UDN</b><br>2026-6-26 下午 18:31分<br><b>豪雨侵襲台南多處工業區、市場淹水 經發局全員勘災助產業復原 - UDN</b><br><a href='https://news.google.com/rss/articles/CBMiU0FVX3lxTE9hSWExaTBtc2MxSWxtYW9xTFJCaFU0cVdESldTS1gtVHpBNVhKcVhFbktyenZyR2FzbGFIV19GNWZxUnVWQXB2Nm9jTlpRYUlDZm9J0gFYQVVfeXFMT0JIYUQwQkhaZEE1VlVveGQybTlVWmlpWTUyaFdWRXVGa1R5YmVMemx5dGl3aUpRNkdoTzJSRU5ZLUxiejhmb0xXQmtJX2p1a2V3THowOUowTA?oc=5' target='_blank'>?梯??啗?</a><hr>台南市 <br>22.999728, 120.227028</div>`)[0];
+                popup_6db7c2920f1e5442f1b6518e30c32433.setContent(html_7d89b1f4bf945c6a4b7c47394509ff5a);
+            
+        
+
+        marker_ae57aaea8e988736130b3939c8bb3176.bindPopup(popup_6db7c2920f1e5442f1b6518e30c32433)
+        ;
+
+        
+    
+    
+            marker_ae57aaea8e988736130b3939c8bb3176.bindTooltip(
+                `<div>
+                     1. UDN / 豪雨侵襲台南多處工業區、市場淹水 經發局全員勘災助產業復原 - UDN
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_ae57aaea8e988736130b3939c8bb3176.setIcon(div_icon_16e430f0f268bb72178d461d7aac7711);
+            
+    
+            var marker_03a19efc479d1814beda1391f241876e = L.marker(
+                [23.987159, 121.601571],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_a7e8be3bae06c4104b48e762fe98d386 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u9060\u898b\u96dc\u8a8c\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_0d318bf0b98dc8e7159d230ee7a8bfbb = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_43acb73774fe251b0345e21a47661715 = $(`<div id="html_43acb73774fe251b0345e21a47661715" style="width: 100.0%; height: 100.0%;"><b>遠見雜誌</b><br>2026-6-26 下午 17:58分<br><b>米克拉颱風挾帶豪雨，各縣市淹水現況？花蓮又有新堰塞湖 - 遠見雜誌</b><br><a href='https://news.google.com/rss/articles/CBMiTkFVX3lxTE92bFRhSGwwQzI0bm5SOHI4ZllSZUR2OVZfQXE3MEFBWU53VDUwVUV3THJIVmQza1dLak5vTVZEdmNQYmtHR3Z2SlFvZkNuQQ?oc=5' target='_blank'>?梯??啗?</a><hr>花蓮縣 <br>23.987159, 121.601571</div>`)[0];
+                popup_0d318bf0b98dc8e7159d230ee7a8bfbb.setContent(html_43acb73774fe251b0345e21a47661715);
+            
+        
+
+        marker_03a19efc479d1814beda1391f241876e.bindPopup(popup_0d318bf0b98dc8e7159d230ee7a8bfbb)
+        ;
+
+        
+    
+    
+            marker_03a19efc479d1814beda1391f241876e.bindTooltip(
+                `<div>
+                     2. 遠見雜誌 / 米克拉颱風挾帶豪雨，各縣市淹水現況？花蓮又有新堰塞湖 - 遠見雜誌
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_03a19efc479d1814beda1391f241876e.setIcon(div_icon_a7e8be3bae06c4104b48e762fe98d386);
+            
+    
+            var marker_a8090672b23a512937852432cb0f691f = L.marker(
+                [22.551976, 120.54876],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_091090014d557b7f71ff2ceec71c3b44 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eUDN\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_2f25d8b0bd508617eb3043adeb65374a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_5c6ac9ccf18f90834e4195070ee66662 = $(`<div id="html_5c6ac9ccf18f90834e4195070ee66662" style="width: 100.0%; height: 100.0%;"><b>UDN</b><br>2026-6-26 下午 17:10分<br><b>豪雨不斷屏東農損嚴重 縣府爭取天然災害救助全品項免勘 - UDN</b><br><a href='https://news.google.com/rss/articles/CBMiUEFVX3lxTE92Q2JSMnRQU3FKaDBGOXh3WmI1b2tMajNES0QwZDVzbTRnVTNsdE1tZ0FiN1BkX0JmQlFsbVVEazNhdE5NZnFvVlV0OTU0djVl0gFWQVVfeXFMTkY3U0MwMFE3N0pOUHRObzFSSllNM040dlN5UVdVYlU0YldhaVBhYmt3b3ZUemo4dUxkY2QzZ2UzOUhWTUFmZkxxVENUcXRkM1dpR3A2M0E?oc=5' target='_blank'>?梯??啗?</a><hr>屏東縣 <br>22.551976, 120.54876</div>`)[0];
+                popup_2f25d8b0bd508617eb3043adeb65374a.setContent(html_5c6ac9ccf18f90834e4195070ee66662);
+            
+        
+
+        marker_a8090672b23a512937852432cb0f691f.bindPopup(popup_2f25d8b0bd508617eb3043adeb65374a)
+        ;
+
+        
+    
+    
+            marker_a8090672b23a512937852432cb0f691f.bindTooltip(
+                `<div>
+                     3. UDN / 豪雨不斷屏東農損嚴重 縣府爭取天然災害救助全品項免勘 - UDN
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_a8090672b23a512937852432cb0f691f.setIcon(div_icon_091090014d557b7f71ff2ceec71c3b44);
+            
+    
+            var marker_6aeffe4e09b7ffabe2d6224be538e620 = L.marker(
+                [25.037519, 121.563679],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_7a97ffb5067bfad7db3ffcc800a6ed6e = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u4e2d\u592e\u793e CNA\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_1a8b0a1ac43083fe5d21ab8f5bd6b70a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_5cd2fce69affdc85fc6e7bb2998ea004 = $(`<div id="html_5cd2fce69affdc85fc6e7bb2998ea004" style="width: 100.0%; height: 100.0%;"><b>中央社 CNA</b><br>2026-6-26 下午 17:05分<br><b>劇烈豪雨作業解除台北氣象站6月累積雨量可能創同期新高| 生活 - 中央社 CNA</b><br><a href='https://news.google.com/rss/articles/CBMiX0FVX3lxTFBiTk9TaDNNRS1tSTBvWjJVczh3aHlYSEpoU0ZsZGhXdHlZNDRDOTFQYTViRGRKSld6UUd2LTRRVnJCbGRGQjdNdWplTjdzMFVxN1lQSEpoZzNlcm1WZmhj?oc=5' target='_blank'>?梯??啗?</a><hr>台北市 <br>25.037519, 121.563679</div>`)[0];
+                popup_1a8b0a1ac43083fe5d21ab8f5bd6b70a.setContent(html_5cd2fce69affdc85fc6e7bb2998ea004);
+            
+        
+
+        marker_6aeffe4e09b7ffabe2d6224be538e620.bindPopup(popup_1a8b0a1ac43083fe5d21ab8f5bd6b70a)
+        ;
+
+        
+    
+    
+            marker_6aeffe4e09b7ffabe2d6224be538e620.bindTooltip(
+                `<div>
+                     4. 中央社 CNA / 劇烈豪雨作業解除台北氣象站6月累積雨量可能創同期新高| 生活 - 中央社 CNA
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6aeffe4e09b7ffabe2d6224be538e620.setIcon(div_icon_7a97ffb5067bfad7db3ffcc800a6ed6e);
+            
+    
+            var marker_05d8ae8d6afd985ce79f20891d23e648 = L.marker(
+                [25.127603, 121.739183],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_c74bb47117c9a779ef8b65ce14d6e01a = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_5c8508475b3b32f43c8993598bb296cd = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_745e0bb8e1c7c5bbacc244bc400af474 = $(`<div id="html_745e0bb8e1c7c5bbacc244bc400af474" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 16:51分<br><b>米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMiugRBVV95cUxQMUhHaWliWnhiVTZBbVFkbVE3VDR4SUswU1ZjN1k4MTh6OUd0Q0dibHp4YmN3T3RSRUhYbmhhLVZ0Xy02UjRYalRUNTFuWXlYRktHQ0ctQ2NJRFZnWjlkYVRFc3ZvWFhTQXF3ZVd4S0hiVjlKVjAwYzR6T0ZjdHpzaV9KOVAwcXhvUkR0MHZOTE1HYVFNLVJqSTJFa3hNMU1MejJvVWFkLXVHQTl6Yjg1QVVpM3dfRUFEcHp6ckpCM0NtOE1DM0V6ZnJXSkV4R3hlZGpIXzVVelBNZVVlMk9wckFxNVdyaklBQnZ3RkUwMlA0RnhMVktGQXZTbGpSbENxOEp1a0VDYlZQS1NtNFNZUWxLbWRvd1BMLUlLOTQ3MVpsanNha2kzUEtoUk5TTFF0Rzg1R2NmdFRBOW9iNjJRU3JSZ1N3eW9OcVc4MVpuaUQ5TE8xNmhJS3YtUzNtWVduS2RYMlpvZ2xYbGxqTTFhLU51Z0hHWEx0S1JMUGhPcVhyQWt3U2tVNHJZbHpKRjJSOUtOTzh5eEV6eXF6NXcyTnZGQ0ZNSDQyR1pLSHc2YmZfa1UxOEl4eHF3SjhKQkg1cnhuQi12VXNGdUdCa2xieW13MGh1Rmp0M3dUaHFhNE9Ydlg3RFhBcWhvOG95VmlQRXktUzdCaENnXzBFdmpoNUFGa3V5SEE0LVBlNWVVa1l5RFJDcGpON1piX2hlVE8tdVVRSXpJVW04REIycEFKX0ItX2o4dWJ6aUE?oc=5' target='_blank'>?梯??啗?</a><hr>基隆市 基隆市<br>25.127603, 121.739183</div>`)[0];
+                popup_5c8508475b3b32f43c8993598bb296cd.setContent(html_745e0bb8e1c7c5bbacc244bc400af474);
+            
+        
+
+        marker_05d8ae8d6afd985ce79f20891d23e648.bindPopup(popup_5c8508475b3b32f43c8993598bb296cd)
+        ;
+
+        
+    
+    
+            marker_05d8ae8d6afd985ce79f20891d23e648.bindTooltip(
+                `<div>
+                     5. Yahoo新聞 / 米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_05d8ae8d6afd985ce79f20891d23e648.setIcon(div_icon_c74bb47117c9a779ef8b65ce14d6e01a);
+            
+    
+            var marker_6588dd26576768c54aeb7dd323d6a7d5 = L.marker(
+                [24.838722, 121.017724],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_4bc90f1d8fa594ab4e7bbeb518a43156 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_4615a2f0c164ebc6f9f51b2be7e7a2c2 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_5a50fcaa6bf15c04dd0e2ec68c04f3eb = $(`<div id="html_5a50fcaa6bf15c04dd0e2ec68c04f3eb" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 16:51分<br><b>米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMiugRBVV95cUxQMUhHaWliWnhiVTZBbVFkbVE3VDR4SUswU1ZjN1k4MTh6OUd0Q0dibHp4YmN3T3RSRUhYbmhhLVZ0Xy02UjRYalRUNTFuWXlYRktHQ0ctQ2NJRFZnWjlkYVRFc3ZvWFhTQXF3ZVd4S0hiVjlKVjAwYzR6T0ZjdHpzaV9KOVAwcXhvUkR0MHZOTE1HYVFNLVJqSTJFa3hNMU1MejJvVWFkLXVHQTl6Yjg1QVVpM3dfRUFEcHp6ckpCM0NtOE1DM0V6ZnJXSkV4R3hlZGpIXzVVelBNZVVlMk9wckFxNVdyaklBQnZ3RkUwMlA0RnhMVktGQXZTbGpSbENxOEp1a0VDYlZQS1NtNFNZUWxLbWRvd1BMLUlLOTQ3MVpsanNha2kzUEtoUk5TTFF0Rzg1R2NmdFRBOW9iNjJRU3JSZ1N3eW9OcVc4MVpuaUQ5TE8xNmhJS3YtUzNtWVduS2RYMlpvZ2xYbGxqTTFhLU51Z0hHWEx0S1JMUGhPcVhyQWt3U2tVNHJZbHpKRjJSOUtOTzh5eEV6eXF6NXcyTnZGQ0ZNSDQyR1pLSHc2YmZfa1UxOEl4eHF3SjhKQkg1cnhuQi12VXNGdUdCa2xieW13MGh1Rmp0M3dUaHFhNE9Ydlg3RFhBcWhvOG95VmlQRXktUzdCaENnXzBFdmpoNUFGa3V5SEE0LVBlNWVVa1l5RFJDcGpON1piX2hlVE8tdVVRSXpJVW04REIycEFKX0ItX2o4dWJ6aUE?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 基隆市<br>24.838722, 121.017724</div>`)[0];
+                popup_4615a2f0c164ebc6f9f51b2be7e7a2c2.setContent(html_5a50fcaa6bf15c04dd0e2ec68c04f3eb);
+            
+        
+
+        marker_6588dd26576768c54aeb7dd323d6a7d5.bindPopup(popup_4615a2f0c164ebc6f9f51b2be7e7a2c2)
+        ;
+
+        
+    
+    
+            marker_6588dd26576768c54aeb7dd323d6a7d5.bindTooltip(
+                `<div>
+                     6. Yahoo新聞 / 米克拉颱風6/26災情一次看：新竹縣積淹水1死1失蹤、基隆通明街邊坡崩塌、南高屏多處淹水嚴重 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_6588dd26576768c54aeb7dd323d6a7d5.setIcon(div_icon_4bc90f1d8fa594ab4e7bbeb518a43156);
+            
+    
+            var marker_f6c6d43df9b54b93bf4e703469adc7d9 = L.marker(
+                [24.838722, 121.017724],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_e20e45a54f28ea8ae233f9345976381a = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u516c\u8996\u65b0\u805e\u7db2PNN\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_88e95667aaa2ed2e4e7fb6f44325ff2a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_65066d1cb9d129c0286ba4f93a2997ff = $(`<div id="html_65066d1cb9d129c0286ba4f93a2997ff" style="width: 100.0%; height: 100.0%;"><b>公視新聞網PNN</b><br>2026-6-26 下午 16:36分<br><b>新竹縣市多處積淹水 竹北女性受困車內死亡 - 公視新聞網PNN</b><br><a href='https://news.google.com/rss/articles/CBMiT0FVX3lxTE9iSzNweng5SmxGeURUSGZGcXdMblBPTEhYelVMQUl5WUR6a3JmYmZad21DSHktTXdIOVc5MlVRRGw3cF90UlBVRy16dlA4UHM?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 <br>24.838722, 121.017724</div>`)[0];
+                popup_88e95667aaa2ed2e4e7fb6f44325ff2a.setContent(html_65066d1cb9d129c0286ba4f93a2997ff);
+            
+        
+
+        marker_f6c6d43df9b54b93bf4e703469adc7d9.bindPopup(popup_88e95667aaa2ed2e4e7fb6f44325ff2a)
+        ;
+
+        
+    
+    
+            marker_f6c6d43df9b54b93bf4e703469adc7d9.bindTooltip(
+                `<div>
+                     7. 公視新聞網PNN / 新竹縣市多處積淹水 竹北女性受困車內死亡 - 公視新聞網PNN
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_f6c6d43df9b54b93bf4e703469adc7d9.setIcon(div_icon_e20e45a54f28ea8ae233f9345976381a);
+            
+    
+            var marker_62b9ee4ef3c2c2579cb00a54180485fa = L.marker(
+                [24.838722, 121.017724],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_802b0b0ae4c18c5cdd0b14898ed10b6f = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_29043b1d71aa7903c31717e8f0d51b8a = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6ac38c25f47c2e6a1139817ac8a1e8da = $(`<div id="html_6ac38c25f47c2e6a1139817ac8a1e8da" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 15:44分<br><b>快訊／新竹縣大雨釀災！BMW倒插水中「49歲女困車滅頂」農民巡田失聯 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMiiwNBVV95cUxPTWcwRWFPdFdwOHFiR0RiMG4xYXg0MDdOdnZVS1hLcU4xZkVnUDkwNE1BbF9XS0RwOW1QQmhHcjJvRVhRWWFzSVd3NEc2Qllhd3ZQeU1yRllZYklNUUFNODN6S3dfVkZGZ3M2MGw0TlBOVDkxNGRORHJJNWxrUFYzb2RPSDE3ZVFIZDJNQzN5emQ4OExzMUprRWprUzdLZGUzaVJTX3h4cDlCVy0yMmltd1hXRFk5NlRCSTNKZGZoa0JPYmFGQVRyN3hJOFhYYS1FNFJxUHE4RUpzcWdwMGxhOGl5M1RZWk4wWnhfYkhDd3lodkxEWXFhazBNVGdxbzdyNFJUSFBNTXdQYkNxaWl3NDF2VDU2QnlabmxjLXFhLTNZUEF1RjJSTWl5T0FDclFDXzMzMlFLWG9EVDFvd0pFdjNvYVlQZnNLZXo0enJuc1A5N29rZ2poU19CRlpVRWl4Q1gxXzJEdGd6VUN2aVhLVE5PWVVwaUNYVm5MRjFzNVVLVUtUSC1kTFAxQQ?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 <br>24.838722, 121.017724</div>`)[0];
+                popup_29043b1d71aa7903c31717e8f0d51b8a.setContent(html_6ac38c25f47c2e6a1139817ac8a1e8da);
+            
+        
+
+        marker_62b9ee4ef3c2c2579cb00a54180485fa.bindPopup(popup_29043b1d71aa7903c31717e8f0d51b8a)
+        ;
+
+        
+    
+    
+            marker_62b9ee4ef3c2c2579cb00a54180485fa.bindTooltip(
+                `<div>
+                     8. Yahoo新聞 / 快訊／新竹縣大雨釀災！BMW倒插水中「49歲女困車滅頂」農民巡田失聯 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_62b9ee4ef3c2c2579cb00a54180485fa.setIcon(div_icon_802b0b0ae4c18c5cdd0b14898ed10b6f);
+            
+    
+            var marker_e2e99fa4de5b79419c9ee3349a60bdbf = L.marker(
+                [24.80395, 120.964687],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_74011c8d0eb23e34a9bf273c59e6de25 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_ff53d37933e107dd07f6503f02452f99 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_7a7994de62780980a293017419b9370a = $(`<div id="html_7a7994de62780980a293017419b9370a" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 15:40分<br><b>米克拉颱風6/26交通異動一次看：台鐵竹中=竹東中斷啟動公路接駁、新竹市公車部分停駛 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMikwRBVV95cUxQQi1SS0djaWctWmdpZHJubURUSUUtMjItdTBjSzR3d0h6QVJFSzMzNkNHa19zRFVXOGttOW4xWHhjMWlKNlBBcUdhcFFIcEdJQW53dzRLMDZONVJjNFpzSHQ1WHNiQzFWMGFUZ3NlaTl0Wjd3b1FwY21lNW15UWlUM2VDUEs1d1FSalVWZEs2R0w1V3NmdkpIRmRGRHIyZWlxLU9mbzQ0blBNdHA2eEZDWHZqOVppRF9vcVVhLUliV1ZMLTdkcllSQU1pQXFqZmFSUzB4NFdNZlhXNEx4Ymo0LVd6TGIwamZYazhKRVA3M09IN250VXE4QkJRTTA2X09MUlphNUduTWNEM0VBT2E5d01GekZoRE9DNWJxSG5uQ3ZmNHZVb3NmWmt4OF9Oa1V2ODE3Vmp5Qm5DUFFOMnZMRVVZeDQ2SmFweGY0Y2x6ZThPdnZCVHZleVdVZF8tR3pNVTNLSTczZG9rcXNrN0xVc093SWhGcnZ3a1Q2Z2RPUlVSb29qNTZmTjFzajhDc1JYeDFod2VKMndHVzNFRllSUUVOeWFleWFGZ0pZN3NPZm1LY1A5dGZENk1fSHNQbGowSnRsY2lOTjQ5LUs3cXJZU0Q4QWVJSjVwVTZ3TEp5enhmNHpoVTR1ekhtRUx4S3V3T0VKTVc1akNkdXhSWmdCUEtleDNWUTV2R0ZNQVFFVm5nZlk?oc=5' target='_blank'>?梯??啗?</a><hr>新竹市 <br>24.80395, 120.964687</div>`)[0];
+                popup_ff53d37933e107dd07f6503f02452f99.setContent(html_7a7994de62780980a293017419b9370a);
+            
+        
+
+        marker_e2e99fa4de5b79419c9ee3349a60bdbf.bindPopup(popup_ff53d37933e107dd07f6503f02452f99)
+        ;
+
+        
+    
+    
+            marker_e2e99fa4de5b79419c9ee3349a60bdbf.bindTooltip(
+                `<div>
+                     9. Yahoo新聞 / 米克拉颱風6/26交通異動一次看：台鐵竹中=竹東中斷啟動公路接駁、新竹市公車部分停駛 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e2e99fa4de5b79419c9ee3349a60bdbf.setIcon(div_icon_74011c8d0eb23e34a9bf273c59e6de25);
+            
+    
+            var marker_0bf54d0dc2915a4adaea574eb5bf267c = L.marker(
+                [24.993628, 121.30098],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_20d7b6cb6495f81bf9d0f08c716273d5 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_23b20ff347b42c12dd34400899d58f53 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_76200ccc515a8f552600c8a761c9c094 = $(`<div id="html_76200ccc515a8f552600c8a761c9c094" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 15:13分<br><b>暴雨狂灌！桃園中壢現「噴泉」、平鎮路邊機車慘泡水 北部淹水奇象曝 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMinANBVV95cUxOSGY1WXFvNHIyWncxN25qclpsQUxQZkJXUkh0U0M5Q21nM21tc0N3TTdfY0FESUI0MFlhZFNiTmdTVmJ5bElwOUhncVBldnN2MTcyNXctaDhGWnh3YnFVYzlSamo4TV9lTkhpRUZDVkZfVnRYZmg2cVBKQXhSX0ZCZzlBWXVXT2JLcFVlSWRaRHFQc1BBaTlWZ0Z5X2huN3QyakY0b09NLU4wbGdGczA4Vmk4WWd6Q3ZpVmFxaFhZT2pPTC1KNnU0eWUwdjV6ZWVqRE1NUm1qNTI3RFpPNUVvS191Z2tPMnZaZVFxbE5BZmo2TGZMNzlnb1pyMG1nNG9Zd0FBUEszYUdMcVJYeC1oREdJNnpycUdxN2NTeUhISjJKUFdCQmFkNGxIcjh3cXZxOEV0eVN1ODNON3g4bmk0YWVJNkVsUllCeTEtQzNTUzN4REQtc2RxbVlRR2JlZkpZRDNNbFh1MkxUVm4wS0w2T1M4OVJLT0NETUJrUVJ3WnZuM1NRUjFIQ1VNUENVc1NvSWNWQ29yNlFlaDVB?oc=5' target='_blank'>?梯??啗?</a><hr>桃園市 <br>24.993628, 121.30098</div>`)[0];
+                popup_23b20ff347b42c12dd34400899d58f53.setContent(html_76200ccc515a8f552600c8a761c9c094);
+            
+        
+
+        marker_0bf54d0dc2915a4adaea574eb5bf267c.bindPopup(popup_23b20ff347b42c12dd34400899d58f53)
+        ;
+
+        
+    
+    
+            marker_0bf54d0dc2915a4adaea574eb5bf267c.bindTooltip(
+                `<div>
+                     10. Yahoo新聞 / 暴雨狂灌！桃園中壢現「噴泉」、平鎮路邊機車慘泡水 北部淹水奇象曝 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_0bf54d0dc2915a4adaea574eb5bf267c.setIcon(div_icon_20d7b6cb6495f81bf9d0f08c716273d5);
+            
+    
+            var marker_d26ff472c58b44a3fa0dec66effd176b = L.marker(
+                [24.904722, 120.997222],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_0558071d4d69f569e449d7b3686af2e9 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_8bfff2674aedb74d0f079ca791133482 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6d2f55fd3b91d11de18e491e8aab7658 = $(`<div id="html_6d2f55fd3b91d11de18e491e8aab7658" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 15:02分<br><b>竹縣豪大雨釀淹水 竹北、新豐各有1民眾失聯 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMirwJBVV95cUxONnpnZUNMMFVTeFhNaV9yY0ZaZjFhWERrQmpIeWRhT3dxMTFLOEF6cUkzU29xRnVrQmE5UTJpemVQMDFmWU9fdjhQTnpRbnZxajh5cV9MRU1qTzdHTTdxX3VmQTBnS1Q1RTBIOC1Eb0ZtODMtYnc3bXBURy1FMEhtS0ZSd1VKUElkb3VtY25BeTVkTUMxQ2daODZ2MHhtVGFpNndOVjBZSlhrQXJwS1FxWjZRSHFmOXA5NnNBc1U3SzY1YXF5MzkxWTNBeGlhcURLbGI4RHJ1QVZvel92bXo5aHBEZ0hUVXZBU0xDS0E5QnJhQ0VqYzR0SFlFYzlZbkdqd0lUeTlfT1A5ZlNybXpKRkZzM21ncHhnRkZ1a0Z0N0VROW9uZmVSZHpjVVJxVXM?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 新豐鄉<br>24.904722, 120.997222</div>`)[0];
+                popup_8bfff2674aedb74d0f079ca791133482.setContent(html_6d2f55fd3b91d11de18e491e8aab7658);
+            
+        
+
+        marker_d26ff472c58b44a3fa0dec66effd176b.bindPopup(popup_8bfff2674aedb74d0f079ca791133482)
+        ;
+
+        
+    
+    
+            marker_d26ff472c58b44a3fa0dec66effd176b.bindTooltip(
+                `<div>
+                     11. Yahoo新聞 / 竹縣豪大雨釀淹水 竹北、新豐各有1民眾失聯 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_d26ff472c58b44a3fa0dec66effd176b.setIcon(div_icon_0558071d4d69f569e449d7b3686af2e9);
+            
+    
+            var marker_12a25dfd14db38a65e4a464201275575 = L.marker(
+                [22.551976, 120.54876],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_ffdc7363f62a594b6f839e06bdf7e60f = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_45f9eacc43b9cfd3949e2076c2706d57 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_134f7b12fc2356aeec891d4143ee5dbe = $(`<div id="html_134f7b12fc2356aeec891d4143ee5dbe" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 14:22分<br><b>台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMiowJBVV95cUxQc1lvcG5TOVVJOVlMbFpXNVE0TzZwSnp2RlVEWGFVeVlkWjdZbDZ5UTFONlpEY0lDeXRfTlBBcVIyMVF5VllvYlNhNmVIdU10bVBBSVYyb216cmtSMm1LZ18xUWt5RV9fNG14VnU1MnBNb0g3elBWWDBvVnBoVnNpSEhDS3dCQV9zamNheTY5a1ZjcF8zaWNJamdCZGZlWUpUTTJnc2lDNVphMlNvSjhnNmZjUkZxMVRHdHItVGNHME83NEk1cGZiSkI5aXJ3MzhheVFYSlZJaUZXMmlzTVlkOERhQWNSY0dQM2x1V2ZCVUhJbEJ5bXd4OFpMRU1pa095bXNfZ0tGRHNWNE9pLV9IdmF4NVd3M0ZJM1psZk5icnUwYWM?oc=5' target='_blank'>?梯??啗?</a><hr>屏東縣 <br>22.551976, 120.54876</div>`)[0];
+                popup_45f9eacc43b9cfd3949e2076c2706d57.setContent(html_134f7b12fc2356aeec891d4143ee5dbe);
+            
+        
+
+        marker_12a25dfd14db38a65e4a464201275575.bindPopup(popup_45f9eacc43b9cfd3949e2076c2706d57)
+        ;
+
+        
+    
+    
+            marker_12a25dfd14db38a65e4a464201275575.bindTooltip(
+                `<div>
+                     12. Yahoo新聞 / 台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_12a25dfd14db38a65e4a464201275575.setIcon(div_icon_ffdc7363f62a594b6f839e06bdf7e60f);
+            
+    
+            var marker_11a049cc863bd9e6b474c266555488a8 = L.marker(
+                [25.037519, 121.563679],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_54c4515368c5b8b8903421fabf1a751e = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_d61011992b17f58395d538c3d0f978e2 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_6437d65f03db488d3ad889055967f46a = $(`<div id="html_6437d65f03db488d3ad889055967f46a" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-6-26 下午 14:22分<br><b>台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMiowJBVV95cUxQc1lvcG5TOVVJOVlMbFpXNVE0TzZwSnp2RlVEWGFVeVlkWjdZbDZ5UTFONlpEY0lDeXRfTlBBcVIyMVF5VllvYlNhNmVIdU10bVBBSVYyb216cmtSMm1LZ18xUWt5RV9fNG14VnU1MnBNb0g3elBWWDBvVnBoVnNpSEhDS3dCQV9zamNheTY5a1ZjcF8zaWNJamdCZGZlWUpUTTJnc2lDNVphMlNvSjhnNmZjUkZxMVRHdHItVGNHME83NEk1cGZiSkI5aXJ3MzhheVFYSlZJaUZXMmlzTVlkOERhQWNSY0dQM2x1V2ZCVUhJbEJ5bXd4OFpMRU1pa095bXNfZ0tGRHNWNE9pLV9IdmF4NVd3M0ZJM1psZk5icnUwYWM?oc=5' target='_blank'>?梯??啗?</a><hr>台北市 <br>25.037519, 121.563679</div>`)[0];
+                popup_d61011992b17f58395d538c3d0f978e2.setContent(html_6437d65f03db488d3ad889055967f46a);
+            
+        
+
+        marker_11a049cc863bd9e6b474c266555488a8.bindPopup(popup_d61011992b17f58395d538c3d0f978e2)
+        ;
+
+        
+    
+    
+            marker_11a049cc863bd9e6b474c266555488a8.bindTooltip(
+                `<div>
+                     13. Yahoo新聞 / 台北、屏東淹水補助怎麼領？申請方式一次看 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_11a049cc863bd9e6b474c266555488a8.setIcon(div_icon_54c4515368c5b8b8903421fabf1a751e);
+            
+    
+            var marker_fd422460af4ae3a83f078d3377a4e6e7 = L.marker(
+                [24.80395, 120.964687],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_97626bef50d925aff18de0da8881b9d1 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u93e1\u9031\u520aMirror Media\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_e8ad2931822425e7456e295820aa9012 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_b9dc6c6157ad2d84c5dface41ad128fd = $(`<div id="html_b9dc6c6157ad2d84c5dface41ad128fd" style="width: 100.0%; height: 100.0%;"><b>鏡週刊Mirror Media</b><br>2026-06-26 下午 14:17分<br><b>不斷更新／全台26日停班課一次看！豪雨擴大影響　新竹市12點後停班停課 - 鏡週刊Mirror Media</b><br><a href='https://news.google.com/rss/articles/CBMiW0FVX3lxTE04ZFVocG9ySHduSFhsLU5aMHEtZ1BSYXJCSVBBT3N3TEVBWDFZRTFGcGxWalVtS0FPVFdYb092MWdiN0ZId1BlMUZhS2pkcnhwUEwzZHVPaHphSjjSAWBBVV95cUxPdFR2TDhrTk5nNkYxUGRQOFNwclBSNUZIYVVRSzJTdkNfSmZFTGsxR1FOSE93RUFMNkZYMUJrUUdUdDdpc2E1RURzQ205bUNjQlVRc2lPNEhrNlFELU9GSDU?oc=5' target='_blank'>?梯??啗?</a><hr>新竹市 <br>24.80395, 120.964687</div>`)[0];
+                popup_e8ad2931822425e7456e295820aa9012.setContent(html_b9dc6c6157ad2d84c5dface41ad128fd);
+            
+        
+
+        marker_fd422460af4ae3a83f078d3377a4e6e7.bindPopup(popup_e8ad2931822425e7456e295820aa9012)
+        ;
+
+        
+    
+    
+            marker_fd422460af4ae3a83f078d3377a4e6e7.bindTooltip(
+                `<div>
+                     14. 鏡週刊Mirror Media / 不斷更新／全台26日停班課一次看！豪雨擴大影響　新竹市12點後停班停課 - 鏡週刊Mirror Media
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_fd422460af4ae3a83f078d3377a4e6e7.setIcon(div_icon_97626bef50d925aff18de0da8881b9d1);
+            
+    
+            var marker_c51ae095be76d4c6080578c5a9ae35a0 = L.marker(
+                [24.838722, 121.017724],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_5bef54a40dc9507185365521691388db = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u5ba2\u65b0\u805e HakkaNews\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_085a85caf73ae6baac342ebd7bcac21f = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_71695c1a5178c8dc04406be9f0482260 = $(`<div id="html_71695c1a5178c8dc04406be9f0482260" style="width: 100.0%; height: 100.0%;"><b>客新聞 HakkaNews</b><br>2026-06-26 下午 13:00分<br><b>不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</b><br><a href='https://news.google.com/rss/articles/CBMiUEFVX3lxTE5rVTdtVUdGSlZqMWdjTzFINFJsWTdtb3pUVlNTdTgyQ1g4bVNWbURjZEtvT2J3bEVpRlNkQlFHSmxLMTRyQjdFS1pNeGVNbzJO?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 <br>24.838722, 121.017724</div>`)[0];
+                popup_085a85caf73ae6baac342ebd7bcac21f.setContent(html_71695c1a5178c8dc04406be9f0482260);
+            
+        
+
+        marker_c51ae095be76d4c6080578c5a9ae35a0.bindPopup(popup_085a85caf73ae6baac342ebd7bcac21f)
+        ;
+
+        
+    
+    
+            marker_c51ae095be76d4c6080578c5a9ae35a0.bindTooltip(
+                `<div>
+                     15. 客新聞 HakkaNews / 不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_c51ae095be76d4c6080578c5a9ae35a0.setIcon(div_icon_5bef54a40dc9507185365521691388db);
+            
+    
+            var marker_c1407c88e3a7d1804e7702745b1ddbdf = L.marker(
+                [24.80395, 120.964687],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_58ece38d372b9ef78c20ad89210bf1ee = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003e\u5ba2\u65b0\u805e HakkaNews\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_8579a5ddb37d7e5a258bc0efe01fa237 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_36893afc2b2e95fdb4ea2049d635dc7e = $(`<div id="html_36893afc2b2e95fdb4ea2049d635dc7e" style="width: 100.0%; height: 100.0%;"><b>客新聞 HakkaNews</b><br>2026-06-26 下午 13:00分<br><b>不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews</b><br><a href='https://news.google.com/rss/articles/CBMiUEFVX3lxTE5rVTdtVUdGSlZqMWdjTzFINFJsWTdtb3pUVlNTdTgyQ1g4bVNWbURjZEtvT2J3bEVpRlNkQlFHSmxLMTRyQjdFS1pNeGVNbzJO?oc=5' target='_blank'>?梯??啗?</a><hr>新竹市 <br>24.80395, 120.964687</div>`)[0];
+                popup_8579a5ddb37d7e5a258bc0efe01fa237.setContent(html_36893afc2b2e95fdb4ea2049d635dc7e);
+            
+        
+
+        marker_c1407c88e3a7d1804e7702745b1ddbdf.bindPopup(popup_8579a5ddb37d7e5a258bc0efe01fa237)
+        ;
+
+        
+    
+    
+            marker_c1407c88e3a7d1804e7702745b1ddbdf.bindTooltip(
+                `<div>
+                     16. 客新聞 HakkaNews / 不斷更新／新竹縣、新竹市多處淹水 下午停班停課 - 客新聞 HakkaNews
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_c1407c88e3a7d1804e7702745b1ddbdf.setIcon(div_icon_58ece38d372b9ef78c20ad89210bf1ee);
+            
+    
+            var marker_50dcc911ff66a97882c9a870bd4163fd = L.marker(
+                [24.838722, 121.017724],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_f1be62947b8269573096e3d84ea062a4 = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_a15b45ed656dac1042dacee7f5c356c5 = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_0c9d974e9fe76e46dbb30a7e353dcd13 = $(`<div id="html_0c9d974e9fe76e46dbb30a7e353dcd13" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-06-26 下午 12:55分<br><b>停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMivAVBVV95cUxQUnB2WWJ2bzRzTmVMdk1GYVVvaEZxak5lSWhIMlp6c21fcUJ2a29iTVpYeDJlakk3aHVaSlkyWFIzdnAzRUZPTExOTldRaGVPZUpVTjVUd3NVcjROZ3RBN3JoVjZyS3plTDR1eEswcXVnVU1WYldPaHhsNWhBQ1FOTURrSEFTdllETmxhOUNaZ2JicHlSYUFOSlczZmhmTFlFNUg3VFhpbTlJd1pYcndhdWZrblNBZlpHNG1pNEVTUEdzSmlHTHlLRVJSV2Ria2s0RFN4QVE5N3J6cVBhTTB0X01GTEN3QnNTTmQ4TlI3WXhkY3hlWFZ3WFdVeW5DUTU3RjBabDgzbVJXRHJVNjdtZkFoeDYyZXQ2SnR0dTFXSGJmN0VLcGk0MFI0MF9XX0x1M3ZqU2V4ZzhZc0dnU2liNXJLenlxdUFhZVl2WEw2RTR6MDc0MEd0MG5lRTRieGs3VjZNNnhINUhXbzQtN0hpT0IweFktY1RnX1dXdDNYWk1VUkp6d3lybDRHNnlZRU1OV2h2UVpZTmF5ZjFJRk1kVzk4SHJQRXgwbzdZU2hkNHF6XzJ3OUtDVU1Ob1NNam5HVWswdnowZkhOOHd5b0Itc0U0b3R0d2wwR29oanp3WGV3SEJ3MGQtSXR3Q3JoUXpOMWtxUGRjQ1I0VVlPeWpvREhabTg3aDNpcF9ZbGhfcGwteUFtb2JCNUlpc2pHVDhaTVpHdHNER1lJSmFFZ2ZtN2E3Nzh6S0NfakdmYngzcUVjUVBjXzJVSmdwTEZzYVRJZVJQcXhaNnhfOGtGU2tCR1JmOFItZmVCRnZtR29STUZRSlhqRlpsR1o2czJwX1U5VDMwbGFYNzk1dXB1X3ZLMG5PTVFGUGFBYVFrRktYT0dVYjZkRXlCYm5QdXJ6aDZURnduVVVEenVwaTRS?oc=5' target='_blank'>?梯??啗?</a><hr>新竹縣 <br>24.838722, 121.017724</div>`)[0];
+                popup_a15b45ed656dac1042dacee7f5c356c5.setContent(html_0c9d974e9fe76e46dbb30a7e353dcd13);
+            
+        
+
+        marker_50dcc911ff66a97882c9a870bd4163fd.bindPopup(popup_a15b45ed656dac1042dacee7f5c356c5)
+        ;
+
+        
+    
+    
+            marker_50dcc911ff66a97882c9a870bd4163fd.bindTooltip(
+                `<div>
+                     17. Yahoo新聞 / 停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_50dcc911ff66a97882c9a870bd4163fd.setIcon(div_icon_f1be62947b8269573096e3d84ea062a4);
+            
+    
+            var marker_a05d9ddb0e08cea171ff56866710540b = L.marker(
+                [24.80395, 120.964687],
+                {
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+        
+    
+            var div_icon_6486e2f7245b1f5fd6ef95e5749e895b = L.divIcon({
+  "html": "\u003cdiv class=\"news-marker news-location-marker\" style=\"background:#555555\"\u003e\u003cspan class=\"news-marker-source\"\u003eYahoo\u65b0\u805e\u003c/span\u003e\u003c/div\u003e",
+  "iconSize": [64, 28],
+  "iconAnchor": [32, 14],
+  "className": "empty",
+});
+        
+    
+        var popup_dbc1e826b606215bfc45677af924fe8f = L.popup({
+  "maxWidth": 320,
+});
+
+        
+            
+                var html_996f090e92aefe355886059ca9a9d1b2 = $(`<div id="html_996f090e92aefe355886059ca9a9d1b2" style="width: 100.0%; height: 100.0%;"><b>Yahoo新聞</b><br>2026-06-26 下午 12:55分<br><b>停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞</b><br><a href='https://news.google.com/rss/articles/CBMivAVBVV95cUxQUnB2WWJ2bzRzTmVMdk1GYVVvaEZxak5lSWhIMlp6c21fcUJ2a29iTVpYeDJlakk3aHVaSlkyWFIzdnAzRUZPTExOTldRaGVPZUpVTjVUd3NVcjROZ3RBN3JoVjZyS3plTDR1eEswcXVnVU1WYldPaHhsNWhBQ1FOTURrSEFTdllETmxhOUNaZ2JicHlSYUFOSlczZmhmTFlFNUg3VFhpbTlJd1pYcndhdWZrblNBZlpHNG1pNEVTUEdzSmlHTHlLRVJSV2Ria2s0RFN4QVE5N3J6cVBhTTB0X01GTEN3QnNTTmQ4TlI3WXhkY3hlWFZ3WFdVeW5DUTU3RjBabDgzbVJXRHJVNjdtZkFoeDYyZXQ2SnR0dTFXSGJmN0VLcGk0MFI0MF9XX0x1M3ZqU2V4ZzhZc0dnU2liNXJLenlxdUFhZVl2WEw2RTR6MDc0MEd0MG5lRTRieGs3VjZNNnhINUhXbzQtN0hpT0IweFktY1RnX1dXdDNYWk1VUkp6d3lybDRHNnlZRU1OV2h2UVpZTmF5ZjFJRk1kVzk4SHJQRXgwbzdZU2hkNHF6XzJ3OUtDVU1Ob1NNam5HVWswdnowZkhOOHd5b0Itc0U0b3R0d2wwR29oanp3WGV3SEJ3MGQtSXR3Q3JoUXpOMWtxUGRjQ1I0VVlPeWpvREhabTg3aDNpcF9ZbGhfcGwteUFtb2JCNUlpc2pHVDhaTVpHdHNER1lJSmFFZ2ZtN2E3Nzh6S0NfakdmYngzcUVjUVBjXzJVSmdwTEZzYVRJZVJQcXhaNnhfOGtGU2tCR1JmOFItZmVCRnZtR29STUZRSlhqRlpsR1o2czJwX1U5VDMwbGFYNzk1dXB1X3ZLMG5PTVFGUGFBYVFrRktYT0dVYjZkRXlCYm5QdXJ6aDZURnduVVVEenVwaTRS?oc=5' target='_blank'>?梯??啗?</a><hr>新竹市 <br>24.80395, 120.964687</div>`)[0];
+                popup_dbc1e826b606215bfc45677af924fe8f.setContent(html_996f090e92aefe355886059ca9a9d1b2);
+            
+        
+
+        marker_a05d9ddb0e08cea171ff56866710540b.bindPopup(popup_dbc1e826b606215bfc45677af924fe8f)
+        ;
+
+        
+    
+    
+            marker_a05d9ddb0e08cea171ff56866710540b.bindTooltip(
+                `<div>
+                     18. Yahoo新聞 / 停班停課6/26最新通知：台南市、高雄市、屏東縣停班停課新竹市、新竹縣、嘉義縣南興國小下午起停班課【不斷更新】 - Yahoo新聞
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_a05d9ddb0e08cea171ff56866710540b.setIcon(div_icon_6486e2f7245b1f5fd6ef95e5749e895b);
+            
+    
+            var layer_control_a11bad7234900bdbe224b5fc84330ddf_layers = {
+                base_layers : {
+                    "OpenStreetMap" : tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6,
+                    "Google \u5730\u5716" : tile_layer_b2dec30d8489636c386d25ee31eb2f9f,
+                    "Google \u885b\u661f" : tile_layer_e8d031f61abaf74f18acde77a64c250f,
+                    "Google \u6df7\u5408" : tile_layer_439550dd1fefee17d83fa52a4e2a4bea,
+                },
+                overlays :  {
+                },
+            };
+            let layer_control_a11bad7234900bdbe224b5fc84330ddf = L.control.layers(
+                layer_control_a11bad7234900bdbe224b5fc84330ddf_layers.base_layers,
+                layer_control_a11bad7234900bdbe224b5fc84330ddf_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": false,
+  "autoZIndex": true,
+}
+            ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+
+        
+</script>
+</html>

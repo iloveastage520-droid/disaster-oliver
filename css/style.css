@@ -342,7 +342,7 @@ h3 {
 
 .news-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px) auto auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px) auto auto auto;
   gap: 14px;
   align-items: end;
   padding: 18px;

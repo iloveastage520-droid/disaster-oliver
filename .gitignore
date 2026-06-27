@@ -1,0 +1,6 @@
+data/tv-monitor/audio/
+logs/*.log
+*.wav
+*.mp3
+*.m4a
+__pycache__/

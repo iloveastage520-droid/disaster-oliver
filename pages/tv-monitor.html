@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver AI TV Monitor PoC">
+  <title>AI TV Monitor | Disaster Oliver</title>
+  <link rel="stylesheet" href="../css/tv-monitor.css">
+</head>
+<body>
+  <header class="tv-header">
+    <a class="tv-brand" href="../index.html">
+      <span>DO</span>
+      <strong>AI TV Monitor</strong>
+    </a>
+    <div class="tv-source">
+      <span>Experimental PoC</span>
+      <a href="https://www.youtube.com/watch?v=V1p33hqPrUk" target="_blank" rel="noopener">東森新聞 LIVE</a>
+    </div>
+  </header>
+
+  <main class="tv-shell">
+    <section class="tv-status" aria-label="monitor status">
+      <article>
+        <span>Status</span>
+        <strong id="monitor-status">Loading</strong>
+      </article>
+      <article>
+        <span>Events</span>
+        <strong id="event-count">0</strong>
+      </article>
+      <article>
+        <span>Last Update</span>
+        <strong id="last-update">--</strong>
+      </article>
+    </section>
+
+    <section class="tv-grid">
+      <section class="tv-panel transcripts-panel" aria-labelledby="transcripts-title">
+        <div class="panel-heading">
+          <p>Speech To Text</p>
+          <h1 id="transcripts-title">最近逐字稿</h1>
+        </div>
+        <div id="transcript-list" class="transcript-list" aria-live="polite">
+          <p class="empty-state">尚未讀取到逐字稿。</p>
+        </div>
+      </section>
+
+      <section class="tv-panel events-panel" aria-labelledby="events-title">
+        <div class="panel-heading">
+          <p>Keyword Filter</p>
+          <h2 id="events-title">Possible Events</h2>
+        </div>
+        <div id="event-list" class="event-list" aria-live="polite">
+          <p class="empty-state">目前沒有可能災害事件。</p>
+        </div>
+      </section>
+    </section>
+
+    <section class="tv-console" aria-labelledby="console-title">
+      <div class="panel-heading">
+        <p>Pipeline Log</p>
+        <h2 id="console-title">Console</h2>
+      </div>
+      <pre id="console-log">Waiting for local pipeline output...</pre>
+    </section>
+  </main>
+
+  <script src="../js/tv-monitor.js"></script>
+</body>
+</html>

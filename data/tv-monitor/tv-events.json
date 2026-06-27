@@ -1,94 +1,101 @@
 {
-  "updated_at": "2026-06-27T17:05:00+08:00",
+  "updated_at": "2026-06-27T18:50:45+08:00",
   "source": {
     "name": "中天新聞 YouTube Live",
-    "url": "https://www.youtube.com/watch?v=TAPAVo2GK84"
+    "url": "https://www.youtube.com/watch?v=TAPAVo2GK84",
+    "capture_folder": "30min-20260627-102213",
+    "capture_count": 60,
+    "capture_interval_seconds": 30
   },
   "events": [
     {
-      "id": "cti-20260627-heavy-rain-alert",
+      "id": "cti-20260627-heavy-rain-alert-latest",
       "title": "鋒面發威，6縣市大雷雨警戒、20縣市豪大雨特報",
       "event_type": "豪雨警戒",
       "severity": "high",
-      "location": "台灣中南部及局部山區",
+      "location": "台灣中南部及各地山區",
       "lat": 23.75,
       "lng": 120.85,
-      "time": "2026-06-27 16:54-16:56",
-      "summary": "直播標題與跑馬字幕顯示鋒面造成大雷雨警戒與豪大雨特報，後續畫面陸續帶出新竹、雲林、彰化等地災情。",
-      "keywords": ["鋒面", "大雷雨警戒", "豪大雨特報"],
-      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-090057/youtube-live-30s-20260627-090502.png",
+      "time": "2026-06-27 18:22-18:50",
+      "summary": "30 分鐘側錄期間，直播持續以豪大雨特報、大雷雨警戒與雨量圖卡報導本波鋒面災情，並穿插雲林、彰化等地災況畫面。",
+      "keywords": ["鋒面", "大雷雨警戒", "豪大雨特報", "強降雨"],
+      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-102213/youtube-live-30s-20260627-104134.png",
       "evidence": [
-        "鋒面發威！6縣市大雷雨警戒",
-        "20縣市豪大雨特報"
+        "直播標題：鋒面發威，6縣市大雷雨警戒、20縣市豪大雨特報",
+        "畫面多次出現雨量圖卡與豪雨特報說明",
+        "同一時段持續穿插各地積淹水、道路與民宅受影響畫面"
       ]
     },
     {
-      "id": "cti-20260627-xinpu-search",
-      "title": "新竹新埔滯大水，傳巡田民眾失蹤並持續搜救",
-      "event_type": "淹水搜救",
-      "severity": "high",
-      "location": "新竹縣新埔鎮",
-      "lat": 24.8279,
-      "lng": 121.0777,
-      "time": "2026-06-27 16:54-16:55",
-      "summary": "畫面標示新竹新埔，新聞字幕指出滯大水造成死傷與失蹤，消防以空拍及陸海空方式持續搜索。",
-      "keywords": ["滯大水", "失蹤", "消防", "搜救"],
-      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-090057/youtube-live-30s-20260627-090057.png",
-      "evidence": [
-        "滯大水1死",
-        "2翁巡田失蹤",
-        "消防空拍、陸海空續搜索"
-      ]
-    },
-    {
-      "id": "cti-20260627-yunlin-xiluo-flood",
-      "title": "雲林西螺市場北路積淹水",
+      "id": "cti-20260627-yunlin-xiluo-latest",
+      "title": "雲林西螺市場北路道路積淹水",
       "event_type": "道路積淹水",
       "severity": "medium",
       "location": "雲林縣西螺鎮市場北路",
       "lat": 23.8015,
       "lng": 120.462,
-      "time": "2026-06-27 16:54-16:56",
-      "summary": "直播右側多次顯示雲林西螺市場北路積水畫面，路面有明顯淹水與通行受影響情形。",
+      "time": "2026-06-27 18:22-18:50",
+      "summary": "直播右側多次標示雲林西螺市場北路，畫面可見道路積水與車輛通行受影響，屬於可定位的道路淹水事件。",
       "keywords": ["雲林", "西螺", "市場北路", "積水"],
-      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-090057/youtube-live-30s-20260627-090131.png",
+      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-102213/youtube-live-30s-20260627-102317.png",
       "evidence": [
-        "雲林西螺市場北路",
-        "道路畫面可見積水"
+        "畫面標示：雲林西螺市場北路",
+        "道路畫面可見積水",
+        "同一地點在側錄期間重複出現"
       ]
     },
     {
-      "id": "cti-20260627-yuanlin-rainfall",
-      "title": "彰化員林累積雨量偏高，街區出現積水畫面",
-      "event_type": "強降雨",
+      "id": "cti-20260627-yuanlin-rainfall-latest",
+      "title": "彰化員林累積雨量偏高，街區與建物出現積水",
+      "event_type": "強降雨與積水",
       "severity": "medium",
       "location": "彰化縣員林市",
       "lat": 23.9565,
       "lng": 120.5717,
-      "time": "2026-06-27 16:54-16:56",
-      "summary": "直播畫面標示彰化員林，並顯示累積雨量數值；畫面可見室內外積水與街道雨水情形。",
+      "time": "2026-06-27 18:22-18:50",
+      "summary": "側錄期間直播多次標示彰化員林，並顯示累積雨量數值，畫面可見室內外積水、住家與街區受雨勢影響。",
       "keywords": ["彰化", "員林", "累積雨量", "積水"],
-      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-090057/youtube-live-30s-20260627-090201.png",
+      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-102213/youtube-live-30s-20260627-102247.png",
       "evidence": [
-        "彰化員林",
-        "累積雨量 813mm / 705.5mm"
+        "畫面標示：彰化員林",
+        "多張截圖顯示累積雨量數值",
+        "畫面可見室內外積水與雨勢影響"
       ]
     },
     {
-      "id": "cti-20260627-chiayi-skid",
-      "title": "嘉義市貨車雨中失控打滑",
-      "event_type": "道路事故",
+      "id": "cti-20260627-weekend-rain-risk",
+      "title": "週末天氣仍不穩，各地需留意短延時強降雨",
+      "event_type": "天氣風險提醒",
       "severity": "medium",
-      "location": "嘉義市",
-      "lat": 23.4801,
-      "lng": 120.4491,
-      "time": "2026-06-27 16:56",
-      "summary": "直播畫面顯示貨車不明原因打滑，字幕描述車輛失控並逆向，疑與強降雨及路面濕滑有關。",
-      "keywords": ["貨車", "打滑", "道路事故", "豪雨"],
-      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-090057/youtube-live-30s-20260627-090502.png",
+      "location": "台灣本島",
+      "lat": 23.7,
+      "lng": 121.0,
+      "time": "2026-06-27 18:40-18:45",
+      "summary": "直播天氣段落提醒週末仍有降雨風險，雨區與預報圖卡顯示各地仍需留意短延時強降雨與局部積淹水。",
+      "keywords": ["週末天氣", "短延時強降雨", "雨區", "預報"],
+      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-102213/youtube-live-30s-20260627-104334.png",
       "evidence": [
-        "貨車不明原因打滑",
-        "貨車失控打滑180度大迴旋"
+        "氣象圖卡顯示降雨區域",
+        "主播提醒週末天氣不穩",
+        "可作為後續災情新聞背景事件"
+      ]
+    },
+    {
+      "id": "cti-20260627-road-safety-latest",
+      "title": "豪雨造成道路濕滑，車輛通行風險升高",
+      "event_type": "道路通行風險",
+      "severity": "medium",
+      "location": "中南部道路熱區",
+      "lat": 23.58,
+      "lng": 120.55,
+      "time": "2026-06-27 18:22-18:50",
+      "summary": "直播多次帶到道路濕滑、積水路段與車輛通行畫面，可整理為豪雨期間道路通行風險事件，後續若 OCR 抽出精確地名可再拆分。",
+      "keywords": ["道路濕滑", "車輛通行", "積水", "交通風險"],
+      "photo": "../data/tv-monitor/browser-screenshots/30min-20260627-102213/youtube-live-30s-20260627-102548.png",
+      "evidence": [
+        "畫面出現積水道路與車輛通行",
+        "同一新聞段落持續搭配豪雨警戒資訊",
+        "目前適合先列為區域型道路風險事件"
       ]
     }
   ]

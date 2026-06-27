@@ -2,6 +2,9 @@ data/tv-monitor/audio/
 data/tv-monitor/screenshots/
 data/tv-monitor/browser-screenshots/*.json
 data/tv-monitor/browser-screenshots/*.png
+data/tv-monitor/browser-screenshots/**/*.json
+data/tv-monitor/browser-screenshots/**/*.jpg
+data/tv-monitor/browser-screenshots/**/*.png
 logs/*.log
 *.wav
 *.mp3

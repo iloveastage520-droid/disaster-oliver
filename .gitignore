@@ -1,4 +1,5 @@
 data/tv-monitor/audio/
+data/tv-monitor/screenshots/*.jpg
 logs/*.log
 *.wav
 *.mp3

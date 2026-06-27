@@ -443,6 +443,21 @@
             opacity: 0.9;
             outline: 2px solid rgba(255, 255, 255, 0.75);
         }
+        .news-location-marker.news-age-today {
+            opacity: 1;
+            outline: 3px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.22), 0 10px 24px rgba(0, 0, 0, 0.24);
+        }
+        .news-location-marker.news-age-yesterday {
+            opacity: 0.74;
+            filter: grayscale(0.62);
+            outline: 2px solid rgba(180, 186, 194, 0.85);
+        }
+        .news-location-marker.news-age-older {
+            opacity: 0.55;
+            filter: grayscale(0.9);
+            outline: 2px solid rgba(155, 163, 175, 0.72);
+        }
         #timeline {
             position: fixed;
             left: 410px;
@@ -1137,6 +1152,7 @@
             items.forEach((item) => {
                 liveSheetFocusPoints[item.id] = item.point;
                 liveSheetItems[item.id] = item;
+                const age = liveNewsAge(item);
                 const popup = `
                     <b>${liveEscape(item.source)}</b><br>
                     ${liveEscape(item.published_at)}<br>
@@ -1147,7 +1163,7 @@
                 `;
                 const marker = L.marker(item.point, {
                     icon: L.divIcon({
-                        html: `<div class="news-marker news-location-marker" style="background:${item.color}"><span class="news-marker-source">${liveEscape(item.source)}</span></div>`,
+                        html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(item.source)}</span></div>`,
                         iconSize: [64, 28],
                         iconAnchor: [32, 14]
                     })

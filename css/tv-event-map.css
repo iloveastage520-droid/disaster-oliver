@@ -181,16 +181,63 @@ h2 {
   cursor: pointer;
 }
 
+.event-card.event-today {
+  border-color: rgba(68, 215, 255, 0.18);
+}
+
+.event-card.event-yesterday {
+  color: #d8dee8;
+  background: #172335;
+}
+
+.event-card.event-older {
+  color: #c5ccd8;
+  background: #111a28;
+  opacity: 0.82;
+}
+
 .event-card:hover,
 .event-card.is-active {
   border-color: rgba(68, 215, 255, 0.58);
   background: #19304c;
 }
 
+.event-card-topline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
 .event-card strong {
   display: block;
   margin-bottom: 7px;
   line-height: 1.4;
+}
+
+.recency-badge {
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #07111f !important;
+  background: var(--cyan);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.event-yesterday .recency-badge {
+  background: #a9b6c8;
+}
+
+.event-older .recency-badge {
+  color: #f2f5fa !important;
+  background: #707b8c;
+}
+
+.event-yesterday strong,
+.event-older strong {
+  color: #d5dce8 !important;
 }
 
 .event-card span,

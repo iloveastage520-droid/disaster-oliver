@@ -438,7 +438,7 @@
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             line-height: 1;
         }
-        .news-marker-source { font-size: 16px; font-weight: 800; }
+        .news-marker-source { font-size: 14px; font-weight: 800; }
         .news-location-marker {
             opacity: 0.9;
             outline: 2px solid rgba(255, 255, 255, 0.75);
@@ -1023,6 +1023,31 @@
             const colors = ["#d71920", "#5f01d1", "#005bbb", "#00856f", "#b45309", "#0f766e", "#be123c"];
             return colors[hash % colors.length];
         }
+        function shortSourceName(source) {
+            const value = String(source || "").trim();
+            const rules = [
+                [/yahoo/i, "Yahoo"],
+                [/udn|聯合/i, "UDN"],
+                [/中央社|cna/i, "CNA"],
+                [/公視|pnn/i, "公視"],
+                [/自由時報/i, "自由"],
+                [/中時|中國時報/i, "中時"],
+                [/ettoday/i, "ETtoday"],
+                [/tvbs/i, "TVBS"],
+                [/三立|setn/i, "三立"],
+                [/民視|ftv/i, "民視"],
+                [/鏡週刊|mirror/i, "鏡週刊"],
+                [/客新聞|hakka/i, "客新聞"],
+                [/遠見/i, "遠見"],
+                [/storm/i, "風傳媒"]
+            ];
+            const match = rules.find(([pattern]) => pattern.test(value));
+            if (match) return match[1];
+            return value
+                .replace(/新聞網|新聞|即時|生活|影音|雜誌|新聞台/g, "")
+                .trim()
+                .slice(0, 6) || "News";
+        }
         function liveEscape(value) {
             return String(value || "").replace(/[&<>"']/g, (ch) => ({
                 "&": "&amp;",
@@ -1153,6 +1178,7 @@
                 liveSheetFocusPoints[item.id] = item.point;
                 liveSheetItems[item.id] = item;
                 const age = liveNewsAge(item);
+                const markerSource = shortSourceName(item.source);
                 const popup = `
                     <b>${liveEscape(item.source)}</b><br>
                     ${liveEscape(item.published_at)}<br>
@@ -1163,7 +1189,7 @@
                 `;
                 const marker = L.marker(item.point, {
                     icon: L.divIcon({
-                        html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(item.source)}</span></div>`,
+                        html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(item.source)} / ${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(markerSource)}</span></div>`,
                         iconSize: [64, 28],
                         iconAnchor: [32, 14]
                     })

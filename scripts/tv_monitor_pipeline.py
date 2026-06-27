@@ -6,6 +6,8 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urljoin
+from urllib.request import Request, urlopen
 
 YOUTUBE_URL = "https://www.youtube.com/watch?v=V1p33hqPrUk"
 KEYWORDS = [
@@ -75,6 +77,7 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
     ffmpeg_bin = ffmpeg_path or shutil.which("ffmpeg")
     if not ffmpeg_bin:
         raise RuntimeError("ffmpeg was not found. Add ffmpeg to PATH or pass --ffmpeg-path.")
+    source_path = capture_hls_segments(stream_url, output_path.with_suffix(".ts"))
     command = [
         ffmpeg_bin,
         "-hide_banner",
@@ -82,14 +85,8 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
         "error",
         "-nostdin",
         "-y",
-        "-analyzeduration",
-        "1000000",
-        "-probesize",
-        "32768",
-        "-live_start_index",
-        "-3",
         "-i",
-        stream_url,
+        str(source_path),
         "-t",
         str(seconds),
         "-vn",
@@ -101,7 +98,41 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
         "wav",
         str(output_path),
     ]
-    run_command(command, timeout=seconds + 90)
+    run_command(command, timeout=seconds + 45)
+    source_path.unlink(missing_ok=True)
+
+
+def fetch_text(url):
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=30) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def fetch_bytes(url):
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=30) as response:
+        return response.read()
+
+
+def capture_hls_segments(playlist_url, output_path, segment_count=4):
+    playlist = fetch_text(playlist_url)
+    segment_urls = []
+
+    for line in playlist.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        segment_urls.append(urljoin(playlist_url, line))
+
+    if not segment_urls:
+        raise RuntimeError("No HLS media segments found in playlist.")
+
+    selected_segments = segment_urls[-segment_count:]
+    with output_path.open("wb") as output:
+        for segment_url in selected_segments:
+            output.write(fetch_bytes(segment_url))
+
+    return output_path
 
 
 def load_model(model_name, device, compute_type):

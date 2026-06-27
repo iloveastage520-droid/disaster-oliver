@@ -6,6 +6,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
@@ -72,12 +73,18 @@ def get_audio_stream_url(youtube_url):
     raise RuntimeError("yt-dlp could not resolve the live audio stream:\n" + "\n".join(errors))
 
 
-def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
+def capture_audio(stream_url, output_path, seconds, ffmpeg_path, youtube_url):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     ffmpeg_bin = ffmpeg_path or shutil.which("ffmpeg")
     if not ffmpeg_bin:
         raise RuntimeError("ffmpeg was not found. Add ffmpeg to PATH or pass --ffmpeg-path.")
-    source_path = capture_hls_segments(stream_url, output_path.with_suffix(".ts"))
+    try:
+        source_path = capture_hls_segments(stream_url, output_path.with_suffix(".ts"))
+    except HTTPError as exc:
+        if exc.code != 403:
+            raise
+        print("Direct HLS segment download was forbidden; falling back to yt-dlp download.", flush=True)
+        source_path = capture_with_ytdlp(youtube_url, output_path, seconds)
     command = [
         ffmpeg_bin,
         "-hide_banner",
@@ -100,6 +107,35 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
     ]
     run_command(command, timeout=seconds + 45)
     source_path.unlink(missing_ok=True)
+
+
+def capture_with_ytdlp(youtube_url, output_path, seconds):
+    output_template = str(output_path.with_suffix(".%(ext)s"))
+    before = set(output_path.parent.glob(f"{output_path.stem}.*"))
+    command = [
+        "yt-dlp",
+        "--extractor-args",
+        "youtube:player_client=mweb",
+        "--force-overwrites",
+        "--no-part",
+        "--hls-use-mpegts",
+        "--downloader",
+        "ffmpeg",
+        "--downloader-args",
+        f"ffmpeg_i:-t {seconds}",
+        "-f",
+        "bestaudio/best",
+        "-o",
+        output_template,
+        youtube_url,
+    ]
+    run_command(command, timeout=seconds + 120)
+    after = set(output_path.parent.glob(f"{output_path.stem}.*"))
+    created = sorted(after - before, key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in created:
+        if path.suffix.lower() != ".wav":
+            return path
+    raise RuntimeError("yt-dlp fallback did not create an audio file.")
 
 
 def request_headers():
@@ -229,7 +265,7 @@ def run_once(args, model):
 
     print("Capture Audio...", flush=True)
     stream_url = get_audio_stream_url(args.youtube_url)
-    capture_audio(stream_url, audio_path, args.seconds, args.ffmpeg_path)
+    capture_audio(stream_url, audio_path, args.seconds, args.ffmpeg_path, args.youtube_url)
     print("Audio Captured", flush=True)
     print("↓", flush=True)
     print("Speech To Text...", flush=True)

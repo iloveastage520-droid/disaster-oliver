@@ -35,8 +35,8 @@ def now_text():
     return datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
 
-def run_command(args):
-    result = subprocess.run(args, capture_output=True, text=True, check=False)
+def run_command(args, timeout=None):
+    result = subprocess.run(args, capture_output=True, text=True, check=False, timeout=timeout)
     if result.returncode != 0:
         message = result.stderr.strip() or result.stdout.strip()
         raise RuntimeError(message)
@@ -44,7 +44,7 @@ def run_command(args):
 
 
 def get_audio_stream_url(youtube_url):
-    clients = ["web", "mweb", "android"]
+    clients = ["mweb", "android", "web"]
     errors = []
 
     for client in clients:
@@ -58,8 +58,12 @@ def get_audio_stream_url(youtube_url):
             youtube_url,
         ]
         try:
-            print(f"Trying yt-dlp YouTube client: {client}")
-            return run_command(command)
+            print(f"Trying yt-dlp YouTube client: {client}", flush=True)
+            stream_url = run_command(command, timeout=35)
+            print("YouTube stream resolved", flush=True)
+            return stream_url
+        except subprocess.TimeoutExpired:
+            errors.append(f"{client}: timed out")
         except RuntimeError as exc:
             errors.append(f"{client}: {exc}")
 
@@ -90,7 +94,7 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
         "wav",
         str(output_path),
     ]
-    run_command(command)
+    run_command(command, timeout=seconds + 45)
 
 
 def load_model(model_name, device, compute_type):
@@ -161,29 +165,29 @@ def run_once(args, model):
     timestamp = now_text()
     audio_path = args.audio_dir / f"tv-audio-{datetime.now().strftime('%Y%m%d-%H%M%S')}.wav"
 
-    print("Capture Audio...")
+    print("Capture Audio...", flush=True)
     stream_url = get_audio_stream_url(args.youtube_url)
     capture_audio(stream_url, audio_path, args.seconds, args.ffmpeg_path)
-    print("Audio Captured")
-    print("↓")
-    print("Speech To Text...")
+    print("Audio Captured", flush=True)
+    print("↓", flush=True)
+    print("Speech To Text...", flush=True)
 
     transcript = transcribe_audio(model, audio_path)
     append_transcript(args.transcripts_log, timestamp, transcript)
-    print("Whisper Done")
-    print("↓")
-    print("Keyword Filter...")
+    print("Whisper Done", flush=True)
+    print("↓", flush=True)
+    print("Keyword Filter...", flush=True)
 
     status, keywords = keyword_filter(transcript)
     if status == "Possible Event":
         append_event(args.events_json, timestamp, keywords, transcript)
-        print("Possible Event Detected")
-        print("")
-        print("Keyword:")
+        print("Possible Event Detected", flush=True)
+        print("", flush=True)
+        print("Keyword:", flush=True)
         for keyword in keywords:
-            print(keyword)
+            print(keyword, flush=True)
     else:
-        print("NORMAL")
+        print("NORMAL", flush=True)
 
     if not args.keep_audio:
         audio_path.unlink(missing_ok=True)

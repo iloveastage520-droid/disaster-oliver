@@ -1,5 +1,6 @@
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -43,13 +44,35 @@ def run_command(args):
 
 
 def get_audio_stream_url(youtube_url):
-    return run_command(["yt-dlp", "-f", "bestaudio/best", "-g", youtube_url])
+    clients = ["web", "mweb", "android"]
+    errors = []
+
+    for client in clients:
+        command = [
+            "yt-dlp",
+            "--extractor-args",
+            f"youtube:player_client={client}",
+            "-f",
+            "bestaudio/best",
+            "-g",
+            youtube_url,
+        ]
+        try:
+            print(f"Trying yt-dlp YouTube client: {client}")
+            return run_command(command)
+        except RuntimeError as exc:
+            errors.append(f"{client}: {exc}")
+
+    raise RuntimeError("yt-dlp could not resolve the live audio stream:\n" + "\n".join(errors))
 
 
-def capture_audio(stream_url, output_path, seconds):
+def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    ffmpeg_bin = ffmpeg_path or shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        raise RuntimeError("ffmpeg was not found. Add ffmpeg to PATH or pass --ffmpeg-path.")
     command = [
-        "ffmpeg",
+        ffmpeg_bin,
         "-hide_banner",
         "-loglevel",
         "error",
@@ -140,7 +163,7 @@ def run_once(args, model):
 
     print("Capture Audio...")
     stream_url = get_audio_stream_url(args.youtube_url)
-    capture_audio(stream_url, audio_path, args.seconds)
+    capture_audio(stream_url, audio_path, args.seconds, args.ffmpeg_path)
     print("Audio Captured")
     print("↓")
     print("Speech To Text...")
@@ -175,6 +198,7 @@ def parse_args():
     parser.add_argument("--model", default="small")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--compute-type", default="int8")
+    parser.add_argument("--ffmpeg-path", default="")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--keep-audio", action="store_true")
     parser.add_argument("--audio-dir", type=Path, default=root / "data" / "tv-monitor" / "audio")

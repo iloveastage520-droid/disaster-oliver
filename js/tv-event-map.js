@@ -96,6 +96,9 @@ function renderDetail(event) {
 function renderList(events) {
   eventList.innerHTML = "";
   events.forEach((event) => {
+    const coordinateText = Number.isFinite(event.lat) && Number.isFinite(event.lng)
+      ? `${event.lat.toFixed(4)}, ${event.lng.toFixed(4)}`
+      : "座標待補";
     const card = document.createElement("button");
     card.type = "button";
     card.className = "event-card";
@@ -104,6 +107,7 @@ function renderList(events) {
     card.innerHTML = `
       <strong>${event.title}</strong>
       <span>${event.location}</span>
+      <span class="event-coordinate">座標 ${coordinateText}</span>
       <small>${event.event_type} · ${event.time}</small>
     `;
     card.addEventListener("click", () => renderDetail(event));

@@ -200,6 +200,13 @@ h2 {
   line-height: 1.5;
 }
 
+.event-card .event-coordinate {
+  margin-top: 5px;
+  color: var(--cyan);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
 .event-card[data-severity="high"] strong {
   color: var(--red);
 }

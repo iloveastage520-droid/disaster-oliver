@@ -102,25 +102,49 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
     source_path.unlink(missing_ok=True)
 
 
+def request_headers():
+    return {
+        "User-Agent": "Mozilla/5.0",
+        "Referer": "https://www.youtube.com/",
+        "Origin": "https://www.youtube.com",
+    }
+
+
 def fetch_text(url):
-    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    request = Request(url, headers=request_headers())
     with urlopen(request, timeout=30) as response:
         return response.read().decode("utf-8", errors="replace")
 
 
 def fetch_bytes(url):
-    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    request = Request(url, headers=request_headers())
     with urlopen(request, timeout=30) as response:
         return response.read()
 
 
 def capture_hls_segments(playlist_url, output_path, segment_count=4):
     playlist = fetch_text(playlist_url)
+    if "#EXT-X-STREAM-INF" in playlist:
+        nested_playlists = [
+            urljoin(playlist_url, line.strip())
+            for line in playlist.splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
+        if not nested_playlists:
+            raise RuntimeError("No nested HLS playlists found in master playlist.")
+        playlist_url = nested_playlists[-1]
+        playlist = fetch_text(playlist_url)
+
     segment_urls = []
 
     for line in playlist.splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
+            continue
+        if ".m3u8" in line:
+            playlist_url = urljoin(playlist_url, line)
+            playlist = fetch_text(playlist_url)
+            segment_urls = []
             continue
         segment_urls.append(urljoin(playlist_url, line))
 

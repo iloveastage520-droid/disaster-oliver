@@ -628,6 +628,32 @@
             color: #1f2933;
             background: #e7eef8;
         }
+        .video-candidates {
+            display: grid;
+            gap: 6px;
+        }
+        .video-candidate {
+            display: grid;
+            gap: 3px;
+            padding: 8px 10px;
+            border: 1px solid #d7dce2;
+            border-radius: 6px;
+            color: #1f2933;
+            background: #fff;
+            text-decoration: none;
+        }
+        .video-candidate:hover {
+            border-color: #1f6feb;
+            background: #f0f6ff;
+        }
+        .video-candidate strong {
+            font-size: 13px;
+        }
+        .video-candidate span {
+            color: #66717f;
+            font-size: 12px;
+            line-height: 1.35;
+        }
         .video-note {
             margin: 0;
             color: #66717f;
@@ -1006,7 +1032,31 @@
             const newsList = document.querySelector(".news-list");
             if (!newsList || !item) return;
             const place = [item.matched_county, item.matched_district].filter(Boolean).join(" ") || "未標示行政區";
-            const query = encodeURIComponent(`${place} 淹水 水利署 直播 影像`);
+            const county = item.matched_county || place;
+            const videoCandidates = [
+                {
+                    label: "地點直播影像",
+                    query: `${place} 淹水 直播 影像`,
+                    hint: "優先找該地點附近民眾或媒體直播"
+                },
+                {
+                    label: "水利署水情影像",
+                    query: `${county} 水利署 CCTV 水情 影像`,
+                    hint: "嘗試找水利署或防災單位公開影像"
+                },
+                {
+                    label: "新聞相關影像",
+                    query: `${item.title} 影像 直播`,
+                    hint: "用新聞標題反查影片或現場畫面"
+                }
+            ];
+            const candidateLinks = videoCandidates.map(candidate => `
+                <a class="video-candidate" href="https://www.youtube.com/results?search_query=${encodeURIComponent(candidate.query)}" target="_blank" rel="noopener">
+                    <strong>${liveEscape(candidate.label)}</strong>
+                    <span>${liveEscape(candidate.query)}</span>
+                    <span>${liveEscape(candidate.hint)}</span>
+                </a>
+            `).join("");
             newsList.innerHTML = `
                 <section class="selected-news-panel">
                     <p class="panel-label">目前選取新聞</p>
@@ -1020,10 +1070,10 @@
                     <a class="panel-link" href="${liveEscape(item.link)}" target="_blank" rel="noopener">開啟新聞</a>
                 </section>
                 <section class="public-video-panel">
-                    <p class="panel-label">公開影像入口</p>
-                    <a class="video-search-link" href="https://www.youtube.com/results?search_query=${query}" target="_blank" rel="noopener">YouTube 搜尋：${liveEscape(place)} 直播影像</a>
+                    <p class="panel-label">公開影像候選搜尋</p>
+                    <div class="video-candidates">${candidateLinks}</div>
                     <a class="video-search-link" href="https://fhy.wra.gov.tw/" target="_blank" rel="noopener">水利署防災資訊服務網</a>
-                    <p class="video-note">若有固定 YouTube 直播 embed URL，可再改成直接嵌入播放。</p>
+                    <p class="video-note">測試版先產生搜尋候選；若要直接顯示縮圖結果，需要再接 YouTube Data API。</p>
                 </section>
             `;
         }

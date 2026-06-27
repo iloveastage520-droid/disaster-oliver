@@ -354,7 +354,7 @@
             </div>
     </div>
     <div id="radar-control">
-        <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">顯示雷達</button>
+        <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
         <span id="radar-status">未載入</span>
     </div>
     <style>
@@ -602,6 +602,10 @@
         const newsFocusBounds = {};
         let radarLayer = null;
         let radarVisible = false;
+        let radarFrames = [];
+        let radarFrameIndex = 0;
+        let radarTimer = null;
+        let radarHost = "";
         function currentLeafletMap() {
             const mapKeys = Object.keys(window).filter((key) => key.startsWith("map_"));
             return mapKeys.length ? window[mapKeys[0]] : null;
@@ -674,6 +678,91 @@
                     layer.addTo(map);
                     radarVisible = true;
                     if (button) button.classList.add("active");
+                }
+            } catch (error) {
+                if (status) status.textContent = "雷達載入失敗";
+                console.error(error);
+            } finally {
+                if (button) button.disabled = false;
+            }
+        }
+        function formatRadarTime(frame) {
+            if (!frame || !frame.time) return "無時間";
+            return new Date(frame.time * 1000).toLocaleString("zh-TW", {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+        function radarTileUrl(frame) {
+            return `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+        }
+        function updateRadarFrame() {
+            if (!radarLayer || !radarFrames.length) return;
+            const frame = radarFrames[radarFrameIndex];
+            radarLayer.setUrl(radarTileUrl(frame));
+            const status = document.getElementById("radar-status");
+            if (status) status.textContent = `雷達動畫：${formatRadarTime(frame)} (${radarFrameIndex + 1}/${radarFrames.length})`;
+        }
+        function startRadarAnimation() {
+            stopRadarAnimation();
+            radarTimer = window.setInterval(() => {
+                radarFrameIndex = (radarFrameIndex + 1) % radarFrames.length;
+                updateRadarFrame();
+            }, 850);
+        }
+        function stopRadarAnimation() {
+            if (radarTimer) {
+                window.clearInterval(radarTimer);
+                radarTimer = null;
+            }
+        }
+        async function ensureRadarLayer() {
+            if (radarLayer) return radarLayer;
+            const status = document.getElementById("radar-status");
+            if (status) status.textContent = "載入雷達...";
+            const response = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+            const data = await response.json();
+            radarFrames = ((data.radar && data.radar.past) ? data.radar.past : []).slice(-8);
+            if (!radarFrames.length) throw new Error("No radar frames");
+            radarHost = data.host;
+            radarFrameIndex = radarFrames.length - 1;
+            radarLayer = L.tileLayer(radarTileUrl(radarFrames[radarFrameIndex]), {
+                opacity: 0.58,
+                zIndex: 650,
+                attribution: "Radar &copy; RainViewer",
+                maxNativeZoom: 7,
+                maxZoom: 18
+            });
+            updateRadarFrame();
+            return radarLayer;
+        }
+        async function toggleRadarOverlay() {
+            const map = currentLeafletMap();
+            const button = document.getElementById("radar-toggle");
+            const status = document.getElementById("radar-status");
+            if (!map) return;
+            try {
+                if (button) button.disabled = true;
+                const layer = await ensureRadarLayer();
+                if (radarVisible) {
+                    stopRadarAnimation();
+                    map.removeLayer(layer);
+                    radarVisible = false;
+                    if (button) {
+                        button.classList.remove("active");
+                        button.textContent = "播放雷達";
+                    }
+                    if (status) status.textContent = "雷達已關閉";
+                } else {
+                    layer.addTo(map);
+                    radarVisible = true;
+                    startRadarAnimation();
+                    if (button) {
+                        button.classList.add("active");
+                        button.textContent = "停止雷達";
+                    }
                 }
             } catch (error) {
                 if (status) status.textContent = "雷達載入失敗";

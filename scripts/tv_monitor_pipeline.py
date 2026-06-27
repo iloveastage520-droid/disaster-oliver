@@ -80,11 +80,12 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
         "-hide_banner",
         "-loglevel",
         "error",
+        "-nostdin",
         "-y",
-        "-i",
-        stream_url,
         "-t",
         str(seconds),
+        "-i",
+        stream_url,
         "-vn",
         "-ac",
         "1",
@@ -94,7 +95,7 @@ def capture_audio(stream_url, output_path, seconds, ffmpeg_path):
         "wav",
         str(output_path),
     ]
-    run_command(command, timeout=seconds + 45)
+    run_command(command, timeout=seconds + 90)
 
 
 def load_model(model_name, device, compute_type):

@@ -441,22 +441,23 @@
         .news-marker-source { font-size: 14px; font-weight: 800; }
         .news-location-marker {
             opacity: 0.9;
-            outline: 2px solid rgba(255, 255, 255, 0.75);
+            outline: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
         }
         .news-location-marker.news-age-today {
             opacity: 1;
-            outline: 3px solid rgba(255, 255, 255, 0.95);
-            box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.22), 0 10px 24px rgba(0, 0, 0, 0.24);
+            filter: brightness(1.06);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.26);
         }
         .news-location-marker.news-age-yesterday {
             opacity: 0.74;
             filter: grayscale(0.62);
-            outline: 2px solid rgba(180, 186, 194, 0.85);
+            box-shadow: 0 3px 9px rgba(0, 0, 0, 0.18);
         }
         .news-location-marker.news-age-older {
             opacity: 0.55;
             filter: grayscale(0.9);
-            outline: 2px solid rgba(155, 163, 175, 0.72);
+            box-shadow: 0 2px 7px rgba(0, 0, 0, 0.14);
         }
         #timeline {
             position: fixed;

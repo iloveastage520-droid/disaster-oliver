@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver 直播新聞事件地圖 PoC">
+  <title>直播新聞事件地圖 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="../css/tv-event-map.css">
+</head>
+<body>
+  <header class="event-header">
+    <a class="brand" href="../index.html">
+      <span>DO</span>
+      <strong>直播新聞事件地圖</strong>
+    </a>
+    <nav>
+      <a href="tv-monitor.html">AI TV Monitor</a>
+      <a href="news-map.html">新聞地圖</a>
+    </nav>
+  </header>
+
+  <main class="event-shell">
+    <section class="event-summary" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">YouTube Live Vision PoC</p>
+        <h1 id="page-title">從直播截圖整理災害新聞</h1>
+        <p>
+          這一頁先用 30 秒截圖測試資料，將畫面中的地點、災害類型與照片證據整理成可點選的地圖事件。
+        </p>
+      </div>
+      <div class="summary-metrics">
+        <article>
+          <span>事件</span>
+          <strong id="metric-events">0</strong>
+        </article>
+        <article>
+          <span>來源</span>
+          <strong>Live</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="event-layout">
+      <aside class="event-list-panel" aria-label="事件列表">
+        <div class="panel-title">
+          <p class="eyebrow">Detected Events</p>
+          <h2>新聞事件</h2>
+        </div>
+        <div id="event-list" class="event-list"></div>
+      </aside>
+
+      <section class="map-panel" aria-label="事件地圖">
+        <div id="event-map"></div>
+      </section>
+
+      <aside class="detail-panel" aria-label="事件詳情">
+        <img id="detail-photo" src="" alt="">
+        <div class="detail-body">
+          <p id="detail-type" class="event-type">--</p>
+          <h2 id="detail-title">選擇一則事件</h2>
+          <p id="detail-location" class="detail-location">--</p>
+          <p id="detail-summary" class="detail-summary">請從左側事件列表或地圖標記選擇新聞。</p>
+          <div id="detail-keywords" class="keyword-row"></div>
+          <div>
+            <p class="eyebrow">畫面證據</p>
+            <ul id="detail-evidence" class="evidence-list"></ul>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="../js/tv-event-map.js"></script>
+</body>
+</html>

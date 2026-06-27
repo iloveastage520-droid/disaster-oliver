@@ -26,15 +26,35 @@ function formatNewsDate(value) {
   return text || "時間未明";
 }
 
+function parseNewsDate(value) {
+  const date = new Date(normalizeText(value).replace(/\//g, "-"));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function newsAgeInfo(item) {
+  const publishedDate = parseNewsDate(item.published_at);
+  if (!publishedDate) return { className: "news-age-unknown", label: "未知" };
+
+  const dayDiff = Math.round((startOfDay(new Date()) - startOfDay(publishedDate)) / 86400000);
+  if (dayDiff <= 0) return { className: "news-age-today", label: "今天" };
+  if (dayDiff === 1) return { className: "news-age-yesterday", label: "昨天" };
+  return { className: "news-age-older", label: `${dayDiff} 天前` };
+}
+
 function createNewsCard(item, index, onSelect) {
   const button = document.createElement("button");
-  button.className = "news-result-card";
+  const age = newsAgeInfo(item);
+  button.className = `news-result-card ${age.className}`;
   button.type = "button";
   button.addEventListener("click", () => onSelect(item));
 
   const meta = document.createElement("span");
   meta.className = "news-result-meta";
-  meta.textContent = `${formatNewsDate(item.published_at)} / ${normalizeText(item.source) || "Unknown"}`;
+  meta.textContent = `${age.label} / ${formatNewsDate(item.published_at)} / ${normalizeText(item.source) || "Unknown"}`;
 
   const title = document.createElement("strong");
   title.textContent = normalizeText(item.title) || `未命名新聞 ${index + 1}`;

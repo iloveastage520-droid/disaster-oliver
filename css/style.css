@@ -436,6 +436,23 @@ h3 {
   background: rgba(53, 212, 255, 0.08);
 }
 
+.news-result-card.news-age-today {
+  border-color: rgba(53, 212, 255, 0.48);
+}
+
+.news-result-card.news-age-yesterday {
+  color: rgba(238, 246, 255, 0.78);
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.news-result-card.news-age-older {
+  color: rgba(238, 246, 255, 0.68);
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.16);
+  opacity: 0.86;
+}
+
 .news-result-card strong {
   line-height: 1.55;
 }

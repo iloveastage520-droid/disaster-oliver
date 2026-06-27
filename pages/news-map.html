@@ -558,6 +558,82 @@
             border-color: #2476c7;
             box-shadow: 0 0 0 2px rgba(36, 118, 199, 0.14);
         }
+        .timeline-item.news-age-yesterday {
+            background: #f2f2f2;
+            color: #555;
+        }
+        .timeline-item.news-age-older {
+            background: #e8e8e8;
+            color: #666;
+            opacity: 0.86;
+        }
+        .selected-news-panel,
+        .public-video-panel {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #d7dce2;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .public-video-panel {
+            margin-top: 10px;
+            background: #f7f9fb;
+        }
+        .panel-label {
+            margin: 0;
+            color: #5a6877;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+        .selected-news-panel h4 {
+            margin: 0;
+            line-height: 1.45;
+        }
+        .selected-news-panel dl {
+            display: grid;
+            gap: 8px;
+            margin: 0;
+        }
+        .selected-news-panel dl div {
+            display: grid;
+            gap: 2px;
+        }
+        .selected-news-panel dt {
+            color: #687789;
+            font-size: 12px;
+        }
+        .selected-news-panel dd {
+            margin: 0;
+            color: #1f2933;
+            font-size: 13px;
+            word-break: break-word;
+        }
+        .panel-link,
+        .video-search-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 34px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: #fff;
+            background: #1f6feb;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .video-search-link {
+            justify-content: flex-start;
+            color: #1f2933;
+            background: #e7eef8;
+        }
+        .video-note {
+            margin: 0;
+            color: #66717f;
+            font-size: 12px;
+            line-height: 1.5;
+        }
         @media (max-width: 820px) {
             #sidebar {
                 top: auto;
@@ -804,6 +880,7 @@
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
+        let liveSheetItems = {};
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -914,26 +991,55 @@
                 "'": "&#39;"
             }[ch]));
         }
+        function liveNewsAge(item) {
+            const date = new Date(String(item.published_at || "").replace(/\//g, "-"));
+            if (Number.isNaN(date.getTime())) return { className: "news-age-unknown", label: "未知" };
+            const today = new Date();
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const itemStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diff = Math.round((todayStart - itemStart) / 86400000);
+            if (diff <= 0) return { className: "news-age-today", label: "今天" };
+            if (diff === 1) return { className: "news-age-yesterday", label: "昨天" };
+            return { className: "news-age-older", label: `${diff} 天前` };
+        }
+        function renderLiveContextPanel(item) {
+            const newsList = document.querySelector(".news-list");
+            if (!newsList || !item) return;
+            const place = [item.matched_county, item.matched_district].filter(Boolean).join(" ") || "未標示行政區";
+            const query = encodeURIComponent(`${place} 淹水 水利署 直播 影像`);
+            newsList.innerHTML = `
+                <section class="selected-news-panel">
+                    <p class="panel-label">目前選取新聞</p>
+                    <h4>${liveEscape(item.title)}</h4>
+                    <dl>
+                        <div><dt>時間</dt><dd>${liveEscape(item.published_at || "未標示")}</dd></div>
+                        <div><dt>來源</dt><dd>${liveEscape(item.source || "Unknown")}</dd></div>
+                        <div><dt>地點</dt><dd>${liveEscape(place)}</dd></div>
+                        <div><dt>座標</dt><dd>${item.point[0]}, ${item.point[1]}</dd></div>
+                    </dl>
+                    <a class="panel-link" href="${liveEscape(item.link)}" target="_blank" rel="noopener">開啟新聞</a>
+                </section>
+                <section class="public-video-panel">
+                    <p class="panel-label">公開影像入口</p>
+                    <a class="video-search-link" href="https://www.youtube.com/results?search_query=${query}" target="_blank" rel="noopener">YouTube 搜尋：${liveEscape(place)} 直播影像</a>
+                    <a class="video-search-link" href="https://fhy.wra.gov.tw/" target="_blank" rel="noopener">水利署防災資訊服務網</a>
+                    <p class="video-note">若有固定 YouTube 直播 embed URL，可再改成直接嵌入播放。</p>
+                </section>
+            `;
+        }
         function replaceLiveSidebar(items) {
             const newsList = document.querySelector(".news-list");
             const timelineTrack = document.querySelector(".timeline-track");
             const summary = document.querySelector(".summary");
             if (summary) summary.textContent = `來源：Google Sheet。共 ${items.length} 個定位點；重新整理頁面會重新讀取 Sheet。`;
             if (newsList) {
-                newsList.innerHTML = items.map((item, index) => `
-                    <button class="news-card" data-news-id="${item.id}" onclick="focusNews('${item.id}')">
-                        <span class="news-index" style="background:${item.color}">${index + 1}</span>
-                        <span class="news-title">${liveEscape(item.title)}</span>
-                        <span class="news-time">${liveEscape(item.published_at)}</span>
-                        <span class="news-meta">${liveEscape(item.source)} / ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}</span>
-                    </button>
-                `).join("");
+                renderLiveContextPanel(items[0]);
             }
             if (timelineTrack) {
                 timelineTrack.innerHTML = items.map((item) => `
-                    <button class="timeline-item" data-news-id="${item.id}" onclick="focusNews('${item.id}')" style="--source-color: ${item.color}">
+                    <button class="timeline-item ${liveNewsAge(item).className}" data-news-id="${item.id}" onclick="focusNews('${item.id}')" style="--source-color: ${item.color}">
                         <span class="timeline-dot"></span>
-                        <span class="timeline-time">${liveEscape(item.published_at)}</span>
+                        <span class="timeline-time">${liveEscape(liveNewsAge(item).label)} / ${liveEscape(item.published_at)}</span>
                         <span class="timeline-source">${liveEscape(item.source)}</span>
                         <span class="timeline-title">${liveEscape(item.title)}</span>
                         <span class="timeline-districts">${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}</span>
@@ -977,8 +1083,10 @@
             liveSheetLayer = L.layerGroup().addTo(map);
             liveSheetFocusPoints = {};
             liveSheetMarkers = {};
+            liveSheetItems = {};
             items.forEach((item) => {
                 liveSheetFocusPoints[item.id] = item.point;
+                liveSheetItems[item.id] = item;
                 const popup = `
                     <b>${liveEscape(item.source)}</b><br>
                     ${liveEscape(item.published_at)}<br>
@@ -998,6 +1106,7 @@
             });
             window.focusNews = function(newsId) {
                 setActiveNewsItem(newsId);
+                renderLiveContextPanel(liveSheetItems[newsId]);
                 const point = liveSheetFocusPoints[newsId];
                 const marker = liveSheetMarkers[newsId];
                 if (point) {

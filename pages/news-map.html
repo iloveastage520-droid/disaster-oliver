@@ -355,6 +355,7 @@
     </div>
     <div id="radar-control">
         <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
+        <input type="range" id="radar-timeline" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" oninput="seekRadarFrame(this.value)">
         <span id="radar-status">未載入</span>
     </div>
     <style>
@@ -542,6 +543,13 @@
         }
         #radar-toggle.active { background: #0f8f5f; }
         #radar-toggle:disabled { background: #888; cursor: wait; }
+        #radar-timeline {
+            width: 180px;
+            accent-color: #1f6feb;
+        }
+        #radar-timeline:disabled {
+            opacity: 0.45;
+        }
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
         #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; }
         .news-card.active,
@@ -585,6 +593,10 @@
                 bottom: calc(38vh + 10px);
                 max-width: none;
                 flex-wrap: wrap;
+            }
+            #radar-timeline {
+                flex: 1 1 180px;
+                min-width: 140px;
             }
             #map {
                 left: 0;
@@ -702,8 +714,23 @@
             if (!radarLayer || !radarFrames.length) return;
             const frame = radarFrames[radarFrameIndex];
             radarLayer.setUrl(radarTileUrl(frame));
+            const timeline = document.getElementById("radar-timeline");
+            if (timeline) timeline.value = String(radarFrameIndex);
             const status = document.getElementById("radar-status");
             if (status) status.textContent = `雷達動畫：${formatRadarTime(frame)} (${radarFrameIndex + 1}/${radarFrames.length})`;
+        }
+        function setupRadarTimeline() {
+            const timeline = document.getElementById("radar-timeline");
+            if (!timeline || !radarFrames.length) return;
+            timeline.min = "0";
+            timeline.max = String(radarFrames.length - 1);
+            timeline.value = String(radarFrameIndex);
+            timeline.disabled = false;
+        }
+        function seekRadarFrame(value) {
+            if (!radarFrames.length) return;
+            radarFrameIndex = Math.max(0, Math.min(radarFrames.length - 1, Number(value) || 0));
+            updateRadarFrame();
         }
         function startRadarAnimation() {
             stopRadarAnimation();
@@ -735,6 +762,7 @@
                 maxNativeZoom: 7,
                 maxZoom: 18
             });
+            setupRadarTimeline();
             updateRadarFrame();
             return radarLayer;
         }

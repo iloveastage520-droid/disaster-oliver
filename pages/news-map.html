@@ -1417,6 +1417,91 @@
             );
         
     
+            var tile_layer_nlsc_photo2 = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            var tile_layer_nlsc_shelters = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/SHELTERS/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 0.9,
+}
+
+            );
+        
+    
+            var tile_layer_nlsc_soil_liquefaction = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/SoilLiquefaction/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 0.72,
+}
+
+            );
+        
+    
+            var tile_layer_nlsc_town = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/TOWN/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 0.75,
+}
+
+            );
+        
+    
+            var tile_layer_nlsc_village = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/Village/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 0.68,
+}
+
+            );
+        
+    
             var tile_layer_b2dec30d8489636c386d25ee31eb2f9f = L.tileLayer(
                 "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
                 {
@@ -2291,11 +2376,16 @@
                 base_layers : {
                     "OpenStreetMap" : tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6,
                     "NLSC \u81fa\u7063\u901a\u7528\u96fb\u5b50\u5730\u5716" : tile_layer_nlsc_emap,
+                    "NLSC \u6b63\u5c04\u5f71\u50cf\u5716" : tile_layer_nlsc_photo2,
                     "Google \u5730\u5716" : tile_layer_b2dec30d8489636c386d25ee31eb2f9f,
                     "Google \u885b\u661f" : tile_layer_e8d031f61abaf74f18acde77a64c250f,
                     "Google \u6df7\u5408" : tile_layer_439550dd1fefee17d83fa52a4e2a4bea,
                 },
                 overlays :  {
+                    "NLSC \u907f\u96e3\u6536\u5bb9\u6240" : tile_layer_nlsc_shelters,
+                    "NLSC \u571f\u58e4\u6db2\u5316\u6f5b\u52e2" : tile_layer_nlsc_soil_liquefaction,
+                    "NLSC \u9109\u93ae\u5340\u754c" : tile_layer_nlsc_town,
+                    "NLSC \u6751\u91cc\u754c" : tile_layer_nlsc_village,
                 },
             };
             let layer_control_a11bad7234900bdbe224b5fc84330ddf = L.control.layers(

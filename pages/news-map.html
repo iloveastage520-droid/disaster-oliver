@@ -1155,6 +1155,8 @@
             liveRainStationLayer.clearLayers();
             const stationPoint = parseRainStationPoint(item);
             if (!stationPoint || !item.point) return;
+            const distanceValue = Number(item.nearest_rain_station_distance_km);
+            if (Number.isFinite(distanceValue) && distanceValue > 15) return;
             const stationName = liveEscape(item.nearest_rain_station_name || "附近雨量站");
             const rain1h = liveEscape(item.rainfall_1h_mm || "--");
             const rain24h = liveEscape(item.rainfall_24h_mm || "--");

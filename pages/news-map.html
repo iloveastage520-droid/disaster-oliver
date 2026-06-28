@@ -583,6 +583,22 @@
             color: #666;
             opacity: 0.86;
         }
+        .rain-station-label {
+            background: rgba(255, 255, 255, 0.86);
+            border: 0;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+            color: #075985;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 5px;
+        }
+        .rain-station-label::before { display: none; }
+        .rain-station-label.is-focus {
+            background: rgba(14, 165, 233, 0.95);
+            color: #fff;
+            font-size: 12px;
+        }
         .selected-news-panel,
         .public-video-panel {
             display: grid;
@@ -1176,7 +1192,12 @@
                 fillColor: "#38bdf8",
                 fillOpacity: 0.9,
                 weight: 2
-            }).bindTooltip(`雨量站：${stationName}`)
+            }).bindTooltip(`雨量站：${stationName}`, {
+                permanent: true,
+                direction: "right",
+                offset: [10, 0],
+                className: "rain-station-label is-focus"
+            })
               .bindPopup(`
                 <strong>附近雨量站</strong><br>
                 ${stationName}<br>
@@ -1215,7 +1236,12 @@
                         fillOpacity: 0.55,
                         opacity: 0.75,
                         weight: 1
-                    }).bindTooltip(stationName)
+                    }).bindTooltip(stationName, {
+                        permanent: true,
+                        direction: "right",
+                        offset: [7, 0],
+                        className: "rain-station-label"
+                    })
                       .bindPopup(`
                         <strong>${stationName}</strong><br>
                         ${liveEscape(station.id || "")}<br>

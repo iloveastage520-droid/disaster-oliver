@@ -1546,8 +1546,13 @@
 
             var tile_layer_ncdr_hazards = ncdrExportLayer(
                 "NCDR_SDE_Polygon",
-                "show:10,11,13,16,17",
+                "show:10,11,16,17",
                 0.72
+            );
+            var tile_layer_ncdr_flood_protected = ncdrExportLayer(
+                "NCDR_SDE_Polygon",
+                "show:13",
+                0.42
             );
             var tile_layer_ncdr_rivers = ncdrExportLayer(
                 "NCDR_SDE_Polygon",
@@ -2446,6 +2451,7 @@
                     "NLSC \u9109\u93ae\u5340\u754c" : tile_layer_nlsc_town,
                     "NLSC \u6751\u91cc\u754c" : tile_layer_nlsc_village,
                     "NCDR \u707d\u5bb3\u6f5b\u52e2\u5716\u5c64" : tile_layer_ncdr_hazards,
+                    "NCDR \u6df9\u6c34\u4fdd\u5168\u6236\u6578" : tile_layer_ncdr_flood_protected,
                     "NCDR \u6cb3\u5ddd\u8207\u6d41\u57df" : tile_layer_ncdr_rivers,
                     "NCDR \u9632\u6551\u707d\u64da\u9ede" : tile_layer_ncdr_response_points,
                 },

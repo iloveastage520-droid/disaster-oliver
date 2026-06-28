@@ -1502,6 +1502,65 @@
             );
         
     
+            var NcdrExportTileLayer = L.TileLayer.extend({
+                initialize: function(serviceUrl, options) {
+                    this.serviceUrl = serviceUrl;
+                    L.TileLayer.prototype.initialize.call(this, "", options);
+                },
+                getTileUrl: function(coords) {
+                    var tileSize = this.getTileSize();
+                    var nwPoint = coords.scaleBy(tileSize);
+                    var sePoint = nwPoint.add(tileSize);
+                    var nw = this._map.unproject(nwPoint, coords.z);
+                    var se = this._map.unproject(sePoint, coords.z);
+                    var nw3857 = L.CRS.EPSG3857.project(nw);
+                    var se3857 = L.CRS.EPSG3857.project(se);
+                    var params = {
+                        bbox: [nw3857.x, se3857.y, se3857.x, nw3857.y].join(","),
+                        bboxSR: 3857,
+                        imageSR: 3857,
+                        size: tileSize.x + "," + tileSize.y,
+                        dpi: 96,
+                        format: "png32",
+                        transparent: true,
+                        layers: this.options.layers,
+                        f: "image"
+                    };
+                    return this.serviceUrl + "/export?" + new URLSearchParams(params).toString();
+                }
+            });
+
+            function ncdrExportLayer(serviceName, layers, opacity) {
+                return new NcdrExportTileLayer(
+                    "https://dssmap1.ncdr.nat.gov.tw/server/rest/services/NCDR_SDE/" + serviceName + "/MapServer",
+                    {
+                        layers: layers,
+                        minZoom: 0,
+                        maxZoom: 19,
+                        opacity: opacity,
+                        attribution: "NCDR",
+                        tileSize: 256
+                    }
+                );
+            }
+
+            var tile_layer_ncdr_hazards = ncdrExportLayer(
+                "NCDR_SDE_Polygon",
+                "show:10,11,13,16,17",
+                0.72
+            );
+            var tile_layer_ncdr_rivers = ncdrExportLayer(
+                "NCDR_SDE_Polygon",
+                "show:19,20",
+                0.82
+            );
+            var tile_layer_ncdr_response_points = ncdrExportLayer(
+                "SDE_Point",
+                "show:0,3,4,5",
+                0.88
+            );
+        
+    
             var tile_layer_b2dec30d8489636c386d25ee31eb2f9f = L.tileLayer(
                 "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
                 {
@@ -2386,6 +2445,9 @@
                     "NLSC \u571f\u58e4\u6db2\u5316\u6f5b\u52e2" : tile_layer_nlsc_soil_liquefaction,
                     "NLSC \u9109\u93ae\u5340\u754c" : tile_layer_nlsc_town,
                     "NLSC \u6751\u91cc\u754c" : tile_layer_nlsc_village,
+                    "NCDR \u707d\u5bb3\u6f5b\u52e2\u5716\u5c64" : tile_layer_ncdr_hazards,
+                    "NCDR \u6cb3\u5ddd\u8207\u6d41\u57df" : tile_layer_ncdr_rivers,
+                    "NCDR \u9632\u6551\u707d\u64da\u9ede" : tile_layer_ncdr_response_points,
                 },
             };
             let layer_control_a11bad7234900bdbe224b5fc84330ddf = L.control.layers(

@@ -924,6 +924,8 @@
         let liveSheetMarkers = {};
         let liveSheetItems = {};
         let liveRainStationLayer = null;
+        let liveAllRainStationsLayer = null;
+        let liveAllRainStationsLoaded = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1184,6 +1186,48 @@
               `)
               .addTo(liveRainStationLayer);
         }
+        function parseTaiwanPoint(latValue, lngValue) {
+            const lat = Number(latValue);
+            const lng = Number(lngValue);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            if (lat < 21.5 || lat > 26.5 || lng < 119 || lng > 123) return null;
+            return [lat, lng];
+        }
+        async function loadAllRainStationsLayer(map) {
+            if (!map || liveAllRainStationsLoaded || !liveSheetApiUrl) return;
+            liveAllRainStationsLoaded = true;
+            try {
+                const apiUrl = liveSheetApiUrl + (liveSheetApiUrl.includes("?") ? "&" : "?") + "type=rain-stations&cacheBust=" + Date.now();
+                const response = await fetch(apiUrl);
+                const payload = await response.json();
+                if (!payload || !payload.ok || !Array.isArray(payload.items)) return;
+                liveAllRainStationsLayer = L.layerGroup().addTo(map);
+                payload.items.forEach((station) => {
+                    const point = parseTaiwanPoint(station.lat, station.lng);
+                    if (!point) return;
+                    const stationName = liveEscape(station.name || "雨量站");
+                    const rain1h = liveEscape(station.rainfall_1h_mm || "--");
+                    const rain24h = liveEscape(station.rainfall_24h_mm || "--");
+                    L.circleMarker(point, {
+                        radius: 4,
+                        color: "#0284c7",
+                        fillColor: "#7dd3fc",
+                        fillOpacity: 0.55,
+                        opacity: 0.75,
+                        weight: 1
+                    }).bindTooltip(stationName)
+                      .bindPopup(`
+                        <strong>${stationName}</strong><br>
+                        ${liveEscape(station.id || "")}<br>
+                        1H：${rain1h} mm<br>
+                        24H：${rain24h} mm
+                      `)
+                      .addTo(liveAllRainStationsLayer);
+                });
+            } catch (error) {
+                console.warn("Rain station layer unavailable", error);
+            }
+        }
         function replaceLiveSidebar(items) {
             const newsList = document.querySelector(".news-list");
             const timelineTrack = document.querySelector(".timeline-track");
@@ -1230,6 +1274,7 @@
             }
             clearStaticNewsUi();
             clearStaticMarkers(map);
+            loadAllRainStationsLayer(map);
             const rows = await loadSheetRows();
             const items = expandSheetRows(rows);
             if (!items.length) {

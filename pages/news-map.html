@@ -1400,6 +1400,23 @@
             tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6.addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
         
     
+            var tile_layer_nlsc_emap = L.tileLayer(
+                "https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "NLSC",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
             var tile_layer_b2dec30d8489636c386d25ee31eb2f9f = L.tileLayer(
                 "https://mt1.google.com/vt/lyrs=m\u0026x={x}\u0026y={y}\u0026z={z}",
                 {
@@ -2273,6 +2290,7 @@
             var layer_control_a11bad7234900bdbe224b5fc84330ddf_layers = {
                 base_layers : {
                     "OpenStreetMap" : tile_layer_3ec45b5deb6f35716a48ffd9ea5c91d6,
+                    "NLSC \u81fa\u7063\u901a\u7528\u96fb\u5b50\u5730\u5716" : tile_layer_nlsc_emap,
                     "Google \u5730\u5716" : tile_layer_b2dec30d8489636c386d25ee31eb2f9f,
                     "Google \u885b\u661f" : tile_layer_e8d031f61abaf74f18acde77a64c250f,
                     "Google \u6df7\u5408" : tile_layer_439550dd1fefee17d83fa52a4e2a4bea,

@@ -1011,6 +1011,17 @@
                         source,
                         matched_district: pickLiveValue(districts, index),
                         matched_county: pickLiveValue(counties, index),
+                        nearest_rain_station_name: row.nearest_rain_station_name || "",
+                        nearest_rain_station_id: row.nearest_rain_station_id || "",
+                        nearest_rain_station_distance_km: row.nearest_rain_station_distance_km || "",
+                        rainfall_1h_mm: row.rainfall_1h_mm || "",
+                        rainfall_3h_mm: row.rainfall_3h_mm || "",
+                        rainfall_6h_mm: row.rainfall_6h_mm || "",
+                        rainfall_12h_mm: row.rainfall_12h_mm || "",
+                        rainfall_24h_mm: row.rainfall_24h_mm || "",
+                        rainfall_observed_at: row.rainfall_observed_at || "",
+                        rainfall_source: row.rainfall_source || "",
+                        rainfall_status: row.rainfall_status || "",
                         point,
                         color: liveSourceColor(source)
                     });
@@ -1098,6 +1109,15 @@
                     <span>${liveEscape(candidate.hint)}</span>
                 </a>
             `).join("");
+            const rainStation = item.nearest_rain_station_name
+                ? `${item.nearest_rain_station_name}${item.nearest_rain_station_distance_km ? " / " + item.nearest_rain_station_distance_km + " km" : ""}`
+                : "尚無雨量站資料";
+            const rainfallRows = item.rainfall_status ? `
+                        <div><dt>附近雨量站</dt><dd>${liveEscape(rainStation)}</dd></div>
+                        <div><dt>1H / 3H</dt><dd>${liveEscape(item.rainfall_1h_mm || "--")} mm / ${liveEscape(item.rainfall_3h_mm || "--")} mm</dd></div>
+                        <div><dt>6H / 24H</dt><dd>${liveEscape(item.rainfall_6h_mm || "--")} mm / ${liveEscape(item.rainfall_24h_mm || "--")} mm</dd></div>
+                        <div><dt>雨量時間</dt><dd>${liveEscape(item.rainfall_observed_at || item.rainfall_status || "--")}</dd></div>
+            ` : "";
             newsList.innerHTML = `
                 <section class="selected-news-panel">
                     <p class="panel-label">目前選取新聞</p>
@@ -1107,6 +1127,7 @@
                         <div><dt>來源</dt><dd>${liveEscape(item.source || "Unknown")}</dd></div>
                         <div><dt>地點</dt><dd>${liveEscape(place)}</dd></div>
                         <div><dt>座標</dt><dd>${item.point[0]}, ${item.point[1]}</dd></div>
+                        ${rainfallRows}
                     </dl>
                     <a class="panel-link" href="${liveEscape(item.link)}" target="_blank" rel="noopener">開啟新聞</a>
                 </section>

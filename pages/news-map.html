@@ -923,6 +923,7 @@
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
         let liveSheetItems = {};
+        let liveRainStationLayer = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1013,6 +1014,8 @@
                         matched_county: pickLiveValue(counties, index),
                         nearest_rain_station_name: row.nearest_rain_station_name || "",
                         nearest_rain_station_id: row.nearest_rain_station_id || "",
+                        nearest_rain_station_lat: row.nearest_rain_station_lat || "",
+                        nearest_rain_station_lng: row.nearest_rain_station_lng || "",
                         nearest_rain_station_distance_km: row.nearest_rain_station_distance_km || "",
                         rainfall_1h_mm: row.rainfall_1h_mm || "",
                         rainfall_3h_mm: row.rainfall_3h_mm || "",
@@ -1139,6 +1142,45 @@
                 </section>
             `;
         }
+        function parseRainStationPoint(item) {
+            const lat = Number(item && item.nearest_rain_station_lat);
+            const lng = Number(item && item.nearest_rain_station_lng);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+            return [lat, lng];
+        }
+        function renderRainStationMarker(item) {
+            const map = currentLeafletMap();
+            if (!map || !item) return;
+            if (!liveRainStationLayer) liveRainStationLayer = L.layerGroup().addTo(map);
+            liveRainStationLayer.clearLayers();
+            const stationPoint = parseRainStationPoint(item);
+            if (!stationPoint || !item.point) return;
+            const stationName = liveEscape(item.nearest_rain_station_name || "附近雨量站");
+            const rain1h = liveEscape(item.rainfall_1h_mm || "--");
+            const rain24h = liveEscape(item.rainfall_24h_mm || "--");
+            const distance = liveEscape(item.nearest_rain_station_distance_km || "--");
+            L.polyline([item.point, stationPoint], {
+                color: "#38bdf8",
+                weight: 2,
+                opacity: 0.85,
+                dashArray: "6,6"
+            }).addTo(liveRainStationLayer);
+            L.circleMarker(stationPoint, {
+                radius: 8,
+                color: "#0ea5e9",
+                fillColor: "#38bdf8",
+                fillOpacity: 0.9,
+                weight: 2
+            }).bindTooltip(`雨量站：${stationName}`)
+              .bindPopup(`
+                <strong>附近雨量站</strong><br>
+                ${stationName}<br>
+                距新聞點：${distance} km<br>
+                1H：${rain1h} mm<br>
+                24H：${rain24h} mm
+              `)
+              .addTo(liveRainStationLayer);
+        }
         function replaceLiveSidebar(items) {
             const newsList = document.querySelector(".news-list");
             const timelineTrack = document.querySelector(".timeline-track");
@@ -1146,6 +1188,7 @@
             if (summary) summary.textContent = `來源：Google Sheet。共 ${items.length} 個定位點；重新整理頁面會重新讀取 Sheet。`;
             if (newsList) {
                 renderLiveContextPanel(items[0]);
+                renderRainStationMarker(items[0]);
             }
             if (timelineTrack) {
                 timelineTrack.innerHTML = items.map((item) => `
@@ -1192,6 +1235,7 @@
                 return;
             }
             if (liveSheetLayer) map.removeLayer(liveSheetLayer);
+            if (liveRainStationLayer) liveRainStationLayer.clearLayers();
             liveSheetLayer = L.layerGroup().addTo(map);
             liveSheetFocusPoints = {};
             liveSheetMarkers = {};
@@ -1221,6 +1265,7 @@
             window.focusNews = function(newsId) {
                 setActiveNewsItem(newsId);
                 renderLiveContextPanel(liveSheetItems[newsId]);
+                renderRainStationMarker(liveSheetItems[newsId]);
                 const point = liveSheetFocusPoints[newsId];
                 const marker = liveSheetMarkers[newsId];
                 if (point) {

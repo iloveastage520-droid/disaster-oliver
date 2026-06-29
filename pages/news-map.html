@@ -701,10 +701,10 @@
             #sidebar {
                 top: auto;
                 right: 0;
-                bottom: 0;
+                bottom: 104px;
                 width: auto;
-                height: 38vh;
-                max-height: 360px;
+                height: 32vh;
+                max-height: 300px;
                 padding: 10px;
                 border-right: 0;
                 border-top: 2px solid #333;
@@ -725,11 +725,40 @@
             .news-title { font-size: 13px; }
             .news-time,
             .news-meta { font-size: 11px; }
-            #timeline { display: none; }
+            #timeline {
+                display: block;
+                left: 0;
+                height: 104px;
+            }
+            .timeline-header {
+                height: 24px;
+                padding: 5px 10px 0;
+                font-size: 13px;
+            }
+            .timeline-track {
+                gap: 8px;
+                padding: 6px 10px 10px;
+            }
+            .timeline-item {
+                flex-basis: 220px;
+                height: 64px;
+                padding: 6px 8px 6px 18px;
+            }
+            .timeline-time,
+            .timeline-source {
+                font-size: 11px;
+            }
+            .timeline-title {
+                font-size: 12px;
+                max-height: 30px;
+            }
+            .timeline-districts {
+                display: none;
+            }
             #radar-control {
                 left: 10px;
                 right: 10px;
-                bottom: calc(38vh + 10px);
+                bottom: calc(32vh + 114px);
                 max-width: none;
                 flex-wrap: wrap;
             }
@@ -739,13 +768,21 @@
             }
             #map {
                 left: 0;
-                bottom: 38vh;
+                bottom: calc(32vh + 104px);
             }
         }
         @media (max-width: 480px) {
-            #sidebar { height: 42vh; }
-            #radar-control { bottom: calc(42vh + 10px); }
-            #map { bottom: 42vh; }
+            #sidebar {
+                bottom: 96px;
+                height: 34vh;
+            }
+            #timeline { height: 96px; }
+            .timeline-item {
+                flex-basis: 200px;
+                height: 58px;
+            }
+            #radar-control { bottom: calc(34vh + 106px); }
+            #map { bottom: calc(34vh + 96px); }
         }
     </style>
     <script>

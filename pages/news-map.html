@@ -1030,6 +1030,7 @@
         }
         const liveSheetApiUrl = "https://script.google.com/macros/s/AKfycby2iT5glXEN116qYHqk9YXQmswkJ-kv_zPPfH2cso0GRYnxecXCJaUhs2WljhSpmmPV9g/exec";
         const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
+        const tvEventDataUrl = "../data/tv-monitor/tv-events.json";
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
@@ -1037,6 +1038,7 @@
         let liveRainStationLayer = null;
         let liveAllRainStationsLayer = null;
         let liveAllRainStationsLoaded = false;
+        let tvEventLayer = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1388,6 +1390,51 @@
             });
             toRemove.forEach((layer) => map.removeLayer(layer));
         }
+        function tvEventIcon(event) {
+            const color = event.severity === "high" ? "#e11d48" : "#7c3aed";
+            return L.divIcon({
+                className: "tv-ai-event-marker",
+                html: `<div class="news-marker news-location-marker" style="background:${color}"><span class="news-marker-source">TV</span></div>`,
+                iconSize: [46, 28],
+                iconAnchor: [23, 14]
+            });
+        }
+        async function loadTvEventLayer(map) {
+            try {
+                let response;
+                try {
+                    response = await fetch(`${tvEventDataUrl}?cacheBust=${Date.now()}`);
+                } catch (error) {
+                    response = await fetch(`https://disaster-oliver.pages.dev/data/tv-monitor/tv-events.json?cacheBust=${Date.now()}`);
+                }
+                if (!response.ok) {
+                    response = await fetch(`https://disaster-oliver.pages.dev/data/tv-monitor/tv-events.json?cacheBust=${Date.now()}`);
+                }
+                if (!response.ok) throw new Error(`Cannot load ${tvEventDataUrl}`);
+                const payload = await response.json();
+                const events = (payload.events || []).filter((event) => Number.isFinite(event.lat) && Number.isFinite(event.lng));
+                if (tvEventLayer) map.removeLayer(tvEventLayer);
+                tvEventLayer = L.layerGroup().addTo(map);
+                events.forEach((event) => {
+                    const popup = `
+                        <b>東森新聞 AI 辨識</b><br>
+                        ${liveEscape(event.time || event.recorded_at || "")}<br>
+                        <b>${liveEscape(event.title || event.event_type || "TV event")}</b><br>
+                        ${liveEscape(event.location || "")}<br>
+                        ${Number(event.lat).toFixed(4)}, ${Number(event.lng).toFixed(4)}
+                        <hr>
+                        ${event.photo ? `<img src="${liveEscape(event.photo)}" alt="" style="width:220px;max-width:100%;border-radius:6px;margin-bottom:6px;">` : ""}
+                        <br><a href="tv-event-map.html" target="_blank" rel="noopener">開啟 TV AI 事件地圖</a>
+                    `;
+                    L.marker([event.lat, event.lng], { icon: tvEventIcon(event) })
+                        .bindTooltip(`TV AI / ${event.location || event.event_type || event.title || ""}`)
+                        .bindPopup(popup)
+                        .addTo(tvEventLayer);
+                });
+            } catch (error) {
+                console.error("TV event layer failed", error);
+            }
+        }
         async function loadSheetNewsLayer(retryCount = 0) {
             const map = currentLeafletMap();
             if (!map) {
@@ -1397,6 +1444,7 @@
             clearStaticNewsUi();
             clearStaticMarkers(map);
             loadAllRainStationsLayer(map);
+            loadTvEventLayer(map);
             const rows = await loadSheetRows();
             const items = expandSheetRows(rows);
             if (!items.length) {

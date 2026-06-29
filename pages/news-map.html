@@ -460,6 +460,69 @@
             filter: grayscale(0.9);
             box-shadow: 0 2px 7px rgba(0, 0, 0, 0.14);
         }
+        .tv-ai-event-marker {
+            background: transparent;
+            border: 0;
+        }
+        .tv-ai-event-pin {
+            position: relative;
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            color: #fff;
+            background: linear-gradient(135deg, #e11d48 0%, #7c3aed 100%);
+            border: 2px solid #fff;
+            border-radius: 9px;
+            box-shadow: 0 5px 14px rgba(49, 26, 91, 0.38);
+            transform: rotate(45deg);
+        }
+        .tv-ai-event-pin::after {
+            content: "";
+            position: absolute;
+            right: -4px;
+            bottom: -4px;
+            width: 10px;
+            height: 10px;
+            background: inherit;
+            border-right: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            border-radius: 0 0 3px 0;
+        }
+        .tv-ai-event-pin span {
+            position: relative;
+            z-index: 1;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0;
+            transform: rotate(-45deg);
+        }
+        .tv-ai-event-legend {
+            position: fixed;
+            right: 14px;
+            bottom: 148px;
+            z-index: 9997;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            color: #222;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #c9c9c9;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+            font: 800 12px "Microsoft JhengHei", Arial, sans-serif;
+        }
+        .tv-ai-event-legend i {
+            display: block;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #e11d48 0%, #7c3aed 100%);
+            border: 2px solid #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+            transform: rotate(45deg);
+        }
         #timeline {
             position: fixed;
             left: 410px;
@@ -770,6 +833,10 @@
                 left: 0;
                 bottom: calc(32vh + 104px);
             }
+            .tv-ai-event-legend {
+                right: 10px;
+                bottom: calc(32vh + 112px);
+            }
         }
         @media (max-width: 480px) {
             #sidebar {
@@ -783,6 +850,10 @@
             }
             #radar-control { bottom: calc(34vh + 106px); }
             #map { bottom: calc(34vh + 96px); }
+            .tv-ai-event-legend {
+                bottom: calc(34vh + 104px);
+                font-size: 11px;
+            }
         }
     </style>
     <script>
@@ -1391,13 +1462,19 @@
             toRemove.forEach((layer) => map.removeLayer(layer));
         }
         function tvEventIcon(event) {
-            const color = event.severity === "high" ? "#e11d48" : "#7c3aed";
             return L.divIcon({
                 className: "tv-ai-event-marker",
-                html: `<div class="news-marker news-location-marker" style="background:${color}"><span class="news-marker-source">TV</span></div>`,
-                iconSize: [46, 28],
-                iconAnchor: [23, 14]
+                html: `<div class="tv-ai-event-pin" title="東森新聞 AI 辨識"><span>AI</span></div>`,
+                iconSize: [38, 42],
+                iconAnchor: [19, 34]
             });
+        }
+        function ensureTvEventLegend() {
+            if (document.querySelector(".tv-ai-event-legend")) return;
+            const legend = document.createElement("div");
+            legend.className = "tv-ai-event-legend";
+            legend.innerHTML = "<i></i><span>TV AI 事件</span>";
+            document.body.append(legend);
         }
         async function loadTvEventLayer(map) {
             try {
@@ -1415,6 +1492,7 @@
                 const events = (payload.events || []).filter((event) => Number.isFinite(event.lat) && Number.isFinite(event.lng));
                 if (tvEventLayer) map.removeLayer(tvEventLayer);
                 tvEventLayer = L.layerGroup().addTo(map);
+                if (events.length) ensureTvEventLegend();
                 events.forEach((event) => {
                     const popup = `
                         <b>東森新聞 AI 辨識</b><br>

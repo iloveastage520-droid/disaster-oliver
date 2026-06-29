@@ -207,6 +207,12 @@
     </div>
     <div id="timeline">
         <div class="timeline-header">新聞時間軸</div>
+        <div id="date-filter" class="date-filter" aria-label="新聞日期篩選">
+            <button type="button" data-filter="all" class="active">全部</button>
+            <button type="button" data-filter="today">今天</button>
+            <button type="button" data-filter="yesterday">昨天</button>
+            <button type="button" data-filter="older">更早</button>
+        </div>
         <div class="timeline-track">
             <button class="timeline-item" onclick="focusNews('17')" style="--source-color: #555555">
                 <span class="timeline-dot"></span>
@@ -356,6 +362,7 @@
     <div id="radar-control">
         <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
         <button type="button" id="rain-nowcast-toggle" onclick="toggleRainNowcastOverlay()">短延時降雨預報</button>
+        <button type="button" id="tv-event-toggle" class="active" onclick="toggleTvEventLayer()">AI事件</button>
         <input type="range" id="radar-timeline" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" oninput="seekRadarFrame(this.value)">
         <span id="radar-status">未載入</span>
     </div>
@@ -377,6 +384,32 @@
         #sidebar h4 { margin: 16px 0 8px; font-size: 16px; }
         .summary { color: #555; font-size: 13px; margin-bottom: 10px; }
         .news-list { display: grid; gap: 8px; }
+        .date-filter {
+            position: absolute;
+            top: -38px;
+            left: 12px;
+            z-index: 2;
+            display: flex;
+            gap: 6px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #c9c9c9;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+        }
+        .date-filter button {
+            border: 0;
+            border-radius: 4px;
+            padding: 5px 9px;
+            color: #1f2937;
+            background: #e5e7eb;
+            font: 800 12px "Microsoft JhengHei", Arial, sans-serif;
+            cursor: pointer;
+        }
+        .date-filter button.active {
+            color: #fff;
+            background: #1f6feb;
+        }
         .news-card {
             display: grid;
             grid-template-columns: 28px 86px 1fr;
@@ -612,7 +645,8 @@
             font-family: "Microsoft JhengHei", Arial, sans-serif;
         }
         #radar-toggle,
-        #rain-nowcast-toggle {
+        #rain-nowcast-toggle,
+        #tv-event-toggle {
             border: 0;
             border-radius: 4px;
             background: #1f6feb;
@@ -627,6 +661,9 @@
         #rain-nowcast-toggle { background: #7c3aed; }
         #rain-nowcast-toggle.active { background: #6d28d9; }
         #rain-nowcast-toggle:disabled { background: #888; cursor: wait; }
+        #tv-event-toggle { background: #64748b; }
+        #tv-event-toggle.active { background: #e11d48; }
+        #tv-event-toggle:disabled { background: #888; cursor: wait; }
         #radar-timeline {
             width: 180px;
             accent-color: #1f6feb;
@@ -797,6 +834,17 @@
                 height: 24px;
                 padding: 5px 10px 0;
                 font-size: 13px;
+            }
+            .date-filter {
+                top: -36px;
+                left: 10px;
+                right: auto;
+                max-width: calc(100vw - 20px);
+                overflow-x: auto;
+            }
+            .date-filter button {
+                flex: 0 0 auto;
+                padding: 5px 8px;
             }
             .timeline-track {
                 gap: 8px;
@@ -1106,10 +1154,13 @@
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
         let liveSheetItems = {};
+        let liveSheetAllItems = [];
+        let activeDateFilter = "all";
         let liveRainStationLayer = null;
         let liveAllRainStationsLayer = null;
         let liveAllRainStationsLoaded = false;
         let tvEventLayer = null;
+        let tvEventVisible = true;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1270,6 +1321,40 @@
             if (diff === 1) return { className: "news-age-yesterday", label: "昨天" };
             return { className: "news-age-older", label: `${diff} 天前` };
         }
+        function dateFilterKey(item) {
+            const className = liveNewsAge(item).className;
+            if (className === "news-age-today") return "today";
+            if (className === "news-age-yesterday") return "yesterday";
+            return "older";
+        }
+        function filteredLiveItems() {
+            if (activeDateFilter === "all") return liveSheetAllItems;
+            return liveSheetAllItems.filter((item) => dateFilterKey(item) === activeDateFilter);
+        }
+        function setDateFilter(filter) {
+            activeDateFilter = filter || "all";
+            document.querySelectorAll("#date-filter button").forEach((button) => {
+                button.classList.toggle("active", button.dataset.filter === activeDateFilter);
+            });
+            const map = currentLeafletMap();
+            if (!map || !liveSheetAllItems.length) return;
+            const items = filteredLiveItems();
+            renderNewsLayerItems(map, items);
+            replaceLiveSidebar(items);
+            if (items.length) {
+                const bounds = L.latLngBounds(items.map((item) => item.point));
+                map.fitBounds(bounds, { padding: [28, 28] });
+                renderLiveContextPanel(items[0]);
+                renderRainStationMarker(items[0]);
+            } else if (liveRainStationLayer) {
+                liveRainStationLayer.clearLayers();
+            }
+        }
+        function bindDateFilters() {
+            document.querySelectorAll("#date-filter button").forEach((button) => {
+                button.addEventListener("click", () => setDateFilter(button.dataset.filter));
+            });
+        }
         function renderLiveContextPanel(item) {
             const newsList = document.querySelector(".news-list");
             if (!newsList || !item) return;
@@ -1427,10 +1512,15 @@
             const newsList = document.querySelector(".news-list");
             const timelineTrack = document.querySelector(".timeline-track");
             const summary = document.querySelector(".summary");
-            if (summary) summary.textContent = `來源：Google Sheet。共 ${items.length} 個定位點；重新整理頁面會重新讀取 Sheet。`;
+            if (summary) summary.textContent = `來源：Google Sheet。目前顯示 ${items.length} 則；全部 ${liveSheetAllItems.length || items.length} 則新聞。`;
             if (newsList) {
-                renderLiveContextPanel(items[0]);
-                renderRainStationMarker(items[0]);
+                if (items.length) {
+                    renderLiveContextPanel(items[0]);
+                    renderRainStationMarker(items[0]);
+                } else {
+                    newsList.innerHTML = '<p class="empty-state">這個日期篩選目前沒有新聞。</p>';
+                    if (liveRainStationLayer) liveRainStationLayer.clearLayers();
+                }
             }
             if (timelineTrack) {
                 timelineTrack.innerHTML = items.map((item) => `
@@ -1473,6 +1563,59 @@
                 point[1] + Math.cos(angle) * radius
             ];
         }
+        function renderNewsLayerItems(map, items) {
+            if (liveSheetLayer) map.removeLayer(liveSheetLayer);
+            if (liveRainStationLayer) liveRainStationLayer.clearLayers();
+            liveSheetLayer = L.layerGroup().addTo(map);
+            liveSheetFocusPoints = {};
+            liveSheetMarkers = {};
+            liveSheetItems = {};
+            const seenPointCounts = {};
+            items.forEach((item) => {
+                liveSheetFocusPoints[item.id] = item.point;
+                liveSheetItems[item.id] = item;
+                const pointKey = livePointKey(item.point);
+                const duplicateIndex = seenPointCounts[pointKey] || 0;
+                seenPointCounts[pointKey] = duplicateIndex + 1;
+                const markerPoint = spreadLivePoint(item.point, duplicateIndex);
+                const age = liveNewsAge(item);
+                const markerSource = shortSourceName(item.source);
+                const popup = `
+                    <b>${liveEscape(item.source)}</b><br>
+                    ${liveEscape(item.published_at)}<br>
+                    <b>${liveEscape(item.title)}</b><br>
+                    <a href="${liveEscape(item.link)}" target="_blank">閱讀新聞</a><hr>
+                    ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}<br>
+                    ${item.point[0]}, ${item.point[1]}
+                `;
+                const marker = L.marker(markerPoint, {
+                    icon: L.divIcon({
+                        html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(item.source)} / ${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(markerSource)}</span></div>`,
+                        iconSize: [64, 28],
+                        iconAnchor: [32, 14]
+                    })
+                }).bindTooltip(`${item.id}. ${item.source} / ${item.title}`).bindPopup(popup).addTo(liveSheetLayer);
+                liveSheetMarkers[item.id] = marker;
+            });
+        }
+        function wireFocusNews() {
+            window.focusNews = function(newsId) {
+                const item = liveSheetItems[newsId] || liveSheetAllItems.find((candidate) => candidate.id === newsId);
+                if (!item) return;
+                setActiveNewsItem(newsId);
+                renderLiveContextPanel(item);
+                renderRainStationMarker(item);
+                const point = liveSheetFocusPoints[newsId] || item.point;
+                const marker = liveSheetMarkers[newsId];
+                const map = currentLeafletMap();
+                if (map && point) {
+                    const zoom = window.matchMedia("(max-width: 820px)").matches ? 12 : 13;
+                    map.setView(point, zoom);
+                    refreshMapAfterPanelMove(map);
+                    if (marker) setTimeout(() => marker.openPopup(), 140);
+                }
+            };
+        }
         function tvEventIcon(event) {
             return L.divIcon({
                 className: "tv-ai-event-marker",
@@ -1488,8 +1631,16 @@
             legend.innerHTML = "<i></i><span>TV AI 事件</span>";
             document.body.append(legend);
         }
+        function removeTvEventLegend() {
+            document.querySelector(".tv-ai-event-legend")?.remove();
+        }
         async function loadTvEventLayer(map) {
             try {
+                if (!tvEventVisible) {
+                    if (tvEventLayer) map.removeLayer(tvEventLayer);
+                    removeTvEventLegend();
+                    return;
+                }
                 let response;
                 try {
                     response = await fetch(`${tvEventDataUrl}?cacheBust=${Date.now()}`);
@@ -1525,6 +1676,19 @@
                 console.error("TV event layer failed", error);
             }
         }
+        function toggleTvEventLayer() {
+            tvEventVisible = !tvEventVisible;
+            const button = document.getElementById("tv-event-toggle");
+            if (button) button.classList.toggle("active", tvEventVisible);
+            const map = currentLeafletMap();
+            if (!map) return;
+            if (!tvEventVisible) {
+                if (tvEventLayer) map.removeLayer(tvEventLayer);
+                removeTvEventLegend();
+                return;
+            }
+            loadTvEventLayer(map);
+        }
         async function loadSheetNewsLayer(retryCount = 0) {
             const map = currentLeafletMap();
             if (!map) {
@@ -1536,61 +1700,16 @@
             loadAllRainStationsLayer(map);
             loadTvEventLayer(map);
             const rows = await loadSheetRows();
-            const items = expandSheetRows(rows);
-            if (!items.length) {
+            liveSheetAllItems = expandSheetRows(rows);
+            if (!liveSheetAllItems.length) {
                 const summary = document.querySelector(".summary");
                 if (summary) summary.textContent = "Google Sheet 目前沒有 coordinate 可定位資料。";
                 return;
             }
-            if (liveSheetLayer) map.removeLayer(liveSheetLayer);
-            if (liveRainStationLayer) liveRainStationLayer.clearLayers();
-            liveSheetLayer = L.layerGroup().addTo(map);
-            liveSheetFocusPoints = {};
-            liveSheetMarkers = {};
-            liveSheetItems = {};
-            const seenPointCounts = {};
-            items.forEach((item) => {
-                liveSheetFocusPoints[item.id] = item.point;
-                liveSheetItems[item.id] = item;
-                const pointKey = livePointKey(item.point);
-                const duplicateIndex = seenPointCounts[pointKey] || 0;
-                seenPointCounts[pointKey] = duplicateIndex + 1;
-                const markerPoint = spreadLivePoint(item.point, duplicateIndex);
-                const age = liveNewsAge(item);
-                const markerSource = shortSourceName(item.source);
-                const popup = `
-                    <b>${liveEscape(item.source)}</b><br>
-                    ${liveEscape(item.published_at)}<br>
-                    <b>${liveEscape(item.title)}</b><br>
-                    <a href="${liveEscape(item.link)}" target="_blank">閱讀新聞</a><hr>
-                    ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}<br>
-                    ${item.point[0]}, ${item.point[1]}
-                `;
-                const marker = L.marker(markerPoint, {
-                    icon: L.divIcon({
-                        html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(item.source)} / ${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(markerSource)}</span></div>`,
-                        iconSize: [64, 28],
-                        iconAnchor: [32, 14]
-                    })
-                }).bindTooltip(`${item.id}. ${item.source} / ${item.title}`).bindPopup(popup).addTo(liveSheetLayer);
-                liveSheetMarkers[item.id] = marker;
-            });
-            window.focusNews = function(newsId) {
-                setActiveNewsItem(newsId);
-                renderLiveContextPanel(liveSheetItems[newsId]);
-                renderRainStationMarker(liveSheetItems[newsId]);
-                const point = liveSheetFocusPoints[newsId];
-                const marker = liveSheetMarkers[newsId];
-                if (point) {
-                    const zoom = window.matchMedia("(max-width: 820px)").matches ? 12 : 13;
-                    map.setView(point, zoom);
-                    refreshMapAfterPanelMove(map);
-                    if (marker) setTimeout(() => marker.openPopup(), 140);
-                }
-            };
-            replaceLiveSidebar(items);
-            map.setView(items[0].point, 10);
+            wireFocusNews();
+            setDateFilter(activeDateFilter);
         }
+        bindDateFilters();
         setTimeout(loadSheetNewsLayer, 600);
     </script>
     

@@ -1461,6 +1461,18 @@
             });
             toRemove.forEach((layer) => map.removeLayer(layer));
         }
+        function livePointKey(point) {
+            return `${Number(point[0]).toFixed(5)},${Number(point[1]).toFixed(5)}`;
+        }
+        function spreadLivePoint(point, index) {
+            if (!index) return point;
+            const angle = (index - 1) * 0.85;
+            const radius = 0.0009 + Math.floor((index - 1) / 8) * 0.00035;
+            return [
+                point[0] + Math.sin(angle) * radius,
+                point[1] + Math.cos(angle) * radius
+            ];
+        }
         function tvEventIcon(event) {
             return L.divIcon({
                 className: "tv-ai-event-marker",
@@ -1536,9 +1548,14 @@
             liveSheetFocusPoints = {};
             liveSheetMarkers = {};
             liveSheetItems = {};
+            const seenPointCounts = {};
             items.forEach((item) => {
                 liveSheetFocusPoints[item.id] = item.point;
                 liveSheetItems[item.id] = item;
+                const pointKey = livePointKey(item.point);
+                const duplicateIndex = seenPointCounts[pointKey] || 0;
+                seenPointCounts[pointKey] = duplicateIndex + 1;
+                const markerPoint = spreadLivePoint(item.point, duplicateIndex);
                 const age = liveNewsAge(item);
                 const markerSource = shortSourceName(item.source);
                 const popup = `
@@ -1549,7 +1566,7 @@
                     ${liveEscape([item.matched_county, item.matched_district].filter(Boolean).join(" "))}<br>
                     ${item.point[0]}, ${item.point[1]}
                 `;
-                const marker = L.marker(item.point, {
+                const marker = L.marker(markerPoint, {
                     icon: L.divIcon({
                         html: `<div class="news-marker news-location-marker ${age.className}" title="${liveEscape(item.source)} / ${liveEscape(age.label)}" style="background:${item.color}"><span class="news-marker-source">${liveEscape(markerSource)}</span></div>`,
                         iconSize: [64, 28],

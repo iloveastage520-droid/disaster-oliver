@@ -206,12 +206,14 @@
         <div class="cctv-grid" style="display:none"></div>
     </div>
     <div id="timeline">
-        <div class="timeline-header">新聞時間軸</div>
-        <div id="date-filter" class="date-filter" aria-label="新聞日期篩選">
-            <button type="button" data-filter="all" class="active">全部</button>
-            <button type="button" data-filter="today">今天</button>
-            <button type="button" data-filter="yesterday">昨天</button>
-            <button type="button" data-filter="older">更早</button>
+        <div class="timeline-header">
+            <span>新聞時間軸</span>
+            <div id="date-filter" class="date-filter" aria-label="新聞日期篩選">
+                <button type="button" data-filter="all" class="active">全部</button>
+                <button type="button" data-filter="today">今天</button>
+                <button type="button" data-filter="yesterday">昨天</button>
+                <button type="button" data-filter="older">更多</button>
+            </div>
         </div>
         <div class="timeline-track">
             <button class="timeline-item" onclick="focusNews('17')" style="--source-color: #555555">
@@ -385,17 +387,9 @@
         .summary { color: #555; font-size: 13px; margin-bottom: 10px; }
         .news-list { display: grid; gap: 8px; }
         .date-filter {
-            position: absolute;
-            top: -38px;
-            left: 12px;
-            z-index: 2;
             display: flex;
             gap: 6px;
-            padding: 5px;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #c9c9c9;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+            margin-left: 10px;
         }
         .date-filter button {
             border: 0;
@@ -570,7 +564,9 @@
         }
         .timeline-header {
             height: 28px;
-            padding: 6px 12px 0;
+            display: flex;
+            align-items: center;
+            padding: 4px 12px 0;
             color: #222;
             font-size: 14px;
             font-weight: 800;
@@ -832,13 +828,11 @@
             }
             .timeline-header {
                 height: 24px;
-                padding: 5px 10px 0;
+                padding: 3px 10px 0;
                 font-size: 13px;
             }
             .date-filter {
-                top: -36px;
-                left: 10px;
-                right: auto;
+                margin-left: 8px;
                 max-width: calc(100vw - 20px);
                 overflow-x: auto;
             }

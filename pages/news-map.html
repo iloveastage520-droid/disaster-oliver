@@ -1174,6 +1174,7 @@
         let distributionStationVisible = true;
         let distributionStationLoaded = false;
         let distributionStationAutoFocused = false;
+        let distributionStationRegistered = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1333,6 +1334,17 @@
                 className: "empty"
             });
         }
+        function currentLayerControl() {
+            const keys = Object.keys(window).filter((key) => key.startsWith("layer_control_"));
+            return keys.length ? window[keys[0]] : null;
+        }
+        function registerDistributionStationOverlay() {
+            if (distributionStationRegistered || !distributionStationLayer) return;
+            const control = currentLayerControl();
+            if (!control || !control.addOverlay) return;
+            control.addOverlay(distributionStationLayer, "板橋配售站");
+            distributionStationRegistered = true;
+        }
         async function loadDistributionStationLayer(map) {
             if (!map || distributionStationLoaded) return;
             distributionStationLoaded = true;
@@ -1362,6 +1374,7 @@
                     }
                 });
                 if (distributionStationVisible) distributionStationLayer.addTo(map);
+                registerDistributionStationOverlay();
                 if (!distributionStationAutoFocused && distributionStationLayer.getBounds().isValid()) {
                     distributionStationAutoFocused = true;
                     map.fitBounds(distributionStationLayer.getBounds(), { padding: [32, 32], maxZoom: 15 });

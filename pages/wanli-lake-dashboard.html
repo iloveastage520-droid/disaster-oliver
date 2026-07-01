@@ -201,10 +201,10 @@
     const CREST = 1080;
     const START_LEVEL = 1071.57;
     const DAM_CHAIN = 1920;
+    let curLevel = START_LEVEL;
     const grid = makeGrid();
     const cline = makeCenterLine();
     const hv = makeHvCurve();
-    let curLevel = START_LEVEL;
     let curIdx = idxFromChain(DAM_CHAIN * 0.62);
     let drawn = false;
 

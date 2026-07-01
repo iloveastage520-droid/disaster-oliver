@@ -365,6 +365,7 @@
         <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
         <button type="button" id="rain-nowcast-toggle" onclick="toggleRainNowcastOverlay()">短延時降雨預報</button>
         <button type="button" id="tv-event-toggle" class="active" onclick="toggleTvEventLayer()">AI事件</button>
+        <button type="button" id="distribution-station-toggle" class="active" onclick="toggleDistributionStationLayer()">板橋配售站</button>
         <input type="range" id="radar-timeline" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" oninput="seekRadarFrame(this.value)">
         <span id="radar-status">未載入</span>
     </div>
@@ -490,6 +491,19 @@
         .tv-ai-event-marker {
             background: transparent;
             border: 0;
+        }
+        .distribution-station-marker {
+            display: grid;
+            place-items: center;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #f97316;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
         }
         .tv-ai-event-pin {
             position: relative;
@@ -1144,6 +1158,7 @@
         const liveSheetApiUrl = "https://script.google.com/macros/s/AKfycby2iT5glXEN116qYHqk9YXQmswkJ-kv_zPPfH2cso0GRYnxecXCJaUhs2WljhSpmmPV9g/exec";
         const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
         const tvEventDataUrl = "../data/tv-monitor/tv-events.json";
+        const distributionStationDataUrl = "../data/banqiao-distribution-stations.geojson";
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
@@ -1155,6 +1170,9 @@
         let liveAllRainStationsLoaded = false;
         let tvEventLayer = null;
         let tvEventVisible = true;
+        let distributionStationLayer = null;
+        let distributionStationVisible = true;
+        let distributionStationLoaded = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1303,6 +1321,70 @@
                 '"': "&quot;",
                 "'": "&#39;"
             }[ch]));
+        }
+        function distributionStationIcon(feature) {
+            const text = feature?.properties?.id ? String(feature.properties.id) : "站";
+            return L.divIcon({
+                html: `<div class="distribution-station-marker">${liveEscape(text)}</div>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11],
+                popupAnchor: [0, -12],
+                className: "empty"
+            });
+        }
+        async function loadDistributionStationLayer(map) {
+            if (!map || distributionStationLoaded) return;
+            distributionStationLoaded = true;
+            try {
+                const response = await fetch(distributionStationDataUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const geojson = await response.json();
+                distributionStationLayer = L.geoJSON(geojson, {
+                    pointToLayer: (feature, latlng) => L.marker(latlng, {
+                        icon: distributionStationIcon(feature),
+                        zIndexOffset: 1200
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        const p = feature.properties || {};
+                        const lat = Number(p.wgs84_lat);
+                        const lon = Number(p.wgs84_lon);
+                        layer.bindPopup(`
+                            <div style="min-width:220px">
+                                <b>${liveEscape(p.id)}. ${liveEscape(p.name)}</b><br>
+                                類型：${liveEscape(p.category)}<br>
+                                行政區：${liveEscape(p.district)}／${liveEscape(p.village)}<br>
+                                地址：${liveEscape(p.address)}<br>
+                                聯絡：${liveEscape(p.contact || "--")}<br>
+                                <small>座標：${Number.isFinite(lat) ? lat.toFixed(5) : "--"}, ${Number.isFinite(lon) ? lon.toFixed(5) : "--"}</small>
+                            </div>
+                        `);
+                    }
+                });
+                if (distributionStationVisible) distributionStationLayer.addTo(map);
+            } catch (error) {
+                console.warn("Distribution station layer unavailable", error);
+                const button = document.getElementById("distribution-station-toggle");
+                if (button) {
+                    button.classList.remove("active");
+                    button.textContent = "配售站載入失敗";
+                }
+            }
+        }
+        function toggleDistributionStationLayer() {
+            const map = currentLeafletMap();
+            if (!map) return;
+            distributionStationVisible = !distributionStationVisible;
+            const button = document.getElementById("distribution-station-toggle");
+            if (button) button.classList.toggle("active", distributionStationVisible);
+            if (!distributionStationLayer) {
+                loadDistributionStationLayer(map);
+                return;
+            }
+            if (distributionStationVisible) {
+                distributionStationLayer.addTo(map);
+            } else {
+                map.removeLayer(distributionStationLayer);
+            }
         }
         function liveNewsAge(item) {
             const date = new Date(String(item.published_at || "").replace(/\//g, "-"));
@@ -1693,6 +1775,7 @@
             clearStaticMarkers(map);
             loadAllRainStationsLayer(map);
             loadTvEventLayer(map);
+            loadDistributionStationLayer(map);
             const rows = await loadSheetRows();
             liveSheetAllItems = expandSheetRows(rows);
             if (!liveSheetAllItems.length) {

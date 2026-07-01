@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>萬里溪堰塞湖 三維庫容與剖面示範</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.30.0/plotly.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2933;
+      --muted: #607080;
+      --blue: #0d3b66;
+      --line: #cfd8e3;
+      --panel: #f5f8fb;
+      --water: #188fd6;
+      --crest: #d92d20;
+      --current: #16803c;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .kpi {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 30px;
+      align-items: baseline;
+      justify-content: center;
+      padding: 13px 14px;
+      background: var(--blue);
+      color: #fff;
+      font-size: clamp(15px, 2.1vw, 24px);
+      line-height: 1.35;
+    }
+
+    .kpi .item { white-space: nowrap; }
+    .kpi b {
+      margin: 0 3px;
+      font-size: 1.35em;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .kpi .unit {
+      font-size: .74em;
+      opacity: .86;
+    }
+    .kpi .warn { color: #ffd24d; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: center;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+      font-size: 14px;
+    }
+
+    .toolbar label {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: min(430px, 58vw);
+      accent-color: var(--water);
+    }
+
+    .note {
+      padding: 7px 11px;
+      background: #edf6ff;
+      color: #29445b;
+      font-size: 14px;
+      line-height: 1.55;
+      border-bottom: 1px solid #dbe9f6;
+    }
+
+    #d3d {
+      width: 100%;
+      height: 50vh;
+      min-height: 390px;
+    }
+
+    details {
+      margin: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 9px 12px;
+      background: #e8eef6;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .col {
+      flex: 1 1 340px;
+      min-width: 300px;
+      border-top: 1px solid var(--line);
+    }
+
+    #dlong, #dcross, #dhv {
+      width: 100%;
+      height: 34vh;
+      min-height: 290px;
+    }
+
+    .info {
+      padding: 12px 15px 15px;
+      font-size: 14px;
+      line-height: 1.75;
+      background: #fff;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: min(680px, 100%);
+      font-size: 13px;
+      background: #fff;
+    }
+
+    th, td {
+      border: 1px solid #b8c2cc;
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    th { background: #e8eef6; }
+
+    @media (max-width: 760px) {
+      #d3d { height: 54vh; min-height: 350px; }
+      .toolbar { align-items: stretch; }
+      .toolbar label { width: 100%; }
+      input[type="range"] { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <section class="kpi" aria-label="堰塞湖即時指標">
+    <span class="item">現況水位 <b id="k_lv">--</b><span class="unit"> m</span></span>
+    <span class="item">蓄水量 <b id="k_v">--</b><span class="unit"> 萬m³</span></span>
+    <span class="item">距壩頂 <b id="k_d">--</b><span class="unit"> m</span></span>
+    <span class="item">佔滿庫 <b id="k_p">--</b><span class="unit"> %</span></span>
+  </section>
+
+  <div class="toolbar">
+    <label>
+      水位調整
+      <input id="levelRange" type="range" min="1004.5" max="1080" value="1071.57" step="0.5">
+    </label>
+    <span id="levelText">1071.57 m</span>
+  </div>
+
+  <div id="d3d"></div>
+  <div class="note">可拖曳、縮放 3D 地形；點選湖區或河道位置後，下方縱剖面與橫剖面會同步更新。此檔為仿製示範版，地形資料以程式生成，正式上線時可替換為實際 DEM、壩體線與庫容表。</div>
+
+  <details id="ana" open>
+    <summary>剖面與庫容曲線（縱剖面｜橫剖面｜庫容曲線）</summary>
+    <div class="row">
+      <div class="col"><div id="dlong"></div></div>
+      <div class="col"><div id="dcross"></div></div>
+      <div class="col"><div id="dhv"></div></div>
+    </div>
+  </details>
+
+  <details>
+    <summary>資料來源與方法</summary>
+    <div class="info">
+      <p>本頁仿照「三維庫容與剖面」互動報表製作，展示水位、蓄水量、距壩頂、縱橫剖面與庫容曲線的連動方式。示範庫容曲線依指定控制點進行線性內插，正式版可改用實測水位、空拍量測、DEM 差異分析與官方通報資料。</p>
+      <table>
+        <tr><th>水位 (m)</th><th>蓄水量 (萬m³)</th><th>來源</th></tr>
+        <tr><td>1049</td><td>78</td><td>示範控制點</td></tr>
+        <tr><td>1057</td><td>134</td><td>示範控制點</td></tr>
+        <tr><td>1066.63</td><td>237.11</td><td>示範控制點</td></tr>
+        <tr><td>1071.57</td><td>298.48</td><td>示範控制點</td></tr>
+        <tr><td>1080（壩頂）</td><td>420</td><td>滿庫推估</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <script>
+    const CREST = 1080;
+    const START_LEVEL = 1071.57;
+    const DAM_CHAIN = 1920;
+    const grid = makeGrid();
+    const cline = makeCenterLine();
+    const hv = makeHvCurve();
+    let curLevel = START_LEVEL;
+    let curIdx = idxFromChain(DAM_CHAIN * 0.62);
+    let drawn = false;
+
+    const plotConfig = { responsive: true, scrollZoom: true, displaylogo: false };
+    const colorscale = [
+      [0, "rgb(108, 74, 38)"],
+      [0.2, "rgb(166, 119, 62)"],
+      [0.4, "rgb(215, 188, 130)"],
+      [0.6, "rgb(229, 232, 184)"],
+      [0.8, "rgb(122, 172, 160)"],
+      [1, "rgb(42, 133, 160)"]
+    ];
+
+    function makeGrid() {
+      const nx = 88;
+      const ny = 76;
+      const x = [];
+      const y = [];
+      const zb = [];
+      const za = [];
+      const waterMask = [];
+      for (let c = 0; c < nx; c++) x.push(c * 38);
+      for (let r = 0; r < ny; r++) y.push(r * 38);
+
+      for (let r = 0; r < ny; r++) {
+        const rowBefore = [];
+        const rowAfter = [];
+        const rowMask = [];
+        for (let c = 0; c < nx; c++) {
+          const valleyCenter = ny * 0.54 + Math.sin(c / 8) * 8 + Math.sin(c / 19) * 5;
+          const d = Math.abs(r - valleyCenter);
+          const slope = Math.pow(d, 1.42) * 6.2;
+          const longitudinal = c * 1.08;
+          const relief = Math.sin(c / 4.5) * 4 + Math.cos(r / 5.2) * 3;
+          const base = 990 + slope + longitudinal + relief;
+          const damLift = Math.exp(-Math.pow((c - 63) / 3.5, 2)) * Math.exp(-Math.pow(d / 8, 2)) * 72;
+          const landslide = Math.exp(-Math.pow((c - 61) / 7, 2)) * Math.exp(-Math.pow((r - valleyCenter + 2) / 9, 2)) * 34;
+          const before = base;
+          const after = base + damLift + landslide;
+          rowBefore.push(round(before, 1));
+          rowAfter.push(round(after, 1));
+          rowMask.push(after < curLevel && c < 63 && d < 17 ? curLevel : null);
+        }
+        zb.push(rowBefore);
+        za.push(rowAfter);
+        waterMask.push(rowMask);
+      }
+      return { nx, ny, x, y, zb, za, waterMask };
+    }
+
+    function makeCenterLine() {
+      const pts = [];
+      for (let c = 6; c < grid.nx - 6; c++) {
+        const r = grid.ny * 0.54 + Math.sin(c / 8) * 8 + Math.sin(c / 19) * 5;
+        pts.push([grid.x[c], grid.y[Math.round(r)], c * 38]);
+      }
+      return pts;
+    }
+
+    function makeHvCurve() {
+      const anchors = [
+        [1004.5, 0], [1049, 78], [1057, 134],
+        [1066.63, 237.11], [1071.57, 298.48], [1080, 420]
+      ];
+      const lv = [];
+      const vol = [];
+      for (let h = 1004.5; h <= 1080.001; h += 0.5) {
+        lv.push(round(h, 2));
+        vol.push(round(interpAnchors(h, anchors), 1));
+      }
+      return { lv, vol };
+    }
+
+    function interpAnchors(level, anchors) {
+      if (level <= anchors[0][0]) return anchors[0][1];
+      if (level >= anchors[anchors.length - 1][0]) return anchors[anchors.length - 1][1];
+      for (let i = 0; i < anchors.length - 1; i++) {
+        const a = anchors[i];
+        const b = anchors[i + 1];
+        if (level >= a[0] && level <= b[0]) {
+          const t = (level - a[0]) / (b[0] - a[0]);
+          return a[1] + (b[1] - a[1]) * t;
+        }
+      }
+      return 0;
+    }
+
+    function round(value, digits) {
+      const k = Math.pow(10, digits);
+      return Math.round(value * k) / k;
+    }
+
+    function updateWaterMask() {
+      for (let r = 0; r < grid.ny; r++) {
+        for (let c = 0; c < grid.nx; c++) {
+          const valleyCenter = grid.ny * 0.54 + Math.sin(c / 8) * 8 + Math.sin(c / 19) * 5;
+          const d = Math.abs(r - valleyCenter);
+          grid.waterMask[r][c] = grid.za[r][c] < curLevel && c < 63 && d < 17 ? curLevel : null;
+        }
+      }
+    }
+
+    function interpVol(level) {
+      return interpAnchors(level, [
+        [1004.5, 0], [1049, 78], [1057, 134],
+        [1066.63, 237.11], [1071.57, 298.48], [1080, 420]
+      ]);
+    }
+
+    function updateKpi() {
+      const v = interpVol(curLevel);
+      const d = CREST - curLevel;
+      const p = v / interpVol(CREST) * 100;
+      document.getElementById("k_lv").textContent = curLevel.toFixed(2);
+      document.getElementById("k_v").textContent = v.toFixed(0);
+      document.getElementById("k_p").textContent = p.toFixed(0);
+      const kd = document.getElementById("k_d");
+      kd.textContent = d.toFixed(1);
+      kd.className = d <= 5 ? "warn" : "";
+      document.getElementById("levelText").textContent = curLevel.toFixed(2) + " m";
+    }
+
+    function surfaceTraces() {
+      return [
+        {
+          type: "surface",
+          x: grid.x,
+          y: grid.y,
+          z: grid.za,
+          colorscale,
+          colorbar: { title: "高程 m", len: 0.52, y: 0.62 },
+          opacity: 1,
+          name: "災後地形",
+          hovertemplate: "E %{x:.0f}<br>N %{y:.0f}<br>高程 %{z:.1f} m<extra></extra>"
+        },
+        {
+          type: "surface",
+          x: grid.x,
+          y: grid.y,
+          z: grid.waterMask,
+          showscale: false,
+          colorscale: [[0, "rgba(24,143,214,0.82)"], [1, "rgba(24,143,214,0.82)"]],
+          opacity: 0.72,
+          name: "淹沒範圍",
+          hoverinfo: "skip"
+        },
+        {
+          type: "scatter3d",
+          x: cline.map(p => p[0]),
+          y: cline.map(p => p[1]),
+          z: cline.map(p => sampleZ2d(grid.za, p[0], p[1]) + 5),
+          mode: "lines",
+          line: { color: "#111827", width: 5 },
+          name: "河道中心線",
+          hovertemplate: "里程 %{customdata:.0f} m<extra></extra>",
+          customdata: cline.map(p => p[2])
+        }
+      ];
+    }
+
+    function mainLayout() {
+      return {
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        scene: {
+          xaxis: { title: "東西向距離 m", showspikes: false },
+          yaxis: { title: "南北向距離 m", showspikes: false },
+          zaxis: { title: "高程 m", range: [980, 1145], showspikes: false },
+          camera: { eye: { x: 1.55, y: -1.55, z: 0.92 } },
+          aspectratio: { x: 1.45, y: 1.05, z: 0.5 }
+        },
+        paper_bgcolor: "#ffffff",
+        plot_bgcolor: "#ffffff",
+        showlegend: false
+      };
+    }
+
+    function curChain() {
+      return cline[curIdx][2];
+    }
+
+    function longData() {
+      const chain = cline.map(p => p[2]);
+      const before = cline.map(p => sampleZ2d(grid.zb, p[0], p[1]));
+      const after = cline.map(p => sampleZ2d(grid.za, p[0], p[1]));
+      return [
+        { x: chain, y: before, mode: "lines", name: "災前河床", line: { color: "#111827", width: 2 } },
+        { x: chain, y: after, mode: "lines", name: "災後地形", line: { color: "#8b5a2b", width: 2, dash: "dot" } }
+      ];
+    }
+
+    function longLayout() {
+      return {
+        margin: { l: 50, r: 12, t: 31, b: 50 },
+        title: { text: "縱剖面｜里程 " + curChain().toFixed(0) + " m", font: { size: 14 } },
+        xaxis: { title: "里程 (m)" },
+        yaxis: { title: "高程 (m)", range: [985, 1110] },
+        shapes: profileShapes(curChain()),
+        showlegend: false
+      };
+    }
+
+    function profileShapes(chain) {
+      return [
+        { type: "line", xref: "x", yref: "paper", x0: chain, x1: chain, y0: 0, y1: 1, line: { color: "#111827", width: 1 } },
+        { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: CREST, y1: CREST, line: { color: "#d92d20", width: 2 } },
+        { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: curLevel, y1: curLevel, line: { color: "#16803c", width: 1.5, dash: "dash" } },
+        { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 1049, y1: 1049, line: { color: "#1f6fd6", width: 1, dash: "dash" } }
+      ];
+    }
+
+    function drawLong() {
+      Plotly.react("dlong", longData(), longLayout(), plotConfig);
+    }
+
+    function drawCross() {
+      const i = curIdx;
+      const a = cline[Math.max(0, i - 3)];
+      const b = cline[Math.min(cline.length - 1, i + 3)];
+      let te = b[0] - a[0];
+      let tn = b[1] - a[1];
+      const len = Math.hypot(te, tn) || 1;
+      te /= len;
+      tn /= len;
+      const pe = -tn;
+      const pn = te;
+      const center = cline[i];
+      const dist = [];
+      const before = [];
+      const after = [];
+      let minv = Infinity;
+      let mind = 0;
+      for (let dd = -420; dd <= 420; dd += 38) {
+        const x = center[0] + pe * dd;
+        const y = center[1] + pn * dd;
+        const vb = sampleZ2d(grid.zb, x, y);
+        const va = sampleZ2d(grid.za, x, y);
+        dist.push(dd);
+        before.push(vb);
+        after.push(va);
+        if (Number.isFinite(vb) && vb < minv) {
+          minv = vb;
+          mind = dd;
+        }
+      }
+      Plotly.react("dcross", [
+        { x: dist, y: before, mode: "lines", name: "災前河床", line: { color: "#111827", width: 2 } },
+        { x: dist, y: after, mode: "lines", name: "災後地形", line: { color: "#8b5a2b", width: 1.5, dash: "dot" } },
+        { x: [mind], y: [minv], mode: "markers", marker: { color: "#111827", size: 8, symbol: "triangle-up" } }
+      ], {
+        margin: { l: 50, r: 12, t: 31, b: 50 },
+        title: { text: "橫剖面｜里程 " + center[2].toFixed(0) + " m｜最低 " + minv.toFixed(1) + " m", font: { size: 14 } },
+        xaxis: { title: "橫向距離 (m)" },
+        yaxis: { title: "高程 (m)", range: [985, 1125] },
+        shapes: [
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: CREST, y1: CREST, line: { color: "#d92d20", width: 2 } },
+          { type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: curLevel, y1: curLevel, line: { color: "#16803c", width: 1.5, dash: "dash" } }
+        ],
+        showlegend: false
+      }, plotConfig);
+    }
+
+    function drawHv() {
+      const v = interpVol(curLevel);
+      Plotly.react("dhv", [
+        { x: hv.vol, y: hv.lv, mode: "lines", line: { color: "#1f6fd6", width: 2 } },
+        { x: [v], y: [curLevel], mode: "markers", marker: { color: "#c81e1e", size: 13 } }
+      ], {
+        margin: { l: 56, r: 12, t: 31, b: 50 },
+        title: { text: "庫容曲線｜目前 " + curLevel.toFixed(2) + " m = " + v.toFixed(0) + " 萬m³", font: { size: 14 } },
+        xaxis: { title: "蓄水量 (萬m³)" },
+        yaxis: { title: "水位 (m)" },
+        showlegend: false
+      }, plotConfig);
+    }
+
+    function renderAnalysis() {
+      drawLong();
+      drawCross();
+      drawHv();
+      drawn = true;
+      setTimeout(resizeAnalysis, 60);
+    }
+
+    function resizeAnalysis() {
+      ["dlong", "dcross", "dhv"].forEach(id => Plotly.Plots.resize(document.getElementById(id)));
+    }
+
+    function setIdx(i) {
+      curIdx = Math.max(0, Math.min(cline.length - 1, i));
+      if (drawn) {
+        drawLong();
+        drawCross();
+      }
+    }
+
+    function setLevel(level) {
+      curLevel = Math.max(1004.5, Math.min(CREST, Number(level)));
+      updateWaterMask();
+      updateKpi();
+      Plotly.react("d3d", surfaceTraces(), mainLayout(), plotConfig);
+      if (drawn) {
+        drawLong();
+        drawCross();
+        drawHv();
+      }
+    }
+
+    function sampleZ2d(z, x, y) {
+      const res = 38;
+      const col = x / res;
+      const row = y / res;
+      if (col < 0 || row < 0 || col >= grid.nx - 1 || row >= grid.ny - 1) return null;
+      const c0 = Math.floor(col);
+      const r0 = Math.floor(row);
+      const fc = col - c0;
+      const fr = row - r0;
+      const a = z[r0][c0];
+      const b = z[r0][c0 + 1];
+      const c = z[r0 + 1][c0];
+      const d = z[r0 + 1][c0 + 1];
+      return a * (1 - fc) * (1 - fr) + b * fc * (1 - fr) + c * (1 - fc) * fr + d * fc * fr;
+    }
+
+    function nearestIdx(x, y) {
+      let bi = 0;
+      let bd = Infinity;
+      for (let i = 0; i < cline.length; i++) {
+        const dx = cline[i][0] - x;
+        const dy = cline[i][1] - y;
+        const dd = dx * dx + dy * dy;
+        if (dd < bd) {
+          bd = dd;
+          bi = i;
+        }
+      }
+      return bi;
+    }
+
+    function idxFromChain(chain) {
+      let bi = 0;
+      let bd = Infinity;
+      for (let i = 0; i < cline.length; i++) {
+        const dd = Math.abs(cline[i][2] - chain);
+        if (dd < bd) {
+          bd = dd;
+          bi = i;
+        }
+      }
+      return bi;
+    }
+
+    document.getElementById("levelRange").addEventListener("input", event => setLevel(event.target.value));
+    document.getElementById("ana").addEventListener("toggle", event => {
+      if (event.target.open) {
+        if (!drawn) renderAnalysis();
+        else setTimeout(resizeAnalysis, 60);
+      }
+    });
+
+    updateKpi();
+    updateWaterMask();
+    Plotly.newPlot("d3d", surfaceTraces(), mainLayout(), plotConfig).then(() => {
+      document.getElementById("d3d").on("plotly_click", ev => {
+        const p = ev.points && ev.points[0];
+        if (p && p.x != null && p.y != null) {
+          const ana = document.getElementById("ana");
+          curIdx = nearestIdx(p.x, p.y);
+          if (!ana.open) ana.open = true;
+          setIdx(curIdx);
+        }
+      });
+    });
+
+    if (window.innerWidth <= 760) {
+      document.getElementById("ana").open = false;
+    } else {
+      renderAnalysis();
+    }
+  </script>
+</body>
+</html>

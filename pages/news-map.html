@@ -1173,6 +1173,7 @@
         let distributionStationLayer = null;
         let distributionStationVisible = true;
         let distributionStationLoaded = false;
+        let distributionStationAutoFocused = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1361,6 +1362,11 @@
                     }
                 });
                 if (distributionStationVisible) distributionStationLayer.addTo(map);
+                if (!distributionStationAutoFocused && distributionStationLayer.getBounds().isValid()) {
+                    distributionStationAutoFocused = true;
+                    map.fitBounds(distributionStationLayer.getBounds(), { padding: [32, 32], maxZoom: 15 });
+                    refreshMapAfterPanelMove(map);
+                }
             } catch (error) {
                 console.warn("Distribution station layer unavailable", error);
                 const button = document.getElementById("distribution-station-toggle");

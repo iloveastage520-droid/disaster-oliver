@@ -85,6 +85,65 @@
       border-bottom: 1px solid #dbe9f6;
     }
 
+    .media-band {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fbfd;
+    }
+
+    .media-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    .media-card h2 {
+      margin: 0;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+      letter-spacing: 0;
+      background: #fff;
+    }
+
+    .media-frame {
+      position: relative;
+      min-height: 260px;
+      background: #0b1220;
+    }
+
+    .media-frame img,
+    .media-frame iframe {
+      display: block;
+      width: 100%;
+      min-height: 260px;
+      height: 100%;
+      object-fit: cover;
+      border: 0;
+    }
+
+    .media-note {
+      padding: 10px 12px 12px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .media-note p {
+      margin: 0;
+    }
+
+    .media-note a {
+      color: var(--blue);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
     #d3d {
       width: 100%;
       height: 50vh;
@@ -148,6 +207,7 @@
 
     @media (max-width: 760px) {
       #d3d { height: 54vh; min-height: 350px; }
+      .media-band { grid-template-columns: 1fr; }
       .toolbar { align-items: stretch; }
       .toolbar label { width: 100%; }
       input[type="range"] { width: 100%; }
@@ -172,6 +232,28 @@
 
   <div id="d3d"></div>
   <div class="note">可拖曳、縮放 3D 地形；點選湖區或河道位置後，下方縱剖面與橫剖面會同步更新。此檔為仿製示範版，地形資料以程式生成，正式上線時可替換為實際 DEM、壩體線與庫容表。</div>
+
+  <section class="media-band" aria-label="馬太鞍溪現地影像與新聞">
+    <div class="media-card">
+      <h2>馬太鞍溪橋右岸2</h2>
+      <div class="media-frame">
+        <img id="mataianCamera" alt="馬太鞍溪橋右岸即時影像">
+      </div>
+      <div class="media-note">
+        <p>來源：林保署馬太鞍溪堰塞湖監控面板，介接九河分署影像。影像每 60 秒自動刷新一次。</p>
+        <p><a href="https://www.iiicloud.com.tw/FarmlandQlakenew/BarrierLake" target="_blank" rel="noopener">開啟官方監控面板</a></p>
+      </div>
+    </div>
+    <div class="media-card">
+      <h2>新聞影像</h2>
+      <div class="media-frame">
+        <iframe src="https://www.youtube.com/embed/I3h15eobOGI" title="馬太鞍溪新聞影像" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      <div class="media-note">
+        <p>嵌入使用者提供的 YouTube 新聞影片，作為事件背景與現地狀況補充。</p>
+      </div>
+    </div>
+  </section>
 
   <details id="ana" open>
     <summary>剖面與庫容曲線（縱剖面｜橫剖面｜庫容曲線）</summary>
@@ -201,6 +283,7 @@
     const CREST = 1080;
     const START_LEVEL = 1071.57;
     const DAM_CHAIN = 1920;
+    const CAMERA_URL = "https://fmg.wra.gov.tw/109wraweb/getImage.aspx?CCTV_SN=0x020000005CBECEC3AD8EBDF17699696BFC62997C5D21AFC9E3A6054ACEA634F82F1C98D3849EB06658F74CEBC25CA6B73B935C72&mode=getNewImageS";
     let curLevel = START_LEVEL;
     const grid = makeGrid();
     const cline = makeCenterLine();
@@ -556,6 +639,10 @@
       return bi;
     }
 
+    function refreshCamera() {
+      document.getElementById("mataianCamera").src = CAMERA_URL + "&_=" + Date.now();
+    }
+
     document.getElementById("levelRange").addEventListener("input", event => setLevel(event.target.value));
     document.getElementById("ana").addEventListener("toggle", event => {
       if (event.target.open) {
@@ -566,6 +653,8 @@
 
     updateKpi();
     updateWaterMask();
+    refreshCamera();
+    setInterval(refreshCamera, 60000);
     Plotly.newPlot("d3d", surfaceTraces(), mainLayout(), plotConfig).then(() => {
       document.getElementById("d3d").on("plotly_click", ev => {
         const p = ev.points && ev.points[0];

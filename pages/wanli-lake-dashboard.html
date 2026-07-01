@@ -117,14 +117,22 @@
       background: #0b1220;
     }
 
+    .media-frame.video {
+      min-height: 0;
+      aspect-ratio: 16 / 9;
+    }
+
     .media-frame img,
     .media-frame iframe {
       display: block;
       width: 100%;
-      min-height: 260px;
       height: 100%;
-      object-fit: cover;
       border: 0;
+    }
+
+    .media-frame img {
+      min-height: 260px;
+      object-fit: cover;
     }
 
     .media-note {
@@ -246,11 +254,11 @@
     </div>
     <div class="media-card">
       <h2>新聞影像</h2>
-      <div class="media-frame">
-        <iframe src="https://www.youtube.com/embed/I3h15eobOGI" title="馬太鞍溪新聞影像" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <div class="media-frame video">
+        <iframe src="https://www.youtube.com/embed/I3h15eobOGI?feature=oembed" title="馬太鞍溪工程團隊任務完成撤離 台視新聞" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
       </div>
       <div class="media-note">
-        <p>嵌入使用者提供的 YouTube 新聞影片，作為事件背景與現地狀況補充。</p>
+        <p>台視新聞影片，作為事件背景與現地狀況補充。若瀏覽器阻擋嵌入播放，可<a href="https://www.youtube.com/watch?v=I3h15eobOGI" target="_blank" rel="noopener">開新分頁觀看</a>。</p>
       </div>
     </div>
   </section>

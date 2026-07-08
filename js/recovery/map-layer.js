@@ -30,14 +30,15 @@ export function initRecoveryMap() {
     fullscreenControl: true
   });
 
-  const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; 開放街圖貢獻者"
+  const googleMap = L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+    maxZoom: 20,
+    subdomains: ["0", "1", "2", "3"],
+    attribution: "&copy; Google"
   }).addTo(map);
 
   L.control.scale({ imperial: false }).addTo(map);
 
-  return { map, baseLayers: { 開放街圖: osm } };
+  return { map, baseLayers: { "Google 地圖": googleMap } };
 }
 
 export function createRecoveryLayer(map, geojson) {

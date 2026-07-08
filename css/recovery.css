@@ -42,6 +42,7 @@
 .recovery-map-panel,
 .recovery-dashboard,
 .recovery-timeline,
+.recovery-data-panel,
 .dashboard-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -227,6 +228,84 @@
   line-height: 1.5;
 }
 
+.recovery-data-panel {
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.data-panel-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.data-panel-heading h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.data-panel-heading span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.recovery-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.recovery-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.recovery-table th,
+.recovery-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.recovery-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: var(--text);
+  background: rgba(13, 27, 46, 0.96);
+  white-space: nowrap;
+}
+
+.recovery-table tbody tr {
+  cursor: pointer;
+}
+
+.recovery-table tbody tr:hover {
+  background: rgba(53, 212, 255, 0.08);
+}
+
+.road-name-cell {
+  min-width: 240px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.table-status-completed,
+.table-status-progress,
+.table-status-not-started {
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.table-status-completed { color: #4ee69b; }
+.table-status-progress { color: #facc15; }
+.table-status-not-started { color: #ff5f7a; }
+
 .recovery-timeline {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -276,11 +355,17 @@
 @media (max-width: 980px) {
   .recovery-header,
   .recovery-workspace,
+  .data-panel-heading,
   .recovery-timeline {
     grid-template-columns: 1fr;
   }
 
   .recovery-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .data-panel-heading {
     align-items: stretch;
     flex-direction: column;
   }

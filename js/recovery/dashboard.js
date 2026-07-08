@@ -11,6 +11,7 @@ export function renderDashboard(features, statistics) {
   if (bar) bar.style.width = `${statistics.completionRate}%`;
 
   if (features.length) renderSelectedRoad(features[0].properties);
+  renderRecoveryDataList(features);
 }
 
 export function renderSelectedRoad(properties) {
@@ -51,6 +52,38 @@ export function renderLayerStatus(layerNames) {
   }));
 }
 
+export function renderRecoveryDataList(features) {
+  const body = document.querySelector("#recovery-data-list");
+  if (!body) return;
+
+  if (!features.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    cell.textContent = "目前沒有資料";
+    row.append(cell);
+    body.replaceChildren(row);
+    return;
+  }
+
+  body.replaceChildren(...features.map((feature) => {
+    const properties = feature.properties;
+    const row = document.createElement("tr");
+    row.append(
+      tableCell(properties.responsibleUnit || "--"),
+      tableCell(properties.contractor || "--"),
+      tableCell(properties.roadName || "--", "road-name-cell"),
+      tableCell(statusLabel(properties.status), statusClass(properties.status)),
+      tableCell(`${properties.completionPercentage}%`),
+      tableCell(properties.estimatedFinishTime || "--"),
+      tableCell(properties.lastUpdate || "--"),
+      tableCell(properties.remark || "--")
+    );
+    row.addEventListener("click", () => renderSelectedRoad(properties));
+    return row;
+  }));
+}
+
 function unitText(properties) {
   return [properties.responsibleUnit, properties.contractor].filter(Boolean).join(" / ") || "--";
 }
@@ -61,6 +94,21 @@ function statusLabel(status) {
     "In Progress": "處理中",
     "Not Started": "未開始"
   }[status] || "未開始";
+}
+
+function statusClass(status) {
+  return {
+    Completed: "table-status-completed",
+    "In Progress": "table-status-progress",
+    "Not Started": "table-status-not-started"
+  }[status] || "table-status-not-started";
+}
+
+function tableCell(value, className = "") {
+  const cell = document.createElement("td");
+  cell.textContent = value;
+  if (className) cell.className = className;
+  return cell;
 }
 
 function setText(selector, value) {

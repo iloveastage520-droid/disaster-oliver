@@ -71,14 +71,16 @@ export function renderRecoveryDataList(features) {
     const row = document.createElement("tr");
     row.append(
       tableCell(properties.responsibleUnit || "--"),
-      tableCell(properties.contractor || "--"),
       tableCell(properties.roadName || "--", "road-name-cell"),
       tableCell(statusLabel(properties.status), statusClass(properties.status)),
-      tableCell(`${properties.completionPercentage}%`),
-      tableCell(properties.estimatedFinishTime || "--"),
-      tableCell(properties.lastUpdate || "--"),
-      tableCell(properties.remark || "--")
+      tableCell(properties.estimatedFinishTime || "--")
     );
+    row.title = [
+      `支援廠商：${properties.contractor || "--"}`,
+      `完成度：${properties.completionPercentage}%`,
+      `更新時間：${properties.lastUpdate || "--"}`,
+      `備註：${properties.remark || "--"}`
+    ].join("\n");
     row.addEventListener("click", () => renderSelectedRoad(properties));
     return row;
   }));

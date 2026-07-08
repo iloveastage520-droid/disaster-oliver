@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="北水處康芮颱風道路清理進度地圖與 Excel 資料清單。">
+  <title>北水處康芮颱風道路清理進度</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/recovery.css">
+</head>
+<body data-page="recovery-map">
+  <header class="site-header recovery-standalone-header">
+    <div class="brand" aria-label="北水處康芮颱風道路清理進度">
+      <span class="brand-mark">水</span>
+      <span class="brand-text">北水處康芮颱風道路清理進度</span>
+    </div>
+    <div class="standalone-header-note">獨立分享頁面</div>
+  </header>
+
+  <main class="recovery-main">
+    <section class="recovery-header" aria-labelledby="recovery-title">
+      <div>
+        <p class="eyebrow">Excel 資料視覺化</p>
+        <h1 id="recovery-title">11/3 北水處及廠商支援情形統計</h1>
+      </div>
+      <div class="recovery-meta">
+        <span>資料來源：北水處康芮颱風實際支援統計表</span>
+        <strong id="recovery-last-update">113-11-03 15:30</strong>
+      </div>
+    </section>
+
+    <section class="recovery-workspace" aria-label="道路清理地圖與統計">
+      <section class="recovery-map-panel" aria-label="道路清理 GIS 地圖">
+        <div id="recovery-map" class="recovery-map"></div>
+        <div class="recovery-legend" aria-label="道路狀態圖例">
+          <strong>道路狀態</strong>
+          <span><i class="status-completed"></i>已完成</span>
+          <span><i class="status-progress"></i>處理中</span>
+          <span><i class="status-not-started"></i>未開始</span>
+        </div>
+      </section>
+
+      <aside class="recovery-dashboard" aria-label="道路清理統計">
+        <section class="dashboard-card selected-road-card">
+          <p class="eyebrow">選取路段</p>
+          <h2 id="selected-road-name">請選取路段</h2>
+          <dl id="selected-road-detail" class="road-detail-list">
+            <div><dt>權責單位</dt><dd>--</dd></div>
+            <div><dt>狀態</dt><dd>--</dd></div>
+            <div><dt>完成度</dt><dd>--</dd></div>
+            <div><dt>預計完成</dt><dd>--</dd></div>
+            <div><dt>更新時間</dt><dd>--</dd></div>
+            <div><dt>備註</dt><dd>--</dd></div>
+          </dl>
+        </section>
+
+        <section class="dashboard-card">
+          <div class="panel-title-row">
+            <div>
+              <p class="eyebrow">統計摘要</p>
+              <h2>道路清理進度</h2>
+            </div>
+            <strong id="summary-total">0</strong>
+          </div>
+          <div class="summary-grid">
+            <article><span>已完成</span><strong id="summary-completed">0</strong></article>
+            <article><span>處理中</span><strong id="summary-progress">0</strong></article>
+            <article><span>未開始</span><strong id="summary-not-started">0</strong></article>
+          </div>
+          <div class="progress-block">
+            <div class="progress-label">
+              <span>完成率</span>
+              <strong id="summary-rate">0%</strong>
+            </div>
+            <div class="progress-track"><span id="summary-bar"></span></div>
+          </div>
+          <div class="eta-row">
+            <span>最晚預計完成</span>
+            <strong id="summary-eta">--</strong>
+          </div>
+        </section>
+
+        <section class="dashboard-card layer-card">
+          <p class="eyebrow">圖層開關</p>
+          <div id="layer-status-list" class="layer-status-list"></div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="recovery-data-panel" aria-label="Excel 資料清單">
+      <div class="data-panel-heading">
+        <div>
+          <p class="eyebrow">Excel 資料清單</p>
+          <h2>原始填報內容整理</h2>
+        </div>
+        <span>點選表格列可更新右側選取路段資訊</span>
+      </div>
+      <div class="recovery-table-wrap">
+        <table class="recovery-table">
+          <thead>
+            <tr>
+              <th>單位</th>
+              <th>支援廠商</th>
+              <th>路段</th>
+              <th>狀態</th>
+              <th>完成度</th>
+              <th>預計完成</th>
+              <th>更新時間</th>
+              <th>備註</th>
+            </tr>
+          </thead>
+          <tbody id="recovery-data-list"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="recovery-timeline" aria-label="時間軸">
+      <div class="timeline-title">
+        <p class="eyebrow">時間軸</p>
+        <h2>目前保留 UI</h2>
+      </div>
+      <div id="recovery-timeline-track" class="recovery-timeline-track"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer recovery-standalone-footer">
+    <span>北水處康芮颱風道路清理進度</span>
+    <span>資料時間：113-11-03 15:30</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js"></script>
+  <script type="module" src="../js/recovery/recovery.js"></script>
+</body>
+</html>

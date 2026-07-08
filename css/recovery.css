@@ -2,6 +2,19 @@
   padding-bottom: 32px;
 }
 
+.recovery-standalone-header {
+  position: relative;
+}
+
+.standalone-header-note {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.recovery-standalone-footer {
+  margin-top: 0;
+}
+
 .recovery-header {
   display: flex;
   align-items: end;

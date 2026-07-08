@@ -3,41 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Disaster Oliver 災後復原情資地圖，用於呈現道路清理進度。">
-  <title>災後復原情資地圖 | Disaster Oliver</title>
+  <meta name="description" content="北水處康芮颱風道路清理進度地圖與 Excel 資料清單。">
+  <title>北水處康芮颱風道路清理進度</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/recovery.css">
 </head>
 <body data-page="recovery-map">
-  <header class="site-header">
-    <a class="brand" href="../index.html" aria-label="Disaster Oliver 首頁">
-      <span class="brand-mark">DO</span>
-      <span class="brand-text">Disaster Oliver</span>
-    </a>
-    <nav class="site-nav" aria-label="主要導覽">
-      <a href="news.html">最新新聞</a>
-      <a href="news-map.html">新聞地圖</a>
-      <a href="flood-potential.html">淹水潛勢</a>
-      <a href="recovery-map.html" aria-current="page">災後復原情資地圖</a>
-      <a href="../index.html#dashboard">儀表板</a>
-    </nav>
+  <header class="site-header recovery-standalone-header">
+    <div class="brand" aria-label="北水處康芮颱風道路清理進度">
+      <span class="brand-mark">水</span>
+      <span class="brand-text">北水處康芮颱風道路清理進度</span>
+    </div>
+    <div class="standalone-header-note">獨立分享頁面</div>
   </header>
 
   <main class="recovery-main">
     <section class="recovery-header" aria-labelledby="recovery-title">
       <div>
-        <p class="eyebrow">災後復原情資地圖</p>
-        <h1 id="recovery-title">颱風後道路清理進度</h1>
+        <p class="eyebrow">Excel 資料視覺化</p>
+        <h1 id="recovery-title">11/3 北水處及廠商支援情形統計</h1>
       </div>
       <div class="recovery-meta">
-        <span>資料來源：北水處支援情形統計表</span>
+        <span>資料來源：北水處康芮颱風實際支援統計表</span>
         <strong id="recovery-last-update">113-11-03 15:30</strong>
       </div>
     </section>
 
-    <section class="recovery-workspace" aria-label="災後復原地圖工作區">
+    <section class="recovery-workspace" aria-label="道路清理地圖與統計">
       <section class="recovery-map-panel" aria-label="道路清理 GIS 地圖">
         <div id="recovery-map" class="recovery-map"></div>
         <div class="recovery-legend" aria-label="道路狀態圖例">
@@ -48,7 +42,7 @@
         </div>
       </section>
 
-      <aside class="recovery-dashboard" aria-label="復原進度儀表板">
+      <aside class="recovery-dashboard" aria-label="道路清理統計">
         <section class="dashboard-card selected-road-card">
           <p class="eyebrow">選取路段</p>
           <h2 id="selected-road-name">請選取路段</h2>
@@ -66,7 +60,7 @@
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">統計摘要</p>
-              <h2>復原進度</h2>
+              <h2>道路清理進度</h2>
             </div>
             <strong id="summary-total">0</strong>
           </div>
@@ -83,13 +77,13 @@
             <div class="progress-track"><span id="summary-bar"></span></div>
           </div>
           <div class="eta-row">
-            <span>預估完成時間</span>
+            <span>最晚預計完成</span>
             <strong id="summary-eta">--</strong>
           </div>
         </section>
 
         <section class="dashboard-card layer-card">
-          <p class="eyebrow">圖層管理</p>
+          <p class="eyebrow">圖層開關</p>
           <div id="layer-status-list" class="layer-status-list"></div>
         </section>
       </aside>
@@ -99,9 +93,9 @@
       <div class="data-panel-heading">
         <div>
           <p class="eyebrow">Excel 資料清單</p>
-          <h2>北水處康芮颱風實際支援統計</h2>
+          <h2>原始填報內容整理</h2>
         </div>
-        <span>由原始 Excel 整理為道路清理進度資料</span>
+        <span>點選表格列可更新右側選取路段資訊</span>
       </div>
       <div class="recovery-table-wrap">
         <table class="recovery-table">
@@ -122,18 +116,18 @@
       </div>
     </section>
 
-    <section class="recovery-timeline" aria-label="復原進度時間軸">
+    <section class="recovery-timeline" aria-label="時間軸">
       <div class="timeline-title">
         <p class="eyebrow">時間軸</p>
-        <h2>預留回放功能</h2>
+        <h2>目前保留 UI</h2>
       </div>
       <div id="recovery-timeline-track" class="recovery-timeline-track"></div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <span>Disaster Oliver</span>
-    <span>災後復原情資地圖</span>
+  <footer class="site-footer recovery-standalone-footer">
+    <span>北水處康芮颱風道路清理進度</span>
+    <span>資料時間：113-11-03 15:30</span>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

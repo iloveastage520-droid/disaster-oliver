@@ -304,6 +304,12 @@
   background: rgba(53, 212, 255, 0.08);
 }
 
+.recovery-table tbody tr.active {
+  background: rgba(53, 212, 255, 0.15);
+  outline: 1px solid rgba(53, 212, 255, 0.52);
+  outline-offset: -1px;
+}
+
 .road-name-cell {
   min-width: 150px;
   color: var(--text);

@@ -20,6 +20,7 @@ const STATUS_STYLES = {
 };
 
 let activeLayer;
+const layerByFeatureId = new Map();
 
 export function initRecoveryMap() {
   const map = L.map("recovery-map", {
@@ -40,9 +41,13 @@ export function initRecoveryMap() {
 }
 
 export function createRecoveryLayer(map, geojson) {
+  layerByFeatureId.clear();
   activeLayer = L.geoJSON(geojson, {
     style: roadStyle,
-    onEachFeature: (feature, layer) => bindRoadEvents(map, feature, layer)
+    onEachFeature: (feature, layer) => {
+      layerByFeatureId.set(feature.properties.id, layer);
+      bindRoadEvents(map, feature, layer);
+    }
   }).addTo(map);
 
   if (activeLayer.getLayers().length) {
@@ -50,6 +55,13 @@ export function createRecoveryLayer(map, geojson) {
   }
 
   return activeLayer;
+}
+
+export function focusRecoveryRoad(map, featureId) {
+  const layer = layerByFeatureId.get(featureId);
+  if (!layer) return;
+
+  selectRoadLayer(map, layer, true);
 }
 
 export function createLayerControl(map, baseLayers, recoveryLayer) {
@@ -107,10 +119,20 @@ function bindRoadEvents(map, feature, layer) {
   });
 
   layer.on("click", () => {
-    setActiveRoad(layer);
-    renderSelectedRoad(feature.properties);
-    map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+    selectRoadLayer(map, layer, false);
   });
+}
+
+function selectRoadLayer(map, layer, openPopup) {
+  setActiveRoad(layer);
+  renderSelectedRoad(layer.feature.properties);
+  map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+
+  if (openPopup) layer.openPopup();
+
+  document.dispatchEvent(new CustomEvent("recovery:road-selected", {
+    detail: { id: layer.feature.properties.id }
+  }));
 }
 
 function setActiveRoad(selectedLayer) {

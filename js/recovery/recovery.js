@@ -1,7 +1,7 @@
 import { loadRecoveryDataset, normalizeRecoveryDataset } from "./excel-parser.js";
 import { calculateStatistics } from "./statistics.js";
-import { renderDashboard, renderLayerStatus } from "./dashboard.js";
-import { initRecoveryMap, createRecoveryLayer, createLayerControl, RECOVERY_LAYER_NAMES } from "./map-layer.js";
+import { renderDashboard, renderLayerStatus, setRecoveryRowSelectHandler } from "./dashboard.js";
+import { initRecoveryMap, createRecoveryLayer, createLayerControl, focusRecoveryRoad, RECOVERY_LAYER_NAMES } from "./map-layer.js";
 import { renderTimeline } from "./timeline.js";
 
 async function initRecoveryPage() {
@@ -16,6 +16,7 @@ async function initRecoveryPage() {
     const geojson = normalizeRecoveryDataset(await loadRecoveryDataset());
     const recoveryLayer = createRecoveryLayer(map, geojson);
     createLayerControl(map, baseLayers, recoveryLayer);
+    setRecoveryRowSelectHandler((featureId) => focusRecoveryRoad(map, featureId));
     renderDashboard(geojson.features, calculateStatistics(geojson.features));
     updateLastUpdate(geojson.metadata?.lastUpdate);
   } catch (error) {

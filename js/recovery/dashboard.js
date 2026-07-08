@@ -1,3 +1,9 @@
+let onRecoveryRowSelect = () => {};
+
+export function setRecoveryRowSelectHandler(handler) {
+  onRecoveryRowSelect = typeof handler === "function" ? handler : () => {};
+}
+
 export function renderDashboard(features, statistics) {
   animateNumber("#summary-total", statistics.total);
   animateNumber("#summary-completed", statistics.completed);
@@ -12,6 +18,7 @@ export function renderDashboard(features, statistics) {
 
   if (features.length) renderSelectedRoad(features[0].properties);
   renderRecoveryDataList(features);
+  bindMapSelectionHighlight();
 }
 
 export function renderSelectedRoad(properties) {
@@ -69,6 +76,7 @@ export function renderRecoveryDataList(features) {
   body.replaceChildren(...features.map((feature) => {
     const properties = feature.properties;
     const row = document.createElement("tr");
+    row.dataset.recoveryRoadId = properties.id;
     row.append(
       tableCell(properties.responsibleUnit || "--"),
       tableCell(properties.roadName || "--", "road-name-cell"),
@@ -81,9 +89,32 @@ export function renderRecoveryDataList(features) {
       `更新時間：${properties.lastUpdate || "--"}`,
       `備註：${properties.remark || "--"}`
     ].join("\n");
-    row.addEventListener("click", () => renderSelectedRoad(properties));
+    row.addEventListener("click", () => {
+      renderSelectedRoad(properties);
+      setActiveRecoveryRow(properties.id, false);
+      onRecoveryRowSelect(properties.id);
+    });
     return row;
   }));
+}
+
+export function setActiveRecoveryRow(featureId, scrollIntoView = true) {
+  document.querySelectorAll("#recovery-data-list tr").forEach((row) => {
+    const active = row.dataset.recoveryRoadId === featureId;
+    row.classList.toggle("active", active);
+    if (active && scrollIntoView) {
+      row.scrollIntoView({ block: "nearest" });
+    }
+  });
+}
+
+function bindMapSelectionHighlight() {
+  if (document.body.dataset.recoverySelectionBound === "true") return;
+  document.body.dataset.recoverySelectionBound = "true";
+
+  document.addEventListener("recovery:road-selected", (event) => {
+    setActiveRecoveryRow(event.detail?.id);
+  });
 }
 
 function unitText(properties) {

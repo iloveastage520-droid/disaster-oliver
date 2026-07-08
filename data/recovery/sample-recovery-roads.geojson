@@ -1,0 +1,335 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "source": "1131103北水處康芮颱風實際支援統計表",
+    "event": "Kong-rey typhoon road cleanup",
+    "lastUpdate": "113-11-03 15:30",
+    "note": "Initial recovery sample converted from the Excel summary. Road geometry is approximated for dashboard visualization."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-001",
+        "roadName": "長興街（基隆路至芳蘭路）",
+        "responsibleUnit": "淨水科",
+        "contractor": "祥益興",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": ""
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5526, 25.0141], [121.5578, 25.0152]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-002",
+        "roadName": "復興南路東側（辛亥路至市民大道）",
+        "responsibleUnit": "東區",
+        "contractor": "禾楓",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "復興南路東側已完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5436, 25.0215], [121.5439, 25.0278], [121.5442, 25.0375], [121.5447, 25.0452]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-003",
+        "roadName": "復興南北路中央分隔島（和平東路以北至民族東路）",
+        "responsibleUnit": "東區",
+        "contractor": "禾楓",
+        "status": "In Progress",
+        "completionPercentage": 65,
+        "estimatedFinishTime": "19:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "未完成路段，預計19:00完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5436, 25.0268], [121.5440, 25.0409], [121.5446, 25.0525], [121.5456, 25.0680]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-004",
+        "roadName": "和平東路3段（麟光站到莊敬隧道口）兩側",
+        "responsibleUnit": "東區",
+        "contractor": "鎮沅、明泉",
+        "status": "In Progress",
+        "completionPercentage": 82,
+        "estimatedFinishTime": "18:30",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "麟光站對面公園、黎和綠地尚在處理"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5574, 25.0186], [121.5617, 25.0182], [121.5682, 25.0176], [121.5737, 25.0173]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-005",
+        "roadName": "建國南北路單號側",
+        "responsibleUnit": "西區",
+        "contractor": "嘉昇昌",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "建國南北路單號側已完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5361, 25.0205], [121.5362, 25.0332], [121.5365, 25.0477], [121.5368, 25.0602]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-006",
+        "roadName": "建國南路一段及二段單號側（忠孝東路至辛亥路）",
+        "responsibleUnit": "西區",
+        "contractor": "嘉昇昌",
+        "status": "In Progress",
+        "completionPercentage": 72,
+        "estimatedFinishTime": "18:30",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "預計18:30完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5361, 25.0435], [121.5361, 25.0368], [121.5360, 25.0301], [121.5359, 25.0214]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-007",
+        "roadName": "信義路1至5段南側、5段北側、1段北側",
+        "responsibleUnit": "南區",
+        "contractor": "碧城",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "已完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5197, 25.0338], [121.5323, 25.0334], [121.5459, 25.0330], [121.5608, 25.0324], [121.5742, 25.0321]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-008",
+        "roadName": "信義路2至4段北側",
+        "responsibleUnit": "南區",
+        "contractor": "碧城",
+        "status": "In Progress",
+        "completionPercentage": 76,
+        "estimatedFinishTime": "19:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "預計19:00完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5282, 25.0336], [121.5395, 25.0332], [121.5521, 25.0328], [121.5635, 25.0324]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-009",
+        "roadName": "和平西路全段、和平東路1至2段",
+        "responsibleUnit": "北區",
+        "contractor": "昱丞",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "已完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.4992, 25.0267], [121.5160, 25.0264], [121.5315, 25.0261], [121.5480, 25.0257]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-010",
+        "roadName": "和平東路3段至麟光站",
+        "responsibleUnit": "北區",
+        "contractor": "昱丞",
+        "status": "In Progress",
+        "completionPercentage": 88,
+        "estimatedFinishTime": "18:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "3處處理中"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5480, 25.0257], [121.5572, 25.0224], [121.5641, 25.0193], [121.5682, 25.0176]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-011",
+        "roadName": "仁愛路四段市府至300巷",
+        "responsibleUnit": "北區",
+        "contractor": "順盛",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "已完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5641, 25.0375], [121.5557, 25.0376], [121.5489, 25.0378]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-012",
+        "roadName": "仁愛路四段300巷至復興南路",
+        "responsibleUnit": "北區",
+        "contractor": "順盛",
+        "status": "In Progress",
+        "completionPercentage": 92,
+        "estimatedFinishTime": "17:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "收尾中"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5489, 25.0378], [121.5427, 25.0380]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-013",
+        "roadName": "仁愛路3段（復興南路至建國南路）",
+        "responsibleUnit": "陽明",
+        "contractor": "宇力",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": ""
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5430, 25.0380], [121.5361, 25.0382]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-014",
+        "roadName": "仁愛路3段（建國南路至新生南路）",
+        "responsibleUnit": "陽明",
+        "contractor": "宇力、祥富、榮奕",
+        "status": "In Progress",
+        "completionPercentage": 64,
+        "estimatedFinishTime": "19:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "目前與新工處皇昌營造共同清理中"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5361, 25.0382], [121.5278, 25.0383], [121.5320, 25.0383]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-015",
+        "roadName": "忠孝東路五至七段北側",
+        "responsibleUnit": "工程總隊",
+        "contractor": "魁隆",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "北側已收運完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5660, 25.0415], [121.5798, 25.0412], [121.5942, 25.0410], [121.6105, 25.0405]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-016",
+        "roadName": "忠孝東路六至七段南側",
+        "responsibleUnit": "工程總隊",
+        "contractor": "魁隆、泰業",
+        "status": "In Progress",
+        "completionPercentage": 58,
+        "estimatedFinishTime": "19:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "目前清運忠孝東路六至七段南側"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5818, 25.0411], [121.5942, 25.0410], [121.6105, 25.0405]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-017",
+        "roadName": "忠孝東路一段及忠孝西路",
+        "responsibleUnit": "工程總隊",
+        "contractor": "桓展",
+        "status": "Completed",
+        "completionPercentage": 100,
+        "estimatedFinishTime": "",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "忠孝東路一段及忠孝西路已清運完成"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5350, 25.0459], [121.5240, 25.0460], [121.5152, 25.0462], [121.5065, 25.0464]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "recovery-018",
+        "roadName": "忠孝東路沿線公園處鋸樹清理",
+        "responsibleUnit": "工程總隊",
+        "contractor": "桓展",
+        "status": "In Progress",
+        "completionPercentage": 55,
+        "estimatedFinishTime": "19:00",
+        "lastUpdate": "113-11-03 15:30",
+        "remark": "協助清運沿線公園處完成鋸樹處清理"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[121.5152, 25.0462], [121.5298, 25.0459], [121.5455, 25.0454], [121.5602, 25.0422]]
+      }
+    }
+  ]
+}

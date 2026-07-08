@@ -18,13 +18,14 @@
       <a href="news.html">最新新聞</a>
       <a href="news-map.html">新聞地圖</a>
       <a href="flood-potential.html">淹水潛勢</a>
-      <a href="../index.html#dashboard">Dashboard</a>
+      <a href="recovery-map.html">災後復原地圖</a>
+      <a href="../index.html#dashboard">儀表板</a>
     </nav>
   </header>
 
   <main>
     <section class="page-hero flood-page-hero" aria-labelledby="flood-title">
-      <p class="eyebrow">Flood Potential Overlay</p>
+      <p class="eyebrow">淹水潛勢圖層</p>
       <h1 id="flood-title">新聞位置與淹水潛勢測試圖</h1>
       <p>
         目前先載入南台灣 24H / 200mm 淹水潛勢測試圖層，驗證 Google Sheet 新聞點位是否能與公開 GIS 圖資疊合。
@@ -34,7 +35,7 @@
     <section class="flood-workspace" aria-label="淹水潛勢測試工作區">
       <aside class="flood-side-panel">
         <div class="section-heading">
-          <p class="eyebrow">Located News</p>
+          <p class="eyebrow">已定位新聞</p>
           <h2>定位新聞</h2>
         </div>
 
@@ -56,8 +57,8 @@
             <strong id="flood-count">--</strong>
           </div>
           <div class="metric">
-            <span>Status</span>
-            <strong id="flood-status">Loading</strong>
+            <span>狀態</span>
+            <strong id="flood-status">讀取中</strong>
           </div>
         </div>
 
@@ -77,7 +78,7 @@
 
   <footer class="site-footer">
     <span>Disaster Oliver</span>
-    <span>Flood potential PoC</span>
+    <span>淹水潛勢展示模組</span>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

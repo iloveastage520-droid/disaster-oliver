@@ -90,7 +90,7 @@ function transformRecoveryApiResponse(data) {
       lastUpdate: data.reportTime || data.updatedAt,
       summary: data.summary
     },
-    features: data.tasks.map((task) => {
+    features: data.tasks.filter(isCompletedTask).map((task) => {
       const roadId = text(task.roadId) || buildRoadId(task);
       const geometry = task.geometry || geometryFromRoadId(roadId);
       const status = normalizeStatus(task.status);
@@ -118,6 +118,10 @@ function transformRecoveryApiResponse(data) {
       };
     })
   };
+}
+
+function isCompletedTask(task) {
+  return normalizeStatus(task.status) === "Completed";
 }
 
 function buildRoadId(task) {

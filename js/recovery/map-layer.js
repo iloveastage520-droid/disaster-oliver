@@ -1,16 +1,7 @@
 import { renderSelectedRoad } from "./dashboard.js";
 
 export const RECOVERY_LAYER_NAMES = [
-  "復原進度",
-  "監視器",
-  "倒伏樹木",
-  "道路封閉",
-  "搶修車輛",
-  "雨量",
-  "災情通報",
-  "停電",
-  "停水",
-  "醫療資源"
+  "復原進度"
 ];
 
 const STATUS_STYLES = {
@@ -67,21 +58,8 @@ export function focusRecoveryRoad(map, featureId) {
 
 export function createLayerControl(map, baseLayers, recoveryLayer) {
   const overlays = {
-    復原進度: recoveryLayer,
-    監視器: L.layerGroup(),
-    倒伏樹木: L.layerGroup(),
-    道路封閉: L.layerGroup(),
-    搶修車輛: L.layerGroup(),
-    雨量: L.layerGroup(),
-    災情通報: L.layerGroup(),
-    停電: L.layerGroup(),
-    停水: L.layerGroup(),
-    醫療資源: L.layerGroup()
+    復原進度: recoveryLayer
   };
-
-  Object.entries(overlays).forEach(([name, layer]) => {
-    if (name !== "復原進度") layer.addTo(map);
-  });
 
   return L.control.layers(baseLayers, overlays, {
     position: "topright",

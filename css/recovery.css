@@ -23,13 +23,20 @@
   padding: 28px 0 18px;
 }
 
+.recovery-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .recovery-header h1 {
   margin-bottom: 0;
-  font-size: clamp(30px, 4vw, 54px);
+  font-size: clamp(28px, 2.9vw, 42px);
+  line-height: 1.18;
 }
 
 .recovery-meta {
   display: grid;
+  flex: 0 0 auto;
   gap: 6px;
   min-width: 280px;
   padding: 14px 16px;

@@ -35,8 +35,7 @@ function updateRecoveryTitle() {
   const element = document.querySelector("#recovery-title");
   if (!element) return;
 
-  const parts = taipeiDateParts(new Date());
-  element.textContent = `${Number(parts.month)}/${Number(parts.day)} 北水處及廠商支援情形統計`;
+  element.textContent = "北水處及廠商支援情形統計";
 }
 
 function formatTaipeiRocDateTime(date) {

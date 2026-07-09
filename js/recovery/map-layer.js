@@ -5,9 +5,9 @@ export const RECOVERY_LAYER_NAMES = [
 ];
 
 const STATUS_STYLES = {
-  Completed: "#22c55e",
-  "In Progress": "#facc15",
-  "Not Started": "#ef4444"
+  Completed: "#00aeef",
+  "In Progress": "#ffb000",
+  "Not Started": "#e84a5f"
 };
 
 let activeLayer;
@@ -81,12 +81,18 @@ export function createLayerControl(map, baseLayers, recoveryLayer) {
 }
 
 function roadStyle(feature) {
+  const color = STATUS_STYLES[feature.properties.status] || STATUS_STYLES["Not Started"];
+  const isPolygon = feature.geometry?.type?.includes("Polygon");
+
   return {
-    color: STATUS_STYLES[feature.properties.status] || STATUS_STYLES["Not Started"],
-    weight: 6,
-    opacity: 0.9,
+    color,
+    weight: isPolygon ? 4 : 7,
+    opacity: 0.96,
+    fillColor: color,
+    fillOpacity: isPolygon ? 0.22 : 0,
     lineCap: "round",
-    lineJoin: "round"
+    lineJoin: "round",
+    className: "recovery-road-line"
   };
 }
 
@@ -101,7 +107,7 @@ function bindRoadEvents(map, feature, layer) {
   });
 
   layer.on("mouseover", () => {
-    layer.setStyle({ weight: 8, opacity: 1 });
+    layer.setStyle({ weight: lineWeight(feature, 10, 5), opacity: 1 });
     layer.bringToFront();
   });
 
@@ -130,11 +136,15 @@ function setActiveRoad(selectedLayer) {
   activeLayer.eachLayer((layer) => {
     layer.setStyle({
       ...roadStyle(layer.feature),
-      weight: layer === selectedLayer ? 8 : 6,
-      opacity: layer === selectedLayer ? 1 : 0.9
+      weight: layer === selectedLayer ? lineWeight(layer.feature, 10, 5) : lineWeight(layer.feature, 7, 4),
+      opacity: layer === selectedLayer ? 1 : 0.96
     });
     layer._recoveryActive = layer === selectedLayer;
   });
+}
+
+function lineWeight(feature, lineValue, polygonValue) {
+  return feature.geometry?.type?.includes("Polygon") ? polygonValue : lineValue;
 }
 
 function isActive(layer) {

@@ -358,6 +358,12 @@ body[data-page="recovery-map"] .site-header {
   line-height: 1.5;
 }
 
+.leaflet-interactive.recovery-road-line {
+  filter:
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.98))
+    drop-shadow(0 0 5px rgba(0, 174, 239, 0.72));
+}
+
 .recovery-data-panel {
   padding: 12px;
   max-height: none;

@@ -23,6 +23,7 @@ export function renderDashboard(features, statistics) {
 
 export function renderSelectedRoad(properties) {
   setText("#selected-road-name", properties.roadName || "未命名路段");
+  renderSelectedPhoto(properties);
 
   const rows = [
     ["權責單位", unitText(properties)],
@@ -96,6 +97,37 @@ export function renderRecoveryDataList(features) {
     });
     return row;
   }));
+}
+
+function renderSelectedPhoto(properties) {
+  const panel = document.querySelector("#selected-road-photo");
+  const caption = document.querySelector("#selected-road-photo-caption");
+  if (!panel) return;
+
+  const photoUrl = properties.photoUrl || "";
+  const photoCaption = properties.photoCaption || properties.roadText || properties.roadName || "完成照片";
+
+  const previousImage = panel.querySelector("img");
+  const previousPlaceholder = panel.querySelector(".road-photo-placeholder");
+  if (previousImage) previousImage.remove();
+  if (previousPlaceholder) previousPlaceholder.remove();
+
+  if (photoUrl) {
+    const image = document.createElement("img");
+    image.src = photoUrl;
+    image.alt = photoCaption;
+    image.loading = "lazy";
+    panel.prepend(image);
+    panel.classList.remove("is-empty");
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "road-photo-placeholder";
+    placeholder.textContent = "這個路段尚未提供照片";
+    panel.prepend(placeholder);
+    panel.classList.add("is-empty");
+  }
+
+  if (caption) caption.textContent = photoCaption;
 }
 
 export function setActiveRecoveryRow(featureId, scrollIntoView = true) {

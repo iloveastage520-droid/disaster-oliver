@@ -123,6 +123,40 @@
   margin: 0;
 }
 
+.road-photo-panel {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.road-photo-panel img,
+.road-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.road-photo-panel img {
+  display: block;
+  object-fit: cover;
+}
+
+.road-photo-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.road-photo-panel figcaption {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .road-detail-list div {
   display: grid;
   gap: 4px;

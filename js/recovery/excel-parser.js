@@ -1,6 +1,13 @@
 const SAMPLE_GEOJSON_URL = "../data/recovery/sample-recovery-roads.geojson";
 const SHEET_API_URL = window.RECOVERY_SHEET_API_URL || "";
 
+const PHOTO_URLS_BY_ROW = {
+  3: ["https://drive.google.com/file/d/1oe1e0UprpgtXg8SNHFVVJN8WCa8Ha3gW/view?usp=sharing"],
+  4: ["https://drive.google.com/file/d/12m4sgmxIbKX_VaPoXBE0QMl5qFKyGDq0/view?usp=drive_link"],
+  5: ["https://drive.google.com/file/d/18jYg-5YIm5pfC5ohfSKlpQvauINY09q4/view?usp=drive_link"],
+  6: ["https://drive.google.com/file/d/1FzBDPEcGn0nx5Xen9jd9ELp9QPCqIN1t/view?usp=drive_link"]
+};
+
 const ROAD_GEOMETRY_LIBRARY = {
   "長興街____基隆路__芳蘭路": [[121.5427, 25.0209], [121.5473, 25.0222]],
   "復興南路__東側__辛亥路__市民大道": [[121.5438, 25.0212], [121.5439, 25.0452]],
@@ -45,7 +52,10 @@ export function normalizeRecoveryFeature(feature) {
       completionPercentage: clampPercentage(properties.completionPercentage),
       estimatedFinishTime: text(properties.estimatedFinishTime) || "--",
       lastUpdate: text(properties.lastUpdate),
-      remark: text(properties.remark)
+      remark: text(properties.remark),
+      roadText: text(properties.roadText),
+      photoUrl: directPhotoUrl(properties.photoUrl),
+      photoCaption: text(properties.photoCaption)
     }
   };
 }
@@ -107,6 +117,8 @@ function transformRecoveryApiResponse(data) {
           estimatedFinishTime: text(task.eta) || "--",
           lastUpdate: data.reportTime || data.updatedAt || "",
           remark: text(task.remark),
+          photoUrl: directPhotoUrl(text(task.photoUrl) || defaultPhotoUrl(task)),
+          photoCaption: text(task.photoCaption) || text(task.roadText) || "完成照片",
           roadText: text(task.roadText),
           side: text(task.side),
           start: text(task.start),
@@ -143,4 +155,24 @@ function normalizeRoadKeyPart(value) {
 function geometryFromRoadId(roadId) {
   const coordinates = ROAD_GEOMETRY_LIBRARY[roadId];
   return coordinates ? { type: "LineString", coordinates } : null;
+}
+
+function defaultPhotoUrl(task) {
+  const rowPhotos = PHOTO_URLS_BY_ROW[Number(task.rowNumber)] || [];
+  return rowPhotos[0] || "";
+}
+
+function directPhotoUrl(url) {
+  const value = text(url);
+  if (!value) return "";
+
+  const fileMatch = value.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (fileMatch) return `https://drive.google.com/thumbnail?id=${fileMatch[1]}&sz=w1200`;
+
+  const idMatch = value.match(/[?&]id=([^&]+)/);
+  if (value.includes("drive.google.com") && idMatch) {
+    return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1200`;
+  }
+
+  return value;
 }

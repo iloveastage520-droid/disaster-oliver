@@ -43,6 +43,29 @@
       </section>
 
       <aside class="recovery-dashboard" aria-label="道路清理統計">
+        <section class="dashboard-card recovery-data-panel" aria-label="Excel 填報內容">
+          <div class="data-panel-heading">
+            <div>
+              <p class="eyebrow">Excel 填報內容</p>
+              <h2>原始填報清單</h2>
+            </div>
+            <span>點選列可更新選取路段</span>
+          </div>
+          <div class="recovery-table-wrap">
+            <table class="recovery-table">
+              <thead>
+                <tr>
+                  <th>單位</th>
+                  <th>路段</th>
+                  <th>狀態</th>
+                  <th>預計</th>
+                </tr>
+              </thead>
+              <tbody id="recovery-data-list"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="dashboard-card selected-road-card">
           <p class="eyebrow">選取路段</p>
           <h2 id="selected-road-name">請選取路段</h2>
@@ -85,29 +108,6 @@
         <section class="dashboard-card layer-card">
           <p class="eyebrow">圖層開關</p>
           <div id="layer-status-list" class="layer-status-list"></div>
-        </section>
-
-        <section class="dashboard-card recovery-data-panel" aria-label="Excel 填報內容">
-          <div class="data-panel-heading">
-            <div>
-              <p class="eyebrow">Excel 填報內容</p>
-              <h2>原始填報清單</h2>
-            </div>
-            <span>點選列可更新選取路段</span>
-          </div>
-          <div class="recovery-table-wrap">
-            <table class="recovery-table">
-              <thead>
-                <tr>
-                  <th>單位</th>
-                  <th>路段</th>
-                  <th>狀態</th>
-                  <th>預計</th>
-                </tr>
-              </thead>
-              <tbody id="recovery-data-list"></tbody>
-            </table>
-          </div>
         </section>
       </aside>
     </section>

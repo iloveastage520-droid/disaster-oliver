@@ -10,6 +10,13 @@ const STATUS_STYLES = {
   "Not Started": "#e84a5f"
 };
 
+const GROUP_STYLES = {
+  "組1": "#00aeef",
+  "組2": "#ffb000",
+  "組3": "#f15bb5",
+  "組4": "#7c3aed"
+};
+
 let activeLayer;
 const layerByFeatureId = new Map();
 
@@ -81,7 +88,7 @@ export function createLayerControl(map, baseLayers, recoveryLayer) {
 }
 
 function roadStyle(feature) {
-  const color = STATUS_STYLES[feature.properties.status] || STATUS_STYLES["Not Started"];
+  const color = featureColor(feature);
   const isPolygon = feature.geometry?.type?.includes("Polygon");
 
   return {
@@ -94,6 +101,11 @@ function roadStyle(feature) {
     lineJoin: "round",
     className: "recovery-road-line"
   };
+}
+
+function featureColor(feature) {
+  const unit = feature.properties.responsibleUnit;
+  return GROUP_STYLES[unit] || STATUS_STYLES[feature.properties.status] || STATUS_STYLES["Not Started"];
 }
 
 function bindRoadEvents(map, feature, layer) {

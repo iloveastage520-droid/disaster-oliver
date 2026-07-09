@@ -361,7 +361,7 @@ body[data-page="recovery-map"] .site-header {
 .leaflet-interactive.recovery-road-line {
   filter:
     drop-shadow(0 0 2px rgba(255, 255, 255, 0.98))
-    drop-shadow(0 0 5px rgba(0, 174, 239, 0.72));
+    drop-shadow(0 1px 4px rgba(3, 18, 30, 0.55));
 }
 
 .recovery-data-panel {

@@ -28,21 +28,34 @@ async function initRecoveryPage() {
 
 function updateLastUpdate(value) {
   const element = document.querySelector("#recovery-last-update");
-  if (element && value) element.textContent = value;
+  if (element) element.textContent = formatTaipeiRocDateTime(new Date());
 }
 
 function updateRecoveryTitle() {
   const element = document.querySelector("#recovery-title");
   if (!element) return;
 
+  const parts = taipeiDateParts(new Date());
+  element.textContent = `${Number(parts.month)}/${Number(parts.day)} 北水處及廠商支援情形統計`;
+}
+
+function formatTaipeiRocDateTime(date) {
+  const parts = taipeiDateParts(date);
+  const rocYear = Number(parts.year) - 1911;
+  return `${rocYear}年${parts.month}月${parts.day}日${parts.hour}時${parts.minute}分`;
+}
+
+function taipeiDateParts(date) {
   const parts = new Intl.DateTimeFormat("zh-TW", {
     timeZone: "Asia/Taipei",
-    month: "numeric",
-    day: "numeric"
-  }).formatToParts(new Date());
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-  if (month && day) element.textContent = `${month}/${day} 北水處及廠商支援情形統計`;
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map((part) => [part.type, part.value]));
 }
 
 function showLoadError() {

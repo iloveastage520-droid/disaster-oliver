@@ -98,9 +98,9 @@ body[data-page="recovery-map"] .site-header {
 
 .recovery-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.33fr);
+  grid-template-columns: minmax(0, 1fr) minmax(430px, 0.42fr);
   gap: 12px;
-  height: min(720px, calc(100vh - 166px));
+  height: min(780px, calc(100vh - 132px));
   min-height: 520px;
 }
 
@@ -179,7 +179,7 @@ body[data-page="recovery-map"] .site-header {
 .road-photo-panel img,
 .road-photo-placeholder {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2 / 1;
   border: 1px solid var(--recovery-line);
   border-radius: 8px;
   background: var(--recovery-panel-soft);
@@ -259,7 +259,7 @@ body[data-page="recovery-map"] .site-header {
 .summary-grid article {
   display: grid;
   gap: 6px;
-  min-height: 68px;
+  min-height: 62px;
   padding: 10px;
   border: 1px solid var(--recovery-line);
   border-radius: 8px;
@@ -359,7 +359,7 @@ body[data-page="recovery-map"] .site-header {
 
 .recovery-data-panel {
   padding: 12px;
-  max-height: 275px;
+  max-height: 390px;
   overflow: hidden;
 }
 
@@ -383,7 +383,7 @@ body[data-page="recovery-map"] .site-header {
 
 .recovery-table-wrap {
   overflow: auto;
-  max-height: 205px;
+  max-height: 315px;
   border: 1px solid var(--recovery-line);
   border-radius: 8px;
   background: #ffffff;
@@ -391,15 +391,15 @@ body[data-page="recovery-map"] .site-header {
 
 .recovery-table {
   width: 100%;
-  min-width: 0;
+  min-width: 420px;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .recovery-table th,
 .recovery-table td {
-  padding: 7px 8px;
-  font-size: 11px;
+  padding: 8px 9px;
+  font-size: 12px;
   border-bottom: 1px solid var(--recovery-line);
   text-align: left;
   vertical-align: top;
@@ -429,7 +429,7 @@ body[data-page="recovery-map"] .site-header {
 }
 
 .road-name-cell {
-  min-width: 132px;
+  min-width: 180px;
   color: var(--recovery-text);
   font-weight: 700;
 }
@@ -446,7 +446,7 @@ body[data-page="recovery-map"] .site-header {
 .table-status-not-started { color: var(--recovery-red); }
 
 .recovery-timeline {
-  display: grid;
+  display: none;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 12px;
   margin-top: 12px;

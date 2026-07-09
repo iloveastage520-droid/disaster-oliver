@@ -157,6 +157,34 @@
   line-height: 1.4;
 }
 
+.road-photo-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.road-photo-thumbs button {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.road-photo-thumbs button.active {
+  border-color: var(--cyan);
+}
+
+.road-photo-thumbs img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
 .road-detail-list div {
   display: grid;
   gap: 4px;

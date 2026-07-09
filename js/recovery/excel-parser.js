@@ -2,7 +2,12 @@ const SAMPLE_GEOJSON_URL = "../data/recovery/sample-recovery-roads.geojson";
 const SHEET_API_URL = window.RECOVERY_SHEET_API_URL || "";
 
 const PHOTO_URLS_BY_ROW = {
-  3: ["https://drive.google.com/file/d/1oe1e0UprpgtXg8SNHFVVJN8WCa8Ha3gW/view?usp=sharing"],
+  3: [
+    "https://drive.google.com/file/d/1oe1e0UprpgtXg8SNHFVVJN8WCa8Ha3gW/view?usp=sharing",
+    "https://drive.google.com/file/d/12m4sgmxIbKX_VaPoXBE0QMl5qFKyGDq0/view?usp=drive_link",
+    "https://drive.google.com/file/d/18jYg-5YIm5pfC5ohfSKlpQvauINY09q4/view?usp=drive_link",
+    "https://drive.google.com/file/d/1FzBDPEcGn0nx5Xen9jd9ELp9QPCqIN1t/view?usp=drive_link"
+  ],
   4: ["https://drive.google.com/file/d/12m4sgmxIbKX_VaPoXBE0QMl5qFKyGDq0/view?usp=drive_link"],
   5: ["https://drive.google.com/file/d/18jYg-5YIm5pfC5ohfSKlpQvauINY09q4/view?usp=drive_link"],
   6: ["https://drive.google.com/file/d/1FzBDPEcGn0nx5Xen9jd9ELp9QPCqIN1t/view?usp=drive_link"]
@@ -55,7 +60,9 @@ export function normalizeRecoveryFeature(feature) {
       remark: text(properties.remark),
       roadText: text(properties.roadText),
       photoUrl: directPhotoUrl(properties.photoUrl),
-      photoCaption: text(properties.photoCaption)
+      photoCaption: text(properties.photoCaption),
+      photoUrls: normalizePhotoUrls(properties.photoUrls || properties.photoUrl),
+      photoCaptions: normalizePhotoCaptions(properties.photoCaptions || properties.photoCaption)
     }
   };
 }
@@ -117,8 +124,10 @@ function transformRecoveryApiResponse(data) {
           estimatedFinishTime: text(task.eta) || "--",
           lastUpdate: data.reportTime || data.updatedAt || "",
           remark: text(task.remark),
-          photoUrl: directPhotoUrl(text(task.photoUrl) || defaultPhotoUrl(task)),
+          photoUrl: directPhotoUrl(text(task.photoUrl) || defaultPhotoUrls(task)[0]),
           photoCaption: text(task.photoCaption) || text(task.roadText) || "完成照片",
+          photoUrls: normalizePhotoUrls(task.photoUrls?.length ? task.photoUrls : defaultPhotoUrls(task)),
+          photoCaptions: normalizePhotoCaptions(task.photoCaptions?.length ? task.photoCaptions : task.photoCaption),
           roadText: text(task.roadText),
           side: text(task.side),
           start: text(task.start),
@@ -157,9 +166,8 @@ function geometryFromRoadId(roadId) {
   return coordinates ? { type: "LineString", coordinates } : null;
 }
 
-function defaultPhotoUrl(task) {
-  const rowPhotos = PHOTO_URLS_BY_ROW[Number(task.rowNumber)] || [];
-  return rowPhotos[0] || "";
+function defaultPhotoUrls(task) {
+  return PHOTO_URLS_BY_ROW[Number(task.rowNumber)] || [];
 }
 
 function directPhotoUrl(url) {
@@ -175,4 +183,14 @@ function directPhotoUrl(url) {
   }
 
   return value;
+}
+
+function normalizePhotoUrls(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map(directPhotoUrl).filter(Boolean);
+}
+
+function normalizePhotoCaptions(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map(text).filter(Boolean);
 }

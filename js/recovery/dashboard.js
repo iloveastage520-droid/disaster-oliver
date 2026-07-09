@@ -104,30 +104,57 @@ function renderSelectedPhoto(properties) {
   const caption = document.querySelector("#selected-road-photo-caption");
   if (!panel) return;
 
-  const photoUrl = properties.photoUrl || "";
-  const photoCaption = properties.photoCaption || properties.roadText || properties.roadName || "完成照片";
+  const photoUrls = Array.isArray(properties.photoUrls) && properties.photoUrls.length
+    ? properties.photoUrls
+    : [properties.photoUrl].filter(Boolean);
+  const photoCaptions = Array.isArray(properties.photoCaptions) ? properties.photoCaptions : [];
+  const fallbackCaption = properties.photoCaption || properties.roadText || properties.roadName || "完成照片";
 
-  const previousImage = panel.querySelector("img");
-  const previousPlaceholder = panel.querySelector(".road-photo-placeholder");
-  if (previousImage) previousImage.remove();
-  if (previousPlaceholder) previousPlaceholder.remove();
+  panel.querySelectorAll("img, .road-photo-placeholder, .road-photo-thumbs").forEach((element) => {
+    element.remove();
+  });
 
-  if (photoUrl) {
+  if (photoUrls.length) {
     const image = document.createElement("img");
-    image.src = photoUrl;
-    image.alt = photoCaption;
+    const thumbs = document.createElement("div");
+    thumbs.className = "road-photo-thumbs";
+    panel.classList.remove("is-empty");
+
+    const showPhoto = (index) => {
+      const photoCaption = photoCaptions[index] || fallbackCaption;
+      image.src = photoUrls[index];
+      image.alt = photoCaption;
+      if (caption) caption.textContent = photoCaption;
+      thumbs.querySelectorAll("button").forEach((button, buttonIndex) => {
+        button.classList.toggle("active", buttonIndex === index);
+      });
+    };
+
+    photoUrls.forEach((photoUrl, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", `查看照片 ${index + 1}`);
+      const thumb = document.createElement("img");
+      thumb.src = photoUrl;
+      thumb.alt = photoCaptions[index] || fallbackCaption;
+      thumb.loading = "lazy";
+      button.append(thumb);
+      button.addEventListener("click", () => showPhoto(index));
+      thumbs.append(button);
+    });
+
     image.loading = "lazy";
     panel.prepend(image);
-    panel.classList.remove("is-empty");
+    if (photoUrls.length > 1) panel.insertBefore(thumbs, caption);
+    showPhoto(0);
   } else {
     const placeholder = document.createElement("div");
     placeholder.className = "road-photo-placeholder";
     placeholder.textContent = "這個路段尚未提供照片";
     panel.prepend(placeholder);
     panel.classList.add("is-empty");
+    if (caption) caption.textContent = fallbackCaption;
   }
-
-  if (caption) caption.textContent = photoCaption;
 }
 
 export function setActiveRecoveryRow(featureId, scrollIntoView = true) {

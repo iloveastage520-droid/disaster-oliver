@@ -27,9 +27,21 @@ export function initRecoveryMap() {
     attribution: "&copy; Google"
   }).addTo(map);
 
+  const googleSatellite = L.tileLayer("https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+    maxZoom: 20,
+    subdomains: ["0", "1", "2", "3"],
+    attribution: "&copy; Google"
+  });
+
   L.control.scale({ imperial: false }).addTo(map);
 
-  return { map, baseLayers: { "Google 地圖": googleMap } };
+  return {
+    map,
+    baseLayers: {
+      "Google 地圖": googleMap,
+      "Google 衛星": googleSatellite
+    }
+  };
 }
 
 export function createRecoveryLayer(map, geojson) {

@@ -35,7 +35,7 @@ function updateRecoveryTitle() {
   const element = document.querySelector("#recovery-title");
   if (!element) return;
 
-  element.textContent = "北水處及廠商支援情形統計";
+  element.textContent = "陽明分處災後市容復原作業情形統計";
 }
 
 function formatTaipeiRocDateTime(date) {

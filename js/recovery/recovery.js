@@ -9,6 +9,7 @@ async function initRecoveryPage() {
   if (!mapElement) return;
 
   const { map, baseLayers } = initRecoveryMap();
+  updateRecoveryTitle();
   renderTimeline();
   renderLayerStatus(RECOVERY_LAYER_NAMES);
 
@@ -28,6 +29,20 @@ async function initRecoveryPage() {
 function updateLastUpdate(value) {
   const element = document.querySelector("#recovery-last-update");
   if (element && value) element.textContent = value;
+}
+
+function updateRecoveryTitle() {
+  const element = document.querySelector("#recovery-title");
+  if (!element) return;
+
+  const parts = new Intl.DateTimeFormat("zh-TW", {
+    timeZone: "Asia/Taipei",
+    month: "numeric",
+    day: "numeric"
+  }).formatToParts(new Date());
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (month && day) element.textContent = `${month}/${day} 北水處及廠商支援情形統計`;
 }
 
 function showLoadError() {

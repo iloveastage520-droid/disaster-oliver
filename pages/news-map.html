@@ -1316,6 +1316,7 @@
         let typhoonFrameIndex = 0;
         let typhoonTimer = null;
         let himawariLayersLoaded = false;
+        let dynamicLayerControl = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1466,6 +1467,7 @@
             }[ch]));
         }
         function currentLayerControl() {
+            if (dynamicLayerControl) return dynamicLayerControl;
             const keys = Object.keys(window).filter((key) => key.startsWith("layer_control_"));
             return keys.length ? window[keys[0]] : null;
         }
@@ -3183,6 +3185,7 @@
   "autoZIndex": true,
 }
             ).addTo(map_45fcc9a5acd8ea8e0b2d5abc64c03d3b);
+            dynamicLayerControl = layer_control_a11bad7234900bdbe224b5fc84330ddf;
 
         
 </script>

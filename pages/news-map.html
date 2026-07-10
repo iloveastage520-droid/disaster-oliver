@@ -1814,12 +1814,27 @@
             }
             updateHimawariFrameForTime(frame.epoch);
             const status = document.getElementById("himawari-status");
-            if (status) status.textContent = `向日葵：${formatHimawariTime(frame)} (${himawariFrameIndex + 1}/${himawariFrames.length})`;
+            if (status) {
+                const synced = radarFrames.length && frame.epoch >= radarFrames[0].time && frame.epoch <= radarFrames[radarFrames.length - 1].time;
+                status.textContent = `向日葵：${formatHimawariTime(frame)} (${himawariFrameIndex + 1}/${himawariFrames.length})${synced ? " / 對齊雷達區間" : ""}`;
+            }
         }
         function seekHimawariFrame(value) {
             if (!himawariFrames.length) return;
             himawariFrameIndex = Math.max(0, Math.min(himawariFrames.length - 1, Number(value) || 0));
             updateHimawariFrame();
+        }
+        function himawariPlaybackIndexes() {
+            if (radarFrames.length) {
+                const radarStart = radarFrames[0].time;
+                const radarEnd = radarFrames[radarFrames.length - 1].time;
+                const indexes = himawariFrames
+                    .map((frame, index) => ({ frame, index }))
+                    .filter((item) => item.frame.epoch >= radarStart && item.frame.epoch <= radarEnd)
+                    .map((item) => item.index);
+                if (indexes.length) return indexes;
+            }
+            return himawariFrames.map((_, index) => index);
         }
         function stopHimawariPlayback() {
             if (himawariTimer) {
@@ -1838,13 +1853,23 @@
                 stopHimawariPlayback();
                 return;
             }
+            const playbackIndexes = himawariPlaybackIndexes();
+            if (!playbackIndexes.length) return;
+            if (!playbackIndexes.includes(himawariFrameIndex)) {
+                himawariFrameIndex = playbackIndexes[0];
+                updateHimawariFrame();
+            }
             const button = document.getElementById("himawari-play-toggle");
             if (button) {
                 button.classList.add("active");
                 button.textContent = "暫停向日葵";
             }
             himawariTimer = setInterval(() => {
-                himawariFrameIndex = (himawariFrameIndex + 1) % himawariFrames.length;
+                const currentPlaybackIndex = playbackIndexes.indexOf(himawariFrameIndex);
+                const nextPlaybackIndex = currentPlaybackIndex >= 0
+                    ? (currentPlaybackIndex + 1) % playbackIndexes.length
+                    : 0;
+                himawariFrameIndex = playbackIndexes[nextPlaybackIndex];
                 updateHimawariFrame();
             }, 850);
         }

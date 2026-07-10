@@ -1296,6 +1296,7 @@
         const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
         const tvEventDataUrl = "../data/tv-monitor/tv-events.json";
         const typhoonTrackDataUrl = "../data/cwa-typhoon-track.geojson";
+        const himawariTimesUrl = "https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json";
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
@@ -1314,6 +1315,7 @@
         let typhoonFrames = [];
         let typhoonFrameIndex = 0;
         let typhoonTimer = null;
+        let himawariLayersLoaded = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1607,6 +1609,45 @@
             if (!control || !control.addOverlay) return;
             control.addOverlay(typhoonTrackLayer, "CWA 颱風路徑與暴風圈");
             typhoonTrackRegistered = true;
+        }
+        function himawariTileUrl(time, layer) {
+            return `https://www.jma.go.jp/bosai/himawari/data/satimg/${time.basetime}/fd/${time.validtime}/${layer}/{z}/{x}/{y}.jpg`;
+        }
+        async function loadHimawariLayers(map) {
+            if (!map || himawariLayersLoaded) return;
+            himawariLayersLoaded = true;
+            try {
+                const control = currentLayerControl();
+                if (!control || !control.addOverlay) {
+                    himawariLayersLoaded = false;
+                    return;
+                }
+                const response = await fetch(himawariTimesUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const times = await response.json();
+                const latest = Array.isArray(times) ? times[times.length - 1] : null;
+                if (!latest?.basetime || !latest?.validtime) throw new Error("No Himawari target time");
+                const options = {
+                    attribution: "Himawari &copy; JMA",
+                    opacity: 0.65,
+                    minZoom: 3,
+                    maxZoom: 11,
+                    maxNativeZoom: 5
+                };
+                const infrared = L.tileLayer(himawariTileUrl(latest, "B13/TBB"), {
+                    ...options,
+                    zIndex: 620
+                });
+                const waterVapor = L.tileLayer(himawariTileUrl(latest, "B08/TBB"), {
+                    ...options,
+                    zIndex: 621
+                });
+                control.addOverlay(infrared, "向日葵紅外線");
+                control.addOverlay(waterVapor, "向日葵水氣");
+            } catch (error) {
+                himawariLayersLoaded = false;
+                console.warn("Himawari satellite layers unavailable", error);
+            }
         }
         async function loadTyphoonTrackLayer(map) {
             if (!map || typhoonTrackLayer) return;
@@ -2022,6 +2063,7 @@
             loadAllRainStationsLayer(map);
             loadTvEventLayer(map);
             loadTyphoonTrackLayer(map);
+            loadHimawariLayers(map);
             const rows = await loadSheetRows();
             liveSheetAllItems = expandSheetRows(rows);
             if (!liveSheetAllItems.length) {

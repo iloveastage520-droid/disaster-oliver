@@ -543,6 +543,9 @@
             background: #f97316;
             box-shadow: 0 2px 8px rgba(124, 45, 18, 0.3);
         }
+        .himawari-fade-layer {
+            transition: opacity 0.45s linear;
+        }
         .tv-ai-event-pin {
             position: relative;
             display: grid;
@@ -1319,8 +1322,8 @@
         let himawariLayersLoaded = false;
         let dynamicLayerControl = null;
         let himawariFrames = [];
-        let himawariInfraredLayer = null;
-        let himawariWaterVaporLayer = null;
+        let himawariInfraredChannel = null;
+        let himawariWaterVaporChannel = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1518,8 +1521,21 @@
             ].filter(Boolean);
             return rows.join("<br>");
         }
+        function typhoonCircleMatchesFrame(circle, center) {
+            const circleProps = circle.properties || {};
+            const centerProps = center.properties || {};
+            if (centerProps.forecastHour && circleProps.forecastHour) {
+                return String(centerProps.forecastHour) === String(circleProps.forecastHour);
+            }
+            if (centerProps.datetime && circleProps.datetime) {
+                return centerProps.datetime === circleProps.datetime;
+            }
+            return false;
+        }
         function buildTyphoonFrames(geojson) {
             const centerKinds = new Set(["analysis-center", "current-center", "forecast-center"]);
+            const circleFeatures = (geojson.features || [])
+                .filter((feature) => String(feature.properties?.kind || "").includes("circle"));
             typhoonFrames = (geojson.features || [])
                 .filter((feature) => centerKinds.has(feature.properties?.kind) && feature.geometry?.type === "Point")
                 .map((feature) => {
@@ -1528,6 +1544,7 @@
                     return {
                         point: [coords[1], coords[0]],
                         properties: p,
+                        circles: circleFeatures.filter((circle) => typhoonCircleMatchesFrame(circle, feature)),
                         label: p.datetime || (p.forecastHour ? `預報 ${p.forecastHour} 小時` : p.label || "")
                     };
                 })
@@ -1568,6 +1585,12 @@
             const frame = typhoonFrames[typhoonFrameIndex];
             const path = typhoonFrames.slice(0, typhoonFrameIndex + 1).map((item) => item.point);
             L.polyline(path, { color: "#991b1b", weight: 4, opacity: 0.9 }).addTo(typhoonPlaybackLayer);
+            (frame.circles || []).forEach((circle) => {
+                L.geoJSON(circle, {
+                    style: typhoonStyle,
+                    onEachFeature: (feature, layer) => layer.bindPopup(typhoonPopup(feature))
+                }).addTo(typhoonPlaybackLayer);
+            });
             L.circleMarker(frame.point, {
                 radius: 9,
                 color: "#ffffff",
@@ -1638,11 +1661,43 @@
                 return Math.abs(frame.epoch - epochSeconds) < Math.abs(nearest.epoch - epochSeconds) ? frame : nearest;
             }, himawariFrames[0]);
         }
+        function createHimawariChannel(latest, layerName, options) {
+            const layers = [
+                L.tileLayer(himawariTileUrl(latest, layerName), { ...options, opacity: options.opacity }),
+                L.tileLayer(himawariTileUrl(latest, layerName), { ...options, opacity: 0 })
+            ];
+            return {
+                group: L.layerGroup(layers),
+                layers,
+                activeIndex: 0,
+                layerName,
+                targetValidtime: latest.validtime
+            };
+        }
+        function fadeHimawariChannel(channel, frame) {
+            if (!channel || channel.targetValidtime === frame.validtime) return;
+            channel.targetValidtime = frame.validtime;
+            const nextIndex = channel.activeIndex ? 0 : 1;
+            const currentLayer = channel.layers[channel.activeIndex];
+            const nextLayer = channel.layers[nextIndex];
+            nextLayer.setOpacity(0);
+            nextLayer.setUrl(himawariTileUrl(frame, channel.layerName));
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                nextLayer.setOpacity(0.65);
+                currentLayer.setOpacity(0);
+                channel.activeIndex = nextIndex;
+            };
+            nextLayer.once("load", finish);
+            window.setTimeout(finish, 550);
+        }
         function updateHimawariFrameForTime(epochSeconds) {
             const frame = nearestHimawariFrame(epochSeconds);
             if (!frame) return;
-            if (himawariInfraredLayer) himawariInfraredLayer.setUrl(himawariTileUrl(frame, "B13/TBB"));
-            if (himawariWaterVaporLayer) himawariWaterVaporLayer.setUrl(himawariTileUrl(frame, "B08/TBB"));
+            fadeHimawariChannel(himawariInfraredChannel, frame);
+            fadeHimawariChannel(himawariWaterVaporChannel, frame);
         }
         async function loadHimawariLayers(map) {
             if (!map || himawariLayersLoaded) return;
@@ -1666,18 +1721,19 @@
                     opacity: 0.65,
                     minZoom: 3,
                     maxZoom: 11,
-                    maxNativeZoom: 5
+                    maxNativeZoom: 5,
+                    className: "himawari-fade-layer"
                 };
-                himawariInfraredLayer = L.tileLayer(himawariTileUrl(latest, "B13/TBB"), {
+                himawariInfraredChannel = createHimawariChannel(latest, "B13/TBB", {
                     ...options,
                     zIndex: 620
                 });
-                himawariWaterVaporLayer = L.tileLayer(himawariTileUrl(latest, "B08/TBB"), {
+                himawariWaterVaporChannel = createHimawariChannel(latest, "B08/TBB", {
                     ...options,
                     zIndex: 621
                 });
-                control.addOverlay(himawariInfraredLayer, "向日葵紅外線");
-                control.addOverlay(himawariWaterVaporLayer, "向日葵水氣");
+                control.addOverlay(himawariInfraredChannel.group, "向日葵紅外線");
+                control.addOverlay(himawariWaterVaporChannel.group, "向日葵水氣");
                 updateHimawariFrameForTime(radarFrames[radarFrameIndex]?.time);
             } catch (error) {
                 himawariLayersLoaded = false;

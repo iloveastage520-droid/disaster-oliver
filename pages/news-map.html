@@ -1160,6 +1160,7 @@
             if (timeline) timeline.value = String(radarFrameIndex);
             const status = document.getElementById("radar-status");
             if (status) status.textContent = `雷達動畫：${formatRadarTime(frame)} (${radarFrameIndex + 1}/${radarFrames.length})`;
+            updateHimawariFrameForTime(frame.time);
         }
         function setupRadarTimeline() {
             const timeline = document.getElementById("radar-timeline");
@@ -1317,6 +1318,9 @@
         let typhoonTimer = null;
         let himawariLayersLoaded = false;
         let dynamicLayerControl = null;
+        let himawariFrames = [];
+        let himawariInfraredLayer = null;
+        let himawariWaterVaporLayer = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1615,6 +1619,31 @@
         function himawariTileUrl(time, layer) {
             return `https://www.jma.go.jp/bosai/himawari/data/satimg/${time.basetime}/fd/${time.validtime}/${layer}/{z}/{x}/{y}.jpg`;
         }
+        function himawariTimeToEpoch(value) {
+            const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+            if (!match) return NaN;
+            return Date.UTC(
+                Number(match[1]),
+                Number(match[2]) - 1,
+                Number(match[3]),
+                Number(match[4]),
+                Number(match[5]),
+                Number(match[6])
+            ) / 1000;
+        }
+        function nearestHimawariFrame(epochSeconds) {
+            if (!himawariFrames.length) return null;
+            if (!Number.isFinite(epochSeconds)) return himawariFrames[himawariFrames.length - 1];
+            return himawariFrames.reduce((nearest, frame) => {
+                return Math.abs(frame.epoch - epochSeconds) < Math.abs(nearest.epoch - epochSeconds) ? frame : nearest;
+            }, himawariFrames[0]);
+        }
+        function updateHimawariFrameForTime(epochSeconds) {
+            const frame = nearestHimawariFrame(epochSeconds);
+            if (!frame) return;
+            if (himawariInfraredLayer) himawariInfraredLayer.setUrl(himawariTileUrl(frame, "B13/TBB"));
+            if (himawariWaterVaporLayer) himawariWaterVaporLayer.setUrl(himawariTileUrl(frame, "B08/TBB"));
+        }
         async function loadHimawariLayers(map) {
             if (!map || himawariLayersLoaded) return;
             himawariLayersLoaded = true;
@@ -1627,7 +1656,10 @@
                 const response = await fetch(himawariTimesUrl, { cache: "no-store" });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const times = await response.json();
-                const latest = Array.isArray(times) ? times[times.length - 1] : null;
+                himawariFrames = (Array.isArray(times) ? times : [])
+                    .map((time) => ({ ...time, epoch: himawariTimeToEpoch(time.validtime) }))
+                    .filter((time) => time.basetime && time.validtime && Number.isFinite(time.epoch));
+                const latest = himawariFrames[himawariFrames.length - 1] || null;
                 if (!latest?.basetime || !latest?.validtime) throw new Error("No Himawari target time");
                 const options = {
                     attribution: "Himawari &copy; JMA",
@@ -1636,16 +1668,17 @@
                     maxZoom: 11,
                     maxNativeZoom: 5
                 };
-                const infrared = L.tileLayer(himawariTileUrl(latest, "B13/TBB"), {
+                himawariInfraredLayer = L.tileLayer(himawariTileUrl(latest, "B13/TBB"), {
                     ...options,
                     zIndex: 620
                 });
-                const waterVapor = L.tileLayer(himawariTileUrl(latest, "B08/TBB"), {
+                himawariWaterVaporLayer = L.tileLayer(himawariTileUrl(latest, "B08/TBB"), {
                     ...options,
                     zIndex: 621
                 });
-                control.addOverlay(infrared, "向日葵紅外線");
-                control.addOverlay(waterVapor, "向日葵水氣");
+                control.addOverlay(himawariInfraredLayer, "向日葵紅外線");
+                control.addOverlay(himawariWaterVaporLayer, "向日葵水氣");
+                updateHimawariFrameForTime(radarFrames[radarFrameIndex]?.time);
             } catch (error) {
                 himawariLayersLoaded = false;
                 console.warn("Himawari satellite layers unavailable", error);

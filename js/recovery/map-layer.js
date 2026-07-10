@@ -167,13 +167,12 @@ function isActive(layer) {
 
 function popupHtml(properties) {
   const title = properties.roadName || properties.roadText || "未命名路段";
-  const dateAndUnit = [properties.reportDate, properties.responsibleUnit].filter(Boolean).join(" / ");
-  const resources = [properties.manpower, properties.equipment].filter(Boolean).join(" / ");
   return `
     <strong>${escapeHtml(title)}</strong><br>
-    ${dateAndUnit ? `${escapeHtml(dateAndUnit)}<br>` : ""}
-    ${resources ? `${escapeHtml(resources)}<br>` : ""}
-    ${escapeHtml(properties.remark || "")}
+    日期：${escapeHtml(properties.reportDate || "--")}<br>
+    出動人力：${escapeHtml(properties.manpower || "--")}<br>
+    出動機具：${escapeHtml(properties.equipment || "--")}<br>
+    備註：${escapeHtml(properties.remark || "--")}
   `;
 }
 

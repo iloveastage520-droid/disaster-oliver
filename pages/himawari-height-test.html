@@ -51,6 +51,11 @@
       gap: 8px;
       margin-top: 10px;
     }
+    .tools {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
     button {
       border: 0;
       border-radius: 4px;
@@ -88,6 +93,9 @@
       <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
       <button id="latest" type="button">最新</button>
     </div>
+    <div class="tools">
+      <button id="radar-toggle" type="button">雷達回波</button>
+    </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
   </section>
   <script>
@@ -112,6 +120,9 @@
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
     const latest = document.getElementById("latest");
+    const radarToggle = document.getElementById("radar-toggle");
+    let radarLayer = null;
+    let radarVisible = false;
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -132,6 +143,52 @@
         hour: "2-digit",
         minute: "2-digit"
       });
+    }
+    function formatRadarTime(epochSeconds) {
+      return new Date(epochSeconds * 1000).toLocaleString("zh-TW", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+    async function ensureRadarLayer() {
+      if (radarLayer) return radarLayer;
+      const response = await fetch("https://api.rainviewer.com/public/weather-maps.json", { cache: "no-store" });
+      const data = await response.json();
+      const frames = data.radar?.past || [];
+      const latestRadar = frames[frames.length - 1];
+      if (!latestRadar) throw new Error("No radar frame");
+      radarLayer = L.tileLayer(`${data.host}${latestRadar.path}/256/{z}/{x}/{y}/2/1_1.png`, {
+        opacity: 0.58,
+        zIndex: 700,
+        maxNativeZoom: 7,
+        maxZoom: 18,
+        attribution: "Radar &copy; RainViewer"
+      });
+      radarLayer._radarTimeLabel = formatRadarTime(latestRadar.time);
+      return radarLayer;
+    }
+    async function toggleRadar() {
+      try {
+        radarToggle.disabled = true;
+        const layer = await ensureRadarLayer();
+        if (radarVisible) {
+          map.removeLayer(layer);
+          radarVisible = false;
+          radarToggle.classList.remove("active");
+        } else {
+          layer.addTo(map);
+          radarVisible = true;
+          radarToggle.classList.add("active");
+          status.textContent = `雷達回波：${layer._radarTimeLabel}`;
+        }
+      } catch (error) {
+        console.error(error);
+        status.textContent = "雷達回波載入失敗";
+      } finally {
+        radarToggle.disabled = false;
+      }
     }
     function tileUrl(frame, product, z, x, y) {
       return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/${product}/${z}/${x}/${y}.jpg`;
@@ -309,6 +366,7 @@
       if (frames.length) drawFrame(frameIndex);
     });
     play.addEventListener("click", togglePlay);
+    radarToggle.addEventListener("click", toggleRadar);
     latest.addEventListener("click", () => {
       stop();
       timeline.min = "0";

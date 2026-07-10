@@ -51,11 +51,6 @@
       gap: 8px;
       margin-top: 10px;
     }
-    .tools {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
     button {
       border: 0;
       border-radius: 4px;
@@ -93,9 +88,6 @@
       <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
       <button id="latest" type="button">最新</button>
     </div>
-    <div class="tools">
-      <button id="forecast" type="button">外推未來</button>
-    </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
   </section>
   <script>
@@ -120,9 +112,6 @@
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
     const latest = document.getElementById("latest");
-    const forecast = document.getElementById("forecast");
-    let forecastFrames = [];
-    let forecastMode = false;
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -200,7 +189,6 @@
       return { size, targetCtx };
     }
     async function renderFrame(frame) {
-      if (frame.forecastCanvas) return frame.forecastCanvas;
       const offscreen = document.createElement("canvas");
       const { targetCtx } = sizeCanvas(offscreen);
       const tiles = visibleTiles();
@@ -226,92 +214,20 @@
       targetCtx.globalAlpha = 1;
       return offscreen;
     }
-    function imageDataFor(canvasLike) {
-      const dataCanvas = document.createElement("canvas");
-      dataCanvas.width = 96;
-      dataCanvas.height = 72;
-      const dataCtx = dataCanvas.getContext("2d");
-      dataCtx.drawImage(canvasLike, 0, 0, dataCanvas.width, dataCanvas.height);
-      return dataCtx.getImageData(0, 0, dataCanvas.width, dataCanvas.height);
-    }
-    function estimateShift(previousCanvas, latestCanvas) {
-      const previous = imageDataFor(previousCanvas);
-      const latestImage = imageDataFor(latestCanvas);
-      let best = { dx: 0, dy: 0, score: Number.POSITIVE_INFINITY };
-      for (let dy = -4; dy <= 4; dy++) {
-        for (let dx = -4; dx <= 4; dx++) {
-          let score = 0;
-          let count = 0;
-          for (let y = 6; y < previous.height - 6; y += 3) {
-            for (let x = 6; x < previous.width - 6; x += 3) {
-              const x2 = x + dx;
-              const y2 = y + dy;
-              if (x2 < 0 || x2 >= latestImage.width || y2 < 0 || y2 >= latestImage.height) continue;
-              const i1 = (y * previous.width + x) * 4;
-              const i2 = (y2 * latestImage.width + x2) * 4;
-              const v1 = previous.data[i1] + previous.data[i1 + 1] + previous.data[i1 + 2];
-              const v2 = latestImage.data[i2] + latestImage.data[i2 + 1] + latestImage.data[i2 + 2];
-              score += Math.abs(v2 - v1);
-              count++;
-            }
-          }
-          if (count) score /= count;
-          if (score < best.score) best = { dx, dy, score };
-        }
-      }
-      return {
-        dx: best.dx * (latestCanvas.width / 96),
-        dy: best.dy * (latestCanvas.height / 72)
-      };
-    }
-    function shiftedForecastCanvas(sourceCanvas, shift, step) {
-      const futureCanvas = document.createElement("canvas");
-      futureCanvas.width = sourceCanvas.width;
-      futureCanvas.height = sourceCanvas.height;
-      futureCanvas.style.width = sourceCanvas.style.width;
-      futureCanvas.style.height = sourceCanvas.style.height;
-      const futureCtx = futureCanvas.getContext("2d");
-      futureCtx.globalAlpha = Math.max(0.58, 0.9 - step * 0.1);
-      futureCtx.drawImage(sourceCanvas, shift.dx * step, shift.dy * step);
-      futureCtx.globalAlpha = 0.24;
-      futureCtx.drawImage(sourceCanvas, shift.dx * (step - 1), shift.dy * (step - 1));
-      futureCtx.globalAlpha = 1;
-      return futureCanvas;
-    }
-    async function buildForecastFrames() {
-      if (frames.length < 2) return [];
-      status.textContent = "建立未來外推影像中...";
-      const previousCanvas = await renderFrame(frames[frames.length - 2]);
-      const latestCanvas = await renderFrame(frames[frames.length - 1]);
-      let shift = { dx: -28, dy: 0 };
-      try {
-        shift = estimateShift(previousCanvas, latestCanvas);
-      } catch (error) {
-        console.warn("Canvas pixel estimation unavailable; using fallback shift.", error);
-      }
-      const latestFrame = frames[frames.length - 1];
-      return [1, 2, 3].map((step) => ({
-        basetime: latestFrame.basetime,
-        validtime: `${latestFrame.validtime}-forecast-${step}`,
-        epoch: latestFrame.epoch + step * 10 * 60 * 1000,
-        forecastCanvas: shiftedForecastCanvas(latestCanvas, shift, step)
-      }));
-    }
     async function drawFrame(index) {
-      const activeFrames = forecastMode ? forecastFrames : frames;
-      if (!activeFrames.length) return;
+      if (!frames.length) return;
       const requestId = renderRequestId + 1;
       renderRequestId = requestId;
-      frameIndex = Math.max(0, Math.min(activeFrames.length - 1, index));
-      const frame = activeFrames[frameIndex];
+      frameIndex = Math.max(0, Math.min(frames.length - 1, index));
+      const frame = frames[frameIndex];
       timeline.value = String(frameIndex);
       const bitmap = await renderFrame(frame);
       if (renderRequestId !== requestId) return;
       sizeCanvas(canvas);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(bitmap, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
-      status.textContent = `${forecastMode ? "外推未來" : "Canvas 厚度感"}：${formatTime(frame)} (${frameIndex + 1}/${activeFrames.length})`;
-      if (!forecastMode) preloadFrame(frameIndex + 1);
+      status.textContent = `Canvas 厚度感：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
+      preloadFrame(frameIndex + 1);
     }
     function preloadFrame(index) {
       if (!frames.length) return Promise.resolve();
@@ -345,14 +261,12 @@
     }
     function queueNextFrame() {
       timer = window.setTimeout(async () => {
-        const activeFrames = forecastMode ? forecastFrames : frames;
-        await drawFrame((frameIndex + 1) % activeFrames.length);
+        await drawFrame((frameIndex + 1) % frames.length);
         if (timer) queueNextFrame();
       }, 360);
     }
     async function togglePlay() {
-      const activeFrames = forecastMode ? forecastFrames : frames;
-      if (!activeFrames.length) return;
+      if (!frames.length) return;
       if (timer) {
         stop();
         return;
@@ -362,7 +276,7 @@
       play.disabled = true;
       play.textContent = "預載中";
       status.textContent = "預載接下來 5 格影像中...";
-      if (!forecastMode) await preloadUpcomingFrames(5);
+      await preloadUpcomingFrames(5);
       if (playRequestId !== requestId) return;
       play.disabled = false;
       play.classList.add("active");
@@ -397,29 +311,9 @@
     play.addEventListener("click", togglePlay);
     latest.addEventListener("click", () => {
       stop();
-      forecastMode = false;
-      forecast.classList.remove("active");
       timeline.min = "0";
       timeline.max = String(frames.length - 1);
       setFrame(frames.length - 1);
-    });
-    forecast.addEventListener("click", async () => {
-      stop();
-      forecast.disabled = true;
-      if (!forecastFrames.length) forecastFrames = await buildForecastFrames();
-      forecast.disabled = false;
-      if (!forecastFrames.length) return;
-      forecastMode = !forecastMode;
-      forecast.classList.toggle("active", forecastMode);
-      if (forecastMode) {
-        timeline.min = "0";
-        timeline.max = String(forecastFrames.length - 1);
-        await drawFrame(0);
-      } else {
-        timeline.min = "0";
-        timeline.max = String(frames.length - 1);
-        await drawFrame(frames.length - 1);
-      }
     });
     init().catch((error) => {
       console.error(error);

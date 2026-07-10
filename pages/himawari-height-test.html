@@ -15,16 +15,23 @@
       background: #0f172a;
     }
     #map { position: absolute; inset: 0; }
-    #himawari-canvas {
+    #himawari-canvas,
+    #radar-canvas {
       position: absolute;
       inset: 0;
-      z-index: 500;
       width: 100%;
       height: 100%;
       pointer-events: none;
+    }
+    #himawari-canvas {
+      z-index: 500;
       mix-blend-mode: screen;
       filter: contrast(2.05) brightness(1.05) saturate(1.7) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.6));
       opacity: 0.88;
+    }
+    #radar-canvas {
+      z-index: 650;
+      opacity: 0.74;
     }
     .panel {
       position: fixed;
@@ -86,6 +93,7 @@
 <body>
   <div id="map"></div>
   <canvas id="himawari-canvas"></canvas>
+  <canvas id="radar-canvas"></canvas>
   <section class="panel">
     <h1>向日葵雲頂高度感測試</h1>
     <div class="controls">
@@ -95,6 +103,11 @@
     </div>
     <div class="tools">
       <button id="radar-toggle" type="button">雷達回波</button>
+    </div>
+    <div class="controls">
+      <button id="radar-play" type="button">播放雷達</button>
+      <input id="radar-timeline" type="range" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" disabled>
+      <button id="radar-latest" type="button">雷達最新</button>
     </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
   </section>
@@ -114,6 +127,8 @@
     let renderRequestId = 0;
     const canvas = document.getElementById("himawari-canvas");
     const ctx = canvas.getContext("2d");
+    const radarCanvas = document.getElementById("radar-canvas");
+    const radarCtx = radarCanvas.getContext("2d");
     const tileZoom = 5;
     const frameCache = new Map();
     const status = document.getElementById("status");
@@ -121,12 +136,15 @@
     const play = document.getElementById("play");
     const latest = document.getElementById("latest");
     const radarToggle = document.getElementById("radar-toggle");
-    let radarLayer = null;
+    const radarPlay = document.getElementById("radar-play");
+    const radarTimeline = document.getElementById("radar-timeline");
+    const radarLatest = document.getElementById("radar-latest");
     let radarVisible = false;
     let radarFrames = [];
     let radarFrameIndex = 0;
     let radarTimer = null;
     let radarHost = "";
+    const radarCache = new Map();
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -156,63 +174,117 @@
         minute: "2-digit"
       });
     }
-    function radarTileUrl(frame) {
-      return `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+    function radarTileUrl(frame, tile) {
+      return `${radarHost}${frame.path}/256/${tile.z}/${tile.x}/${tile.y}/2/1_1.png`;
     }
-    function updateRadarFrame() {
-      if (!radarLayer || !radarFrames.length) return;
-      const frame = radarFrames[radarFrameIndex];
-      radarLayer.setUrl(radarTileUrl(frame));
-      radarLayer._radarTimeLabel = formatRadarTime(frame.time);
-      if (radarVisible) status.textContent = `雷達回波：${radarLayer._radarTimeLabel}`;
-    }
-    function stopRadarAnimation() {
-      if (radarTimer) {
-        clearInterval(radarTimer);
-        radarTimer = null;
-      }
-    }
-    function startRadarAnimation() {
-      stopRadarAnimation();
-      radarTimer = setInterval(() => {
-        radarFrameIndex = (radarFrameIndex + 1) % radarFrames.length;
-        updateRadarFrame();
-      }, 550);
-    }
-    async function ensureRadarLayer() {
-      if (radarLayer) return radarLayer;
+    async function ensureRadarFrames() {
+      if (radarFrames.length) return;
       const response = await fetch("https://api.rainviewer.com/public/weather-maps.json", { cache: "no-store" });
       const data = await response.json();
       radarFrames = (data.radar?.past || []).slice(-12);
       radarHost = data.host;
       radarFrameIndex = Math.max(0, radarFrames.length - 1);
-      const latestRadar = radarFrames[radarFrameIndex];
-      if (!latestRadar) throw new Error("No radar frame");
-      radarLayer = L.tileLayer(radarTileUrl(latestRadar), {
-        opacity: 0.58,
-        zIndex: 700,
-        maxNativeZoom: 7,
-        maxZoom: 18,
-        attribution: "Radar &copy; RainViewer"
+      if (!radarFrames.length) throw new Error("No radar frame");
+      radarTimeline.min = "0";
+      radarTimeline.max = String(radarFrames.length - 1);
+      radarTimeline.value = String(radarFrameIndex);
+      radarTimeline.disabled = false;
+    }
+    function loadRadarTile(frame, tile) {
+      const key = `${frame.time}:${tile.z}:${tile.x}:${tile.y}`;
+      if (radarCache.has(key)) return Promise.resolve(radarCache.get(key));
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          radarCache.set(key, img);
+          resolve(img);
+        };
+        img.onerror = () => resolve(null);
+        img.src = radarTileUrl(frame, tile);
       });
-      radarLayer._radarTimeLabel = formatRadarTime(latestRadar.time);
-      return radarLayer;
+    }
+    async function renderRadarFrame(frame) {
+      const offscreen = document.createElement("canvas");
+      const { targetCtx } = sizeCanvas(offscreen);
+      const tiles = visibleTiles();
+      targetCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      targetCtx.globalAlpha = 0.72;
+      for (const tile of tiles) {
+        const img = await loadRadarTile(frame, tile);
+        if (!img) continue;
+        const west = tileXToLng(tile.x, tile.z);
+        const east = tileXToLng(tile.x + 1, tile.z);
+        const north = tileYToLat(tile.y, tile.z);
+        const south = tileYToLat(tile.y + 1, tile.z);
+        const topLeft = map.latLngToContainerPoint([north, west]);
+        const bottomRight = map.latLngToContainerPoint([south, east]);
+        targetCtx.drawImage(img, topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+      }
+      targetCtx.globalAlpha = 1;
+      return offscreen;
+    }
+    async function drawRadarFrame(index) {
+      if (!radarVisible || !radarFrames.length) return;
+      radarFrameIndex = Math.max(0, Math.min(radarFrames.length - 1, index));
+      const frame = radarFrames[radarFrameIndex];
+      radarTimeline.value = String(radarFrameIndex);
+      const bitmap = await renderRadarFrame(frame);
+      sizeCanvas(radarCanvas);
+      radarCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+      radarCtx.drawImage(bitmap, 0, 0, radarCanvas.width / (window.devicePixelRatio || 1), radarCanvas.height / (window.devicePixelRatio || 1));
+      status.textContent = `雷達回波：${formatRadarTime(frame.time)} (${radarFrameIndex + 1}/${radarFrames.length})`;
+      preloadRadarFrame(radarFrameIndex + 1);
+    }
+    function preloadRadarFrame(index) {
+      if (!radarFrames.length) return Promise.resolve();
+      const frame = radarFrames[(index + radarFrames.length) % radarFrames.length];
+      return Promise.all(visibleTiles().map((tile) => loadRadarTile(frame, tile)));
+    }
+    function stopRadarAnimation() {
+      if (radarTimer) {
+        clearTimeout(radarTimer);
+        radarTimer = null;
+      }
+      radarPlay.classList.remove("active");
+      radarPlay.textContent = "播放雷達";
+    }
+    function queueNextRadarFrame() {
+      radarTimer = window.setTimeout(async () => {
+        await drawRadarFrame((radarFrameIndex + 1) % radarFrames.length);
+        if (radarTimer) queueNextRadarFrame();
+      }, 500);
+    }
+    function startRadarAnimation() {
+      stopRadarAnimation();
+      radarPlay.classList.add("active");
+      radarPlay.textContent = "暫停雷達";
+      queueNextRadarFrame();
+    }
+    async function toggleRadarPlayback() {
+      if (!radarVisible) {
+        await toggleRadar();
+        return;
+      }
+      if (radarTimer) {
+        stopRadarAnimation();
+      } else {
+        startRadarAnimation();
+      }
     }
     async function toggleRadar() {
       try {
         radarToggle.disabled = true;
-        const layer = await ensureRadarLayer();
+        await ensureRadarFrames();
         if (radarVisible) {
           stopRadarAnimation();
-          map.removeLayer(layer);
           radarVisible = false;
           radarToggle.classList.remove("active");
+          radarCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
         } else {
-          layer.addTo(map);
           radarVisible = true;
           radarToggle.classList.add("active");
+          await drawRadarFrame(radarFrameIndex);
           startRadarAnimation();
-          status.textContent = `雷達回波：${layer._radarTimeLabel}`;
         }
       } catch (error) {
         console.error(error);
@@ -393,11 +465,27 @@
       await drawFrame(frameIndex);
     }
     timeline.addEventListener("input", () => setFrame(Number(timeline.value)));
+    radarTimeline.addEventListener("input", () => {
+      stopRadarAnimation();
+      if (radarVisible) drawRadarFrame(Number(radarTimeline.value));
+    });
     map.on("moveend zoomend resize", () => {
       if (frames.length) drawFrame(frameIndex);
+      if (radarVisible) drawRadarFrame(radarFrameIndex);
     });
     play.addEventListener("click", togglePlay);
     radarToggle.addEventListener("click", toggleRadar);
+    radarPlay.addEventListener("click", toggleRadarPlayback);
+    radarLatest.addEventListener("click", async () => {
+      await ensureRadarFrames();
+      stopRadarAnimation();
+      radarFrameIndex = Math.max(0, radarFrames.length - 1);
+      if (!radarVisible) {
+        radarVisible = true;
+        radarToggle.classList.add("active");
+      }
+      await drawRadarFrame(radarFrameIndex);
+    });
     latest.addEventListener("click", () => {
       stop();
       timeline.min = "0";

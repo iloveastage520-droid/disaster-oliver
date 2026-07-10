@@ -98,11 +98,12 @@
     </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
     <div class="note">
-      這頁用紅外線亮溫加水氣影像做「高度感」測試：雲頂越冷通常越高，水氣疊層用來增加厚雲和高層雲的層次。這不是正式雲頂高度數值圖層。
+      這頁用最近 12 小時的紅外線亮溫加水氣影像做「高度感」測試：雲頂越冷通常越高，水氣疊層用來增加厚雲和高層雲的層次。這不是正式雲頂高度數值圖層。
     </div>
   </section>
   <script>
     const timesUrl = "https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json";
+    const historyHours = 12;
     const map = L.map("map", { center: [23.8, 121.1], zoom: 5, zoomControl: true });
     L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
       maxZoom: 20,
@@ -258,6 +259,11 @@
       frames = (Array.isArray(times) ? times : [])
         .map((frame) => ({ ...frame, epoch: parseJmaTime(frame.validtime) }))
         .filter((frame) => frame.basetime && frame.validtime && Number.isFinite(frame.epoch));
+      const latestEpoch = frames[frames.length - 1]?.epoch;
+      if (Number.isFinite(latestEpoch)) {
+        const startEpoch = latestEpoch - historyHours * 60 * 60 * 1000;
+        frames = frames.filter((frame) => frame.epoch >= startEpoch);
+      }
       if (!frames.length) {
         status.textContent = "向日葵資料目前無法載入";
         return;

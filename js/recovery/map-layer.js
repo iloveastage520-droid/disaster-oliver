@@ -166,21 +166,15 @@ function isActive(layer) {
 }
 
 function popupHtml(properties) {
+  const title = properties.roadName || properties.roadText || "未命名路段";
+  const dateAndUnit = [properties.reportDate, properties.responsibleUnit].filter(Boolean).join(" / ");
+  const resources = [properties.manpower, properties.equipment].filter(Boolean).join(" / ");
   return `
-    <strong>${escapeHtml(properties.roadName)}</strong><br>
-    ${escapeHtml(properties.responsibleUnit)} / ${escapeHtml(properties.contractor)}<br>
-    狀態：${escapeHtml(statusLabel(properties.status))}（${properties.completionPercentage}%）<br>
-    預計完成：${escapeHtml(properties.estimatedFinishTime)}<br>
+    <strong>${escapeHtml(title)}</strong><br>
+    ${dateAndUnit ? `${escapeHtml(dateAndUnit)}<br>` : ""}
+    ${resources ? `${escapeHtml(resources)}<br>` : ""}
     ${escapeHtml(properties.remark || "")}
   `;
-}
-
-function statusLabel(status) {
-  return {
-    Completed: "已完成",
-    "In Progress": "處理中",
-    "Not Started": "未開始"
-  }[status] || "未開始";
 }
 
 function escapeHtml(value) {

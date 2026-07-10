@@ -25,14 +25,14 @@ export function renderDashboard(features, statistics) {
 }
 
 export function renderSelectedRoad(properties) {
-  setText("#selected-road-name", properties.roadName || "未命名路段");
+  setText("#selected-road-name", properties.roadName || properties.roadText || "未命名路段");
   renderSelectedPhoto(properties);
 
   const rows = [
     ["權責單位", unitText(properties)],
-    ["狀態", statusLabel(properties.status)],
-    ["完成度", `${properties.completionPercentage}%`],
-    ["預計完成", properties.estimatedFinishTime],
+    ["主要工作", mainWorkText(properties)],
+    ["出勤人力", properties.manpower || "--"],
+    ["出勤機具", properties.equipment || "--"],
     ["更新時間", properties.lastUpdate || "--"],
     ["備註", properties.remark || "--"]
   ];

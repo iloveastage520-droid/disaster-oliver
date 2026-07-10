@@ -369,6 +369,11 @@
         <input type="range" id="radar-timeline" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" oninput="seekRadarFrame(this.value)">
         <span id="radar-status">未載入</span>
     </div>
+    <div id="typhoon-control">
+        <button type="button" id="typhoon-play-toggle" onclick="toggleTyphoonPlayback()">播放颱風</button>
+        <input type="range" id="typhoon-timeline" min="0" max="0" value="0" step="1" aria-label="颱風時間軸" oninput="seekTyphoonFrame(this.value)">
+        <span id="typhoon-status">颱風路徑未載入</span>
+    </div>
     <style>
         #sidebar {
             position: fixed;
@@ -404,6 +409,7 @@
         }
         body.sidebar-collapsed #sidebar-toggle {
             left: 12px;
+            top: 86px;
         }
         #sidebar h3 { margin: 0 0 8px; font-size: 20px; }
         #sidebar h4 { margin: 16px 0 8px; font-size: 16px; }
@@ -694,9 +700,29 @@
         body.sidebar-collapsed #radar-control {
             left: 52px;
         }
+        #typhoon-control {
+            position: fixed;
+            left: 426px;
+            bottom: 184px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #bbb;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            transition: left 0.22s ease;
+        }
+        body.sidebar-collapsed #typhoon-control {
+            left: 52px;
+        }
         #radar-toggle,
         #rain-nowcast-toggle,
-        #tv-event-toggle {
+        #tv-event-toggle,
+        #typhoon-play-toggle {
             border: 0;
             border-radius: 4px;
             background: #1f6feb;
@@ -714,14 +740,24 @@
         #tv-event-toggle { background: #64748b; }
         #tv-event-toggle.active { background: #e11d48; }
         #tv-event-toggle:disabled { background: #888; cursor: wait; }
+        #typhoon-play-toggle { background: #dc2626; }
+        #typhoon-play-toggle.active { background: #b91c1c; }
         #radar-timeline {
             width: 180px;
             accent-color: #1f6feb;
+        }
+        #typhoon-timeline {
+            width: 220px;
+            accent-color: #dc2626;
+        }
+        #typhoon-timeline:disabled {
+            opacity: 0.45;
         }
         #radar-timeline:disabled {
             opacity: 0.45;
         }
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
+        #typhoon-status { color: #333; font-size: 12px; white-space: nowrap; }
         #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; transition: left 0.22s ease; }
         body.sidebar-collapsed #map { left: 0; }
         .news-card.active,
@@ -934,7 +970,18 @@
                 max-width: none;
                 flex-wrap: wrap;
             }
+            #typhoon-control {
+                left: 10px;
+                right: 10px;
+                bottom: calc(32vh + 164px);
+                max-width: none;
+                flex-wrap: wrap;
+            }
             #radar-timeline {
+                flex: 1 1 180px;
+                min-width: 140px;
+            }
+            #typhoon-timeline {
                 flex: 1 1 180px;
                 min-width: 140px;
             }
@@ -947,6 +994,9 @@
             }
             body.sidebar-collapsed #radar-control {
                 bottom: 114px;
+            }
+            body.sidebar-collapsed #typhoon-control {
+                bottom: 164px;
             }
             .tv-ai-event-legend {
                 right: 10px;
@@ -968,12 +1018,16 @@
             body.sidebar-collapsed #radar-control {
                 bottom: 104px;
             }
+            body.sidebar-collapsed #typhoon-control {
+                bottom: 154px;
+            }
             #timeline { height: 96px; }
             .timeline-item {
                 flex-basis: 200px;
                 height: 58px;
             }
             #radar-control { bottom: calc(34vh + 106px); }
+            #typhoon-control { bottom: calc(34vh + 156px); }
             #map { bottom: calc(34vh + 96px); }
             body.sidebar-collapsed #map { bottom: 96px; }
             .tv-ai-event-legend {
@@ -1256,6 +1310,10 @@
         let typhoonTrackLayer = null;
         let typhoonTrackVisible = true;
         let typhoonTrackRegistered = false;
+        let typhoonPlaybackLayer = null;
+        let typhoonFrames = [];
+        let typhoonFrameIndex = 0;
+        let typhoonTimer = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1452,6 +1510,97 @@
             ].filter(Boolean);
             return rows.join("<br>");
         }
+        function buildTyphoonFrames(geojson) {
+            const centerKinds = new Set(["analysis-center", "current-center", "forecast-center"]);
+            typhoonFrames = (geojson.features || [])
+                .filter((feature) => centerKinds.has(feature.properties?.kind) && feature.geometry?.type === "Point")
+                .map((feature) => {
+                    const p = feature.properties || {};
+                    const coords = feature.geometry.coordinates;
+                    return {
+                        point: [coords[1], coords[0]],
+                        properties: p,
+                        label: p.datetime || (p.forecastHour ? `預報 ${p.forecastHour} 小時` : p.label || "")
+                    };
+                })
+                .filter((frame) => Number.isFinite(frame.point[0]) && Number.isFinite(frame.point[1]));
+            typhoonFrameIndex = Math.min(typhoonFrameIndex, Math.max(0, typhoonFrames.length - 1));
+            setupTyphoonTimeline();
+            updateTyphoonFrame();
+        }
+        function setupTyphoonTimeline() {
+            const timeline = document.getElementById("typhoon-timeline");
+            if (!timeline) return;
+            timeline.disabled = !typhoonFrames.length;
+            timeline.min = "0";
+            timeline.max = String(Math.max(0, typhoonFrames.length - 1));
+            timeline.value = String(typhoonFrameIndex);
+        }
+        function typhoonFramePopup(frame) {
+            const p = frame.properties || {};
+            return [
+                `<b>${liveEscape(p.label || p.intlName || "颱風位置")}</b>`,
+                p.datetime ? `時間：${liveEscape(p.datetime)}` : "",
+                p.forecastHour ? `預報：${liveEscape(p.forecastHour)} 小時` : "",
+                p.maxWindSpeed_ms ? `最大風速：${liveEscape(p.maxWindSpeed_ms)} m/s` : "",
+                p.pressure_hpa ? `中心氣壓：${liveEscape(p.pressure_hpa)} hPa` : ""
+            ].filter(Boolean).join("<br>");
+        }
+        function updateTyphoonFrame() {
+            const map = currentLeafletMap();
+            const timeline = document.getElementById("typhoon-timeline");
+            const status = document.getElementById("typhoon-status");
+            if (timeline) timeline.value = String(typhoonFrameIndex);
+            if (!map || !typhoonFrames.length) {
+                if (status) status.textContent = "颱風路徑未載入";
+                return;
+            }
+            if (!typhoonPlaybackLayer) typhoonPlaybackLayer = L.layerGroup().addTo(map);
+            typhoonPlaybackLayer.clearLayers();
+            const frame = typhoonFrames[typhoonFrameIndex];
+            const path = typhoonFrames.slice(0, typhoonFrameIndex + 1).map((item) => item.point);
+            L.polyline(path, { color: "#991b1b", weight: 4, opacity: 0.9 }).addTo(typhoonPlaybackLayer);
+            L.circleMarker(frame.point, {
+                radius: 9,
+                color: "#ffffff",
+                weight: 2,
+                fillColor: frame.properties.kind === "forecast-center" ? "#f97316" : "#dc2626",
+                fillOpacity: 0.95
+            }).bindPopup(typhoonFramePopup(frame)).addTo(typhoonPlaybackLayer);
+            if (status) status.textContent = `${frame.label || "颱風位置"} (${typhoonFrameIndex + 1}/${typhoonFrames.length})`;
+        }
+        function seekTyphoonFrame(value) {
+            if (!typhoonFrames.length) return;
+            typhoonFrameIndex = Math.max(0, Math.min(typhoonFrames.length - 1, Number(value) || 0));
+            updateTyphoonFrame();
+        }
+        function stopTyphoonPlayback() {
+            if (typhoonTimer) {
+                clearInterval(typhoonTimer);
+                typhoonTimer = null;
+            }
+            const button = document.getElementById("typhoon-play-toggle");
+            if (button) {
+                button.classList.remove("active");
+                button.textContent = "播放颱風";
+            }
+        }
+        function toggleTyphoonPlayback() {
+            if (!typhoonFrames.length) return;
+            if (typhoonTimer) {
+                stopTyphoonPlayback();
+                return;
+            }
+            const button = document.getElementById("typhoon-play-toggle");
+            if (button) {
+                button.classList.add("active");
+                button.textContent = "暫停颱風";
+            }
+            typhoonTimer = setInterval(() => {
+                typhoonFrameIndex = (typhoonFrameIndex + 1) % typhoonFrames.length;
+                updateTyphoonFrame();
+            }, 850);
+        }
         function registerTyphoonTrackOverlay() {
             if (typhoonTrackRegistered || !typhoonTrackLayer) return;
             const control = currentLayerControl();
@@ -1465,7 +1614,9 @@
                 const response = await fetch(typhoonTrackDataUrl, { cache: "no-store" });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const geojson = await response.json();
+                buildTyphoonFrames(geojson);
                 typhoonTrackLayer = L.geoJSON(geojson, {
+                    filter: (feature) => feature.properties?.kind !== "analysis-center",
                     style: typhoonStyle,
                     pointToLayer: (feature, latlng) => L.marker(latlng, {
                         icon: typhoonPointIcon(feature),

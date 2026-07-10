@@ -1,7 +1,7 @@
 {
   "type": "FeatureCollection",
   "name": "CWA_active_typhoon_track",
-  "generated": "2026-07-10T10:55:46.529Z",
+  "generated": "2026-07-10T11:04:06.895Z",
   "source": "CWA W-C0034-005",
   "features": [
     {
@@ -10,7 +10,7 @@
         "kind": "analysis-track",
         "name": "巴威",
         "intlName": "BAVI",
-        "label": "巴威 BAVI 過去路徑"
+        "label": "BAVI 過去路徑"
       },
       "geometry": {
         "type": "LineString",
@@ -229,10 +229,1050 @@
     {
       "type": "Feature",
       "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 0,
+        "datetime": "2026-07-01T08:00:00+08:00",
+        "maxWindSpeed_ms": "15",
+        "pressure_hpa": "1002",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          163.5,
+          8.8
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 1,
+        "datetime": "2026-07-01T14:00:00+08:00",
+        "maxWindSpeed_ms": "15",
+        "pressure_hpa": "1002",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          162,
+          9.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 2,
+        "datetime": "2026-07-01T20:00:00+08:00",
+        "maxWindSpeed_ms": "15",
+        "pressure_hpa": "1000",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          161.5,
+          10.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 3,
+        "datetime": "2026-07-02T02:00:00+08:00",
+        "maxWindSpeed_ms": "15",
+        "pressure_hpa": "1000",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          160.8,
+          10.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 4,
+        "datetime": "2026-07-02T08:00:00+08:00",
+        "maxWindSpeed_ms": "18",
+        "pressure_hpa": "998",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          160.1,
+          11.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 5,
+        "datetime": "2026-07-02T14:00:00+08:00",
+        "maxWindSpeed_ms": "25",
+        "pressure_hpa": "985",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          158.8,
+          11.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 6,
+        "datetime": "2026-07-02T20:00:00+08:00",
+        "maxWindSpeed_ms": "28",
+        "pressure_hpa": "980",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          157.9,
+          12
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 7,
+        "datetime": "2026-07-03T02:00:00+08:00",
+        "maxWindSpeed_ms": "33",
+        "pressure_hpa": "970",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          156.7,
+          12.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 8,
+        "datetime": "2026-07-03T08:00:00+08:00",
+        "maxWindSpeed_ms": "38",
+        "pressure_hpa": "960",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          155.5,
+          12.8
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 9,
+        "datetime": "2026-07-03T14:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          154.2,
+          12.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 10,
+        "datetime": "2026-07-03T20:00:00+08:00",
+        "maxWindSpeed_ms": "51",
+        "pressure_hpa": "925",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          153.1,
+          12.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 11,
+        "datetime": "2026-07-04T02:00:00+08:00",
+        "maxWindSpeed_ms": "53",
+        "pressure_hpa": "920",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          152.3,
+          12.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 12,
+        "datetime": "2026-07-04T08:00:00+08:00",
+        "maxWindSpeed_ms": "53",
+        "pressure_hpa": "915",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          151.4,
+          12.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 13,
+        "datetime": "2026-07-04T14:00:00+08:00",
+        "maxWindSpeed_ms": "53",
+        "pressure_hpa": "915",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          151,
+          12.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 14,
+        "datetime": "2026-07-04T20:00:00+08:00",
+        "maxWindSpeed_ms": "55",
+        "pressure_hpa": "910",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          150.3,
+          12.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 15,
+        "datetime": "2026-07-05T02:00:00+08:00",
+        "maxWindSpeed_ms": "55",
+        "pressure_hpa": "910",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          149.5,
+          12.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 16,
+        "datetime": "2026-07-05T08:00:00+08:00",
+        "maxWindSpeed_ms": "55",
+        "pressure_hpa": "910",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          148.9,
+          12.8
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 17,
+        "datetime": "2026-07-05T14:00:00+08:00",
+        "maxWindSpeed_ms": "55",
+        "pressure_hpa": "910",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          148.1,
+          13.4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 18,
+        "datetime": "2026-07-05T20:00:00+08:00",
+        "maxWindSpeed_ms": "58",
+        "pressure_hpa": "900",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          147,
+          13.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 19,
+        "datetime": "2026-07-06T02:00:00+08:00",
+        "maxWindSpeed_ms": "58",
+        "pressure_hpa": "900",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          146.1,
+          14
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 20,
+        "datetime": "2026-07-06T08:00:00+08:00",
+        "maxWindSpeed_ms": "58",
+        "pressure_hpa": "900",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          145,
+          14.3
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 21,
+        "datetime": "2026-07-06T14:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          144,
+          14.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 22,
+        "datetime": "2026-07-06T20:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          142.8,
+          15.4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 23,
+        "datetime": "2026-07-07T02:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          141.1,
+          15.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 24,
+        "datetime": "2026-07-07T08:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          139.9,
+          16.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 25,
+        "datetime": "2026-07-07T14:00:00+08:00",
+        "maxWindSpeed_ms": "58",
+        "pressure_hpa": "900",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.4,
+          16.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 26,
+        "datetime": "2026-07-07T20:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          136.6,
+          16.8
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 27,
+        "datetime": "2026-07-08T02:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.2,
+          16.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 28,
+        "datetime": "2026-07-08T08:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          134.1,
+          16.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 29,
+        "datetime": "2026-07-08T14:00:00+08:00",
+        "maxWindSpeed_ms": "60",
+        "pressure_hpa": "895",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          132.9,
+          16.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 30,
+        "datetime": "2026-07-08T20:00:00+08:00",
+        "maxWindSpeed_ms": "58",
+        "pressure_hpa": "900",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          131.9,
+          17.3
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 31,
+        "datetime": "2026-07-09T02:00:00+08:00",
+        "maxWindSpeed_ms": "53",
+        "pressure_hpa": "915",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          130.8,
+          17.6
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 32,
+        "datetime": "2026-07-09T08:00:00+08:00",
+        "maxWindSpeed_ms": "51",
+        "pressure_hpa": "925",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          129.8,
+          18.4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 33,
+        "datetime": "2026-07-09T14:00:00+08:00",
+        "maxWindSpeed_ms": "51",
+        "pressure_hpa": "925",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          129,
+          18.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 34,
+        "datetime": "2026-07-09T17:00:00+08:00",
+        "maxWindSpeed_ms": "51",
+        "pressure_hpa": "925",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          128.6,
+          19
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 35,
+        "datetime": "2026-07-09T20:00:00+08:00",
+        "maxWindSpeed_ms": "51",
+        "pressure_hpa": "925",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          128.6,
+          19.2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 36,
+        "datetime": "2026-07-09T23:00:00+08:00",
+        "maxWindSpeed_ms": "48",
+        "pressure_hpa": "930",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          128.5,
+          19.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 37,
+        "datetime": "2026-07-10T02:00:00+08:00",
+        "maxWindSpeed_ms": "48",
+        "pressure_hpa": "930",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          128.2,
+          19.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 38,
+        "datetime": "2026-07-10T05:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.9,
+          20.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 39,
+        "datetime": "2026-07-10T06:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.7,
+          20.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 40,
+        "datetime": "2026-07-10T07:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.6,
+          20.8
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 41,
+        "datetime": "2026-07-10T08:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.5,
+          20.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 42,
+        "datetime": "2026-07-10T09:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.4,
+          21
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 43,
+        "datetime": "2026-07-10T10:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.4,
+          21.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 44,
+        "datetime": "2026-07-10T11:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.3,
+          21.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 45,
+        "datetime": "2026-07-10T12:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.2,
+          21.2
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 46,
+        "datetime": "2026-07-10T13:00:00+08:00",
+        "maxWindSpeed_ms": "45",
+        "pressure_hpa": "940",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.1,
+          21.4
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 47,
+        "datetime": "2026-07-10T14:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.9,
+          21.7
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 48,
+        "datetime": "2026-07-10T15:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.8,
+          21.9
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 49,
+        "datetime": "2026-07-10T16:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.7,
+          22.1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 50,
+        "datetime": "2026-07-10T17:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.6,
+          22.3
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "analysis-center",
+        "name": "巴威",
+        "intlName": "BAVI",
+        "frameIndex": 51,
+        "datetime": "2026-07-10T18:00:00+08:00",
+        "maxWindSpeed_ms": "43",
+        "pressure_hpa": "945",
+        "label": "BAVI 分析位置"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.5,
+          22.5
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "kind": "forecast-track",
         "name": "巴威",
         "intlName": "BAVI",
-        "label": "巴威 BAVI 預報路徑"
+        "label": "BAVI 預報路徑"
       },
       "geometry": {
         "type": "LineString",
@@ -288,7 +1328,7 @@
         "movingDirection": "NNW",
         "circle15ms_km": "380",
         "circle25ms_km": "180",
-        "label": "巴威 BAVI 目前中心"
+        "label": "BAVI 目前中心"
       },
       "geometry": {
         "type": "Point",
@@ -1116,6 +2156,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 52,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "6",
         "maxWindSpeed_ms": "43",
@@ -1448,6 +2489,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 53,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "12",
         "maxWindSpeed_ms": "43",
@@ -1780,6 +2822,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 54,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "18",
         "maxWindSpeed_ms": "43",
@@ -2112,6 +3155,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 55,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "24",
         "maxWindSpeed_ms": "40",
@@ -2444,6 +3488,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 56,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "36",
         "maxWindSpeed_ms": "30",
@@ -2776,6 +3821,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 57,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "48",
         "maxWindSpeed_ms": "23",
@@ -3108,6 +4154,7 @@
         "kind": "forecast-center",
         "name": "巴威",
         "intlName": "BAVI",
+        "frameIndex": 58,
         "initialTime": "2026-07-10T17:00:00+08:00",
         "forecastHour": "72",
         "maxWindSpeed_ms": "12",

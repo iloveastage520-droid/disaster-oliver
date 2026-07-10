@@ -123,6 +123,10 @@
     const radarToggle = document.getElementById("radar-toggle");
     let radarLayer = null;
     let radarVisible = false;
+    let radarFrames = [];
+    let radarFrameIndex = 0;
+    let radarTimer = null;
+    let radarHost = "";
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -152,14 +156,39 @@
         minute: "2-digit"
       });
     }
+    function radarTileUrl(frame) {
+      return `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+    }
+    function updateRadarFrame() {
+      if (!radarLayer || !radarFrames.length) return;
+      const frame = radarFrames[radarFrameIndex];
+      radarLayer.setUrl(radarTileUrl(frame));
+      radarLayer._radarTimeLabel = formatRadarTime(frame.time);
+      if (radarVisible) status.textContent = `雷達回波：${radarLayer._radarTimeLabel}`;
+    }
+    function stopRadarAnimation() {
+      if (radarTimer) {
+        clearInterval(radarTimer);
+        radarTimer = null;
+      }
+    }
+    function startRadarAnimation() {
+      stopRadarAnimation();
+      radarTimer = setInterval(() => {
+        radarFrameIndex = (radarFrameIndex + 1) % radarFrames.length;
+        updateRadarFrame();
+      }, 550);
+    }
     async function ensureRadarLayer() {
       if (radarLayer) return radarLayer;
       const response = await fetch("https://api.rainviewer.com/public/weather-maps.json", { cache: "no-store" });
       const data = await response.json();
-      const frames = data.radar?.past || [];
-      const latestRadar = frames[frames.length - 1];
+      radarFrames = (data.radar?.past || []).slice(-12);
+      radarHost = data.host;
+      radarFrameIndex = Math.max(0, radarFrames.length - 1);
+      const latestRadar = radarFrames[radarFrameIndex];
       if (!latestRadar) throw new Error("No radar frame");
-      radarLayer = L.tileLayer(`${data.host}${latestRadar.path}/256/{z}/{x}/{y}/2/1_1.png`, {
+      radarLayer = L.tileLayer(radarTileUrl(latestRadar), {
         opacity: 0.58,
         zIndex: 700,
         maxNativeZoom: 7,
@@ -174,6 +203,7 @@
         radarToggle.disabled = true;
         const layer = await ensureRadarLayer();
         if (radarVisible) {
+          stopRadarAnimation();
           map.removeLayer(layer);
           radarVisible = false;
           radarToggle.classList.remove("active");
@@ -181,6 +211,7 @@
           layer.addTo(map);
           radarVisible = true;
           radarToggle.classList.add("active");
+          startRadarAnimation();
           status.textContent = `雷達回波：${layer._radarTimeLabel}`;
         }
       } catch (error) {

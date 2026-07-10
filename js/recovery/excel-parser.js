@@ -97,7 +97,7 @@ function transformRecoveryApiResponse(data) {
     },
     features: data.tasks.filter(isCompletedTask).map((task) => {
       const roadId = text(task.roadId) || buildRoadId(task);
-      const geometry = task.geometry || geometryFromRoadId(roadId);
+      const geometry = task.geometry || null;
       const status = normalizeStatus(task.status);
       return {
         type: "Feature",
@@ -117,6 +117,10 @@ function transformRecoveryApiResponse(data) {
           photoUrls: normalizePhotoUrls(task.photoUrls?.length ? task.photoUrls : task.photoUrl),
           photoCaptions: normalizePhotoCaptions(task.photoCaptions?.length ? task.photoCaptions : task.photoCaption),
           roadText: text(task.roadText),
+          itemNo: text(task.itemNo),
+          reportDate: text(task.reportDate),
+          manpower: text(task.manpower),
+          equipment: text(task.equipment),
           side: text(task.side),
           start: text(task.start),
           end: text(task.end),

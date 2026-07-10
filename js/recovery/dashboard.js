@@ -79,10 +79,10 @@ export function renderRecoveryDataList(features) {
     const row = document.createElement("tr");
     row.dataset.recoveryRoadId = properties.id;
     row.append(
-      tableCell(properties.responsibleUnit || "--"),
+      tableCell(tableUnitLabel(properties)),
       tableCell(properties.roadName || "--", "road-name-cell"),
-      tableCell(statusLabel(properties.status), statusClass(properties.status)),
-      tableCell(properties.estimatedFinishTime || "--")
+      tableCell(properties.manpower || "--"),
+      tableCell(properties.equipment || "--")
     );
     row.title = [
       `支援廠商：${properties.contractor || "--"}`,
@@ -178,6 +178,10 @@ function bindMapSelectionHighlight() {
 
 function unitText(properties) {
   return [properties.responsibleUnit, properties.contractor].filter(Boolean).join(" / ") || "--";
+}
+
+function tableUnitLabel(properties) {
+  return [properties.reportDate, properties.responsibleUnit].filter(Boolean).join(" / ") || "--";
 }
 
 function statusLabel(status) {

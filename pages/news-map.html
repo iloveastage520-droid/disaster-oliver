@@ -514,6 +514,29 @@
             background: transparent;
             border: 0;
         }
+        .typhoon-center-marker {
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #dc2626;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 900;
+            box-shadow: 0 2px 10px rgba(127, 29, 29, 0.4);
+        }
+        .typhoon-forecast-marker {
+            display: grid;
+            place-items: center;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #f97316;
+            box-shadow: 0 2px 8px rgba(124, 45, 18, 0.3);
+        }
         .tv-ai-event-pin {
             position: relative;
             display: grid;
@@ -584,6 +607,10 @@
             border-top: 2px solid #333;
             font-family: "Microsoft JhengHei", Arial, sans-serif;
             box-sizing: border-box;
+            transition: left 0.22s ease;
+        }
+        body.sidebar-collapsed #timeline {
+            left: 0;
         }
         .timeline-header {
             height: 28px;
@@ -1214,6 +1241,7 @@
         const liveSheetApiUrl = "https://script.google.com/macros/s/AKfycby2iT5glXEN116qYHqk9YXQmswkJ-kv_zPPfH2cso0GRYnxecXCJaUhs2WljhSpmmPV9g/exec";
         const liveSheetCsvUrl = "https://docs.google.com/spreadsheets/d/12-KsRv8Bn3NpjJjaz3fETRa0ecDNqVVVJtgmGPN5zJM/export?format=csv&gid=2089324111";
         const tvEventDataUrl = "../data/tv-monitor/tv-events.json";
+        const typhoonTrackDataUrl = "../data/cwa-typhoon-track.geojson";
         let liveSheetLayer = null;
         let liveSheetFocusPoints = {};
         let liveSheetMarkers = {};
@@ -1225,6 +1253,9 @@
         let liveAllRainStationsLoaded = false;
         let tvEventLayer = null;
         let tvEventVisible = true;
+        let typhoonTrackLayer = null;
+        let typhoonTrackVisible = true;
+        let typhoonTrackRegistered = false;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1373,6 +1404,82 @@
                 '"': "&quot;",
                 "'": "&#39;"
             }[ch]));
+        }
+        function currentLayerControl() {
+            const keys = Object.keys(window).filter((key) => key.startsWith("layer_control_"));
+            return keys.length ? window[keys[0]] : null;
+        }
+        function typhoonPointIcon(feature) {
+            const kind = feature?.properties?.kind || "";
+            if (kind === "current-center") {
+                return L.divIcon({
+                    html: '<div class="typhoon-center-marker">颱</div>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15],
+                    popupAnchor: [0, -16],
+                    className: "empty"
+                });
+            }
+            return L.divIcon({
+                html: '<div class="typhoon-forecast-marker"></div>',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+                popupAnchor: [0, -10],
+                className: "empty"
+            });
+        }
+        function typhoonStyle(feature) {
+            const kind = feature?.properties?.kind || "";
+            if (kind === "analysis-track") return { color: "#dc2626", weight: 3, opacity: 0.9 };
+            if (kind === "forecast-track") return { color: "#f97316", weight: 3, opacity: 0.9, dashArray: "8,6" };
+            if (kind === "current-15ms-circle") return { color: "#dc2626", weight: 2, fillColor: "#dc2626", fillOpacity: 0.08 };
+            if (kind === "current-25ms-circle") return { color: "#7f1d1d", weight: 2, fillColor: "#7f1d1d", fillOpacity: 0.12 };
+            if (kind === "forecast-70prob-circle") return { color: "#f97316", weight: 1, fillColor: "#f97316", fillOpacity: 0.05, dashArray: "4,5" };
+            return { color: "#f97316", weight: 2, opacity: 0.8 };
+        }
+        function typhoonPopup(feature) {
+            const p = feature.properties || {};
+            const rows = [
+                `<b>${liveEscape(p.label || p.name || "颱風資料")}</b>`,
+                p.name || p.intlName ? `${liveEscape(p.name || "")} ${liveEscape(p.intlName || "")}` : "",
+                p.datetime ? `時間：${liveEscape(p.datetime)}` : "",
+                p.forecastHour ? `預報：${liveEscape(p.forecastHour)} 小時` : "",
+                p.radius_km ? `半徑：${liveEscape(p.radius_km)} km` : "",
+                p.circle15ms_km ? `7級風半徑：${liveEscape(p.circle15ms_km)} km` : "",
+                p.circle25ms_km ? `10級風半徑：${liveEscape(p.circle25ms_km)} km` : "",
+                p.maxWindSpeed_ms ? `最大風速：${liveEscape(p.maxWindSpeed_ms)} m/s` : "",
+                p.pressure_hpa ? `中心氣壓：${liveEscape(p.pressure_hpa)} hPa` : ""
+            ].filter(Boolean);
+            return rows.join("<br>");
+        }
+        function registerTyphoonTrackOverlay() {
+            if (typhoonTrackRegistered || !typhoonTrackLayer) return;
+            const control = currentLayerControl();
+            if (!control || !control.addOverlay) return;
+            control.addOverlay(typhoonTrackLayer, "CWA 颱風路徑與暴風圈");
+            typhoonTrackRegistered = true;
+        }
+        async function loadTyphoonTrackLayer(map) {
+            if (!map || typhoonTrackLayer) return;
+            try {
+                const response = await fetch(typhoonTrackDataUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const geojson = await response.json();
+                typhoonTrackLayer = L.geoJSON(geojson, {
+                    style: typhoonStyle,
+                    pointToLayer: (feature, latlng) => L.marker(latlng, {
+                        icon: typhoonPointIcon(feature),
+                        zIndexOffset: 1500
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(typhoonPopup(feature));
+                    }
+                });
+                if (typhoonTrackVisible) typhoonTrackLayer.addTo(map);
+                registerTyphoonTrackOverlay();
+            } catch (error) {
+                console.warn("Typhoon track layer unavailable", error);
+            }
         }
         function liveNewsAge(item) {
             const date = new Date(String(item.published_at || "").replace(/\//g, "-"));
@@ -1763,6 +1870,7 @@
             clearStaticMarkers(map);
             loadAllRainStationsLayer(map);
             loadTvEventLayer(map);
+            loadTyphoonTrackLayer(map);
             const rows = await loadSheetRows();
             liveSheetAllItems = expandSheetRows(rows);
             if (!liveSheetAllItems.length) {

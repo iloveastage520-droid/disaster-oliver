@@ -98,16 +98,16 @@
     .leaflet-tile-pane .himawari-ir {
       mix-blend-mode: screen;
       filter: contrast(2.05) brightness(1.04) saturate(1.65) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.65));
-      transition: opacity 0.35s linear, filter 0.25s linear;
+      transition: opacity 0.22s linear, filter 0.25s linear;
     }
     .leaflet-tile-pane .himawari-vapor {
       mix-blend-mode: screen;
       filter: contrast(2.15) brightness(1.05) saturate(1.9) hue-rotate(190deg) drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
-      transition: opacity 0.35s linear, filter 0.25s linear;
+      transition: opacity 0.22s linear, filter 0.25s linear;
     }
     .leaflet-tile-pane .himawari-ir,
     .leaflet-tile-pane .himawari-vapor {
-      transition: opacity 0.35s linear, filter 0.25s linear;
+      transition: opacity 0.22s linear, filter 0.25s linear;
     }
     @media (max-width: 720px) {
       .panel {
@@ -220,7 +220,15 @@
         channel.activeSlot = nextIndex;
       };
       nextLayer.once("load", finish);
-      window.setTimeout(finish, 450);
+      window.setTimeout(finish, 260);
+    }
+    function preloadFrame(index) {
+      if (!frames.length) return;
+      const frame = frames[(index + frames.length) % frames.length];
+      ["B13/TBB", "B08/TBB"].forEach((product) => {
+        const img = new Image();
+        img.src = tileUrl(frame, product).replace("{z}", "5").replace("{x}", "27").replace("{y}", "13");
+      });
     }
     function setFrame(index) {
       if (!frames.length) return;
@@ -230,6 +238,7 @@
       updateChannel("ir", frame);
       updateChannel("vapor", frame);
       status.textContent = `紅外線亮溫：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
+      preloadFrame(frameIndex + 1);
     }
     function stop() {
       if (timer) {
@@ -249,7 +258,7 @@
       play.textContent = "暫停";
       timer = setInterval(() => {
         setFrame((frameIndex + 1) % frames.length);
-      }, 520);
+      }, 360);
     }
     async function init() {
       const response = await fetch(timesUrl, { cache: "no-store" });

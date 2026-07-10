@@ -16,8 +16,11 @@ export function renderDashboard(features, statistics) {
   const bar = document.querySelector("#summary-bar");
   if (bar) bar.style.width = `${statistics.completionRate}%`;
 
-  if (features.length) renderSelectedRoad(features[0].properties);
   renderRecoveryDataList(features);
+  if (features.length) {
+    renderSelectedRoad(features[0].properties);
+    setActiveRecoveryRow(features[0].properties.id, false);
+  }
   bindMapSelectionHighlight();
 }
 
@@ -78,6 +81,7 @@ export function renderRecoveryDataList(features) {
     const properties = feature.properties;
     const row = document.createElement("tr");
     row.dataset.recoveryRoadId = properties.id;
+    row.classList.toggle("has-map-geometry", Boolean(feature.geometry));
     row.append(
       tableCell(properties.reportDate || "--"),
       tableCell(properties.responsibleUnit || "--"),

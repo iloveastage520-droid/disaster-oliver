@@ -50,7 +50,11 @@ export function normalizeRecoveryFeature(feature) {
       photoUrl: directPhotoUrl(properties.photoUrl),
       photoCaption: text(properties.photoCaption),
       photoUrls: normalizePhotoUrls(properties.photoUrls || properties.photoUrl),
-      photoCaptions: normalizePhotoCaptions(properties.photoCaptions || properties.photoCaption)
+      photoCaptions: normalizePhotoCaptions(properties.photoCaptions || properties.photoCaption),
+      itemNo: text(properties.itemNo),
+      reportDate: text(properties.reportDate),
+      manpower: text(properties.manpower),
+      equipment: text(properties.equipment)
     }
   };
 }

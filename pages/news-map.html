@@ -361,6 +361,7 @@
             </button>
             </div>
     </div>
+    <button type="button" id="sidebar-toggle" aria-controls="sidebar" aria-expanded="true" onclick="toggleSidebar()">收合</button>
     <div id="radar-control">
         <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
         <button type="button" id="rain-nowcast-toggle" onclick="toggleRainNowcastOverlay()">短延時降雨預報</button>
@@ -381,6 +382,28 @@
             z-index: 9999;
             border-right: 2px solid #333;
             font-family: "Microsoft JhengHei", Arial, sans-serif;
+            transition: transform 0.22s ease;
+        }
+        #sidebar-toggle {
+            position: fixed;
+            top: 12px;
+            left: 422px;
+            z-index: 10000;
+            border: 0;
+            border-radius: 4px;
+            padding: 7px 10px;
+            color: #fff;
+            background: #111827;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+            font: 800 13px "Microsoft JhengHei", Arial, sans-serif;
+            cursor: pointer;
+            transition: left 0.22s ease, bottom 0.22s ease;
+        }
+        body.sidebar-collapsed #sidebar {
+            transform: translateX(-410px);
+        }
+        body.sidebar-collapsed #sidebar-toggle {
+            left: 12px;
         }
         #sidebar h3 { margin: 0 0 8px; font-size: 20px; }
         #sidebar h4 { margin: 16px 0 8px; font-size: 16px; }
@@ -639,6 +662,10 @@
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
             font-family: "Microsoft JhengHei", Arial, sans-serif;
+            transition: left 0.22s ease;
+        }
+        body.sidebar-collapsed #radar-control {
+            left: 52px;
         }
         #radar-toggle,
         #rain-nowcast-toggle,
@@ -668,7 +695,8 @@
             opacity: 0.45;
         }
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
-        #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; }
+        #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; transition: left 0.22s ease; }
+        body.sidebar-collapsed #map { left: 0; }
         .news-card.active,
         .timeline-item.active {
             background: #e7f1ff;
@@ -805,6 +833,18 @@
                 border-right: 0;
                 border-top: 2px solid #333;
             }
+            #sidebar-toggle {
+                top: auto;
+                left: 10px;
+                bottom: calc(32vh + 112px);
+            }
+            body.sidebar-collapsed #sidebar {
+                transform: translateY(calc(100% + 104px));
+            }
+            body.sidebar-collapsed #sidebar-toggle {
+                left: 10px;
+                bottom: 112px;
+            }
             #sidebar h3 { font-size: 16px; margin-bottom: 4px; }
             #sidebar h4,
             .cctv-grid { display: none; }
@@ -875,6 +915,12 @@
                 left: 0;
                 bottom: calc(32vh + 104px);
             }
+            body.sidebar-collapsed #map {
+                bottom: 104px;
+            }
+            body.sidebar-collapsed #radar-control {
+                bottom: 114px;
+            }
             .tv-ai-event-legend {
                 right: 10px;
                 bottom: calc(32vh + 112px);
@@ -885,6 +931,16 @@
                 bottom: 96px;
                 height: 34vh;
             }
+            #sidebar-toggle {
+                bottom: calc(34vh + 104px);
+            }
+            body.sidebar-collapsed #sidebar {
+                transform: translateY(calc(100% + 96px));
+            }
+            body.sidebar-collapsed #sidebar-toggle,
+            body.sidebar-collapsed #radar-control {
+                bottom: 104px;
+            }
             #timeline { height: 96px; }
             .timeline-item {
                 flex-basis: 200px;
@@ -892,6 +948,7 @@
             }
             #radar-control { bottom: calc(34vh + 106px); }
             #map { bottom: calc(34vh + 96px); }
+            body.sidebar-collapsed #map { bottom: 96px; }
             .tv-ai-event-legend {
                 bottom: calc(34vh + 104px);
                 font-size: 11px;
@@ -912,6 +969,19 @@
         function currentLeafletMap() {
             const mapKeys = Object.keys(window).filter((key) => key.startsWith("map_"));
             return mapKeys.length ? window[mapKeys[0]] : null;
+        }
+        function syncSidebarToggle() {
+            const collapsed = document.body.classList.contains("sidebar-collapsed");
+            const button = document.getElementById("sidebar-toggle");
+            if (!button) return;
+            button.textContent = collapsed ? "展開" : "收合";
+            button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        }
+        function toggleSidebar() {
+            document.body.classList.toggle("sidebar-collapsed");
+            syncSidebarToggle();
+            const map = currentLeafletMap();
+            if (map) setTimeout(() => map.invalidateSize(), 240);
         }
         function setActiveNewsItem(newsId) {
             document.querySelectorAll(".news-card, .timeline-item").forEach((item) => {
@@ -1704,6 +1774,7 @@
             setDateFilter(activeDateFilter);
         }
         bindDateFilters();
+        syncSidebarToggle();
         setTimeout(loadSheetNewsLayer, 600);
     </script>
     

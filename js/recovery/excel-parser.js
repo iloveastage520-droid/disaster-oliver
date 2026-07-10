@@ -129,8 +129,20 @@ function transformRecoveryApiResponse(data) {
         },
         geometry
       };
-    })
+    }).sort(compareFeaturePriority)
   };
+}
+
+function compareFeaturePriority(a, b) {
+  return featurePriority(b) - featurePriority(a);
+}
+
+function featurePriority(feature) {
+  const properties = feature.properties || {};
+  let score = 0;
+  if (feature.geometry) score += 2;
+  if (properties.photoUrl || (Array.isArray(properties.photoUrls) && properties.photoUrls.length)) score += 1;
+  return score;
 }
 
 function isCompletedTask(task) {

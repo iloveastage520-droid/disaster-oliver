@@ -14,7 +14,9 @@ const GROUP_STYLES = {
   "組1": "#00aeef",
   "組2": "#ffb000",
   "組3": "#f15bb5",
-  "組4": "#7c3aed"
+  "組4": "#7c3aed",
+  "組5": "#14b8a6",
+  "組6": "#f97316"
 };
 
 let activeLayer;

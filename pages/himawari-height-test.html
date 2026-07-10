@@ -157,6 +157,7 @@
     let frames = [];
     let frameIndex = 0;
     let timer = null;
+    let playRequestId = 0;
     const channels = {};
     const status = document.getElementById("status");
     const timeline = document.getElementById("timeline");
@@ -222,13 +223,40 @@
       nextLayer.once("load", finish);
       window.setTimeout(finish, 260);
     }
-    function preloadFrame(index) {
-      if (!frames.length) return;
-      const frame = frames[(index + frames.length) % frames.length];
-      ["B13/TBB", "B08/TBB"].forEach((product) => {
+    function preloadImage(url) {
+      return new Promise((resolve) => {
         const img = new Image();
-        img.src = tileUrl(frame, product).replace("{z}", "5").replace("{x}", "27").replace("{y}", "13");
+        img.onload = resolve;
+        img.onerror = resolve;
+        img.src = url;
       });
+    }
+    function preloadFrame(index) {
+      if (!frames.length) return Promise.resolve();
+      const frame = frames[(index + frames.length) % frames.length];
+      const tiles = [
+        ["5", "26", "13"],
+        ["5", "27", "13"],
+        ["5", "28", "13"],
+        ["5", "26", "14"],
+        ["5", "27", "14"],
+        ["5", "28", "14"]
+      ];
+      const requests = [];
+      ["B13/TBB", "B08/TBB"].forEach((product) => {
+        tiles.forEach(([z, x, y]) => {
+          requests.push(preloadImage(tileUrl(frame, product).replace("{z}", z).replace("{x}", x).replace("{y}", y)));
+        });
+      });
+      return Promise.all(requests);
+    }
+    function preloadUpcomingFrames(count = 5) {
+      const requests = [];
+      for (let offset = 1; offset <= count; offset++) {
+        requests.push(preloadFrame(frameIndex + offset));
+      }
+      const timeout = new Promise((resolve) => window.setTimeout(resolve, 2000));
+      return Promise.race([Promise.all(requests), timeout]);
     }
     function setFrame(index) {
       if (!frames.length) return;
@@ -241,6 +269,7 @@
       preloadFrame(frameIndex + 1);
     }
     function stop() {
+      playRequestId += 1;
       if (timer) {
         clearInterval(timer);
         timer = null;
@@ -248,12 +277,20 @@
       play.classList.remove("active");
       play.textContent = "播放";
     }
-    function togglePlay() {
+    async function togglePlay() {
       if (!frames.length) return;
       if (timer) {
         stop();
         return;
       }
+      const requestId = playRequestId + 1;
+      playRequestId = requestId;
+      play.disabled = true;
+      play.textContent = "預載中";
+      status.textContent = "預載接下來 5 格影像中...";
+      await preloadUpcomingFrames(5);
+      if (playRequestId !== requestId) return;
+      play.disabled = false;
       play.classList.add("active");
       play.textContent = "暫停";
       timer = setInterval(() => {

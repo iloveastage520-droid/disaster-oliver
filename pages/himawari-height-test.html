@@ -97,17 +97,12 @@
   <section class="panel">
     <h1>向日葵雲頂高度感測試</h1>
     <div class="controls">
-      <button id="play" type="button">播放</button>
+      <button id="play" type="button">播放雲圖</button>
       <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
-      <button id="latest" type="button">最新</button>
-    </div>
-    <div class="tools">
-      <button id="radar-toggle" type="button">雷達回波</button>
     </div>
     <div class="controls">
-      <button id="radar-play" type="button">播放雷達</button>
+      <button id="radar-play" type="button">播放回波</button>
       <input id="radar-timeline" type="range" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" disabled>
-      <button id="radar-latest" type="button">雷達最新</button>
     </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
   </section>
@@ -134,11 +129,8 @@
     const status = document.getElementById("status");
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
-    const latest = document.getElementById("latest");
-    const radarToggle = document.getElementById("radar-toggle");
     const radarPlay = document.getElementById("radar-play");
     const radarTimeline = document.getElementById("radar-timeline");
-    const radarLatest = document.getElementById("radar-latest");
     let radarVisible = false;
     let radarFrames = [];
     let radarFrameIndex = 0;
@@ -246,7 +238,7 @@
         radarTimer = null;
       }
       radarPlay.classList.remove("active");
-      radarPlay.textContent = "播放雷達";
+      radarPlay.textContent = "播放回波";
     }
     function queueNextRadarFrame() {
       radarTimer = window.setTimeout(async () => {
@@ -257,40 +249,29 @@
     function startRadarAnimation() {
       stopRadarAnimation();
       radarPlay.classList.add("active");
-      radarPlay.textContent = "暫停雷達";
+      radarPlay.textContent = "暫停回波";
       queueNextRadarFrame();
     }
     async function toggleRadarPlayback() {
       if (!radarVisible) {
-        await toggleRadar();
+        try {
+          radarPlay.disabled = true;
+          await ensureRadarFrames();
+          radarVisible = true;
+          await drawRadarFrame(radarFrameIndex);
+          startRadarAnimation();
+        } catch (error) {
+          console.error(error);
+          status.textContent = "雷達回波載入失敗";
+        } finally {
+          radarPlay.disabled = false;
+        }
         return;
       }
       if (radarTimer) {
         stopRadarAnimation();
       } else {
         startRadarAnimation();
-      }
-    }
-    async function toggleRadar() {
-      try {
-        radarToggle.disabled = true;
-        await ensureRadarFrames();
-        if (radarVisible) {
-          stopRadarAnimation();
-          radarVisible = false;
-          radarToggle.classList.remove("active");
-          radarCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
-        } else {
-          radarVisible = true;
-          radarToggle.classList.add("active");
-          await drawRadarFrame(radarFrameIndex);
-          startRadarAnimation();
-        }
-      } catch (error) {
-        console.error(error);
-        status.textContent = "雷達回波載入失敗";
-      } finally {
-        radarToggle.disabled = false;
       }
     }
     function tileUrl(frame, product, z, x, y) {
@@ -417,7 +398,7 @@
         timer = null;
       }
       play.classList.remove("active");
-      play.textContent = "播放";
+      play.textContent = "播放雲圖";
     }
     function queueNextFrame() {
       timer = window.setTimeout(async () => {
@@ -440,7 +421,7 @@
       if (playRequestId !== requestId) return;
       play.disabled = false;
       play.classList.add("active");
-      play.textContent = "暫停";
+      play.textContent = "暫停雲圖";
       queueNextFrame();
     }
     async function init() {
@@ -474,24 +455,7 @@
       if (radarVisible) drawRadarFrame(radarFrameIndex);
     });
     play.addEventListener("click", togglePlay);
-    radarToggle.addEventListener("click", toggleRadar);
     radarPlay.addEventListener("click", toggleRadarPlayback);
-    radarLatest.addEventListener("click", async () => {
-      await ensureRadarFrames();
-      stopRadarAnimation();
-      radarFrameIndex = Math.max(0, radarFrames.length - 1);
-      if (!radarVisible) {
-        radarVisible = true;
-        radarToggle.classList.add("active");
-      }
-      await drawRadarFrame(radarFrameIndex);
-    });
-    latest.addEventListener("click", () => {
-      stop();
-      timeline.min = "0";
-      timeline.max = String(frames.length - 1);
-      setFrame(frames.length - 1);
-    });
     init().catch((error) => {
       console.error(error);
       status.textContent = "向日葵資料載入失敗";

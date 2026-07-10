@@ -40,12 +40,6 @@
       gap: 8px;
       margin-top: 10px;
     }
-    .mode-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-    }
     button {
       border: 0;
       border-radius: 4px;
@@ -56,12 +50,6 @@
       cursor: pointer;
     }
     button.active { background: #0e7490; }
-    button.secondary {
-      background: #475569;
-    }
-    button.secondary.active {
-      background: #7c3aed;
-    }
     input[type="range"] {
       width: 100%;
       accent-color: #0891b2;
@@ -109,25 +97,13 @@
     }
     .leaflet-tile-pane .himawari-ir {
       mix-blend-mode: screen;
-      filter: contrast(1.22) saturate(1.2);
+      filter: contrast(2.05) brightness(1.04) saturate(1.65) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.65));
       transition: opacity 0.35s linear, filter 0.25s linear;
     }
     .leaflet-tile-pane .himawari-vapor {
       mix-blend-mode: screen;
-      filter: contrast(1.5) saturate(1.35) hue-rotate(185deg);
-      transition: opacity 0.35s linear, filter 0.25s linear;
-    }
-    body.enhanced .leaflet-tile-pane .himawari-ir {
-      filter: contrast(1.75) brightness(1.08) saturate(1.45);
-    }
-    body.enhanced .leaflet-tile-pane .himawari-vapor {
-      filter: contrast(1.95) brightness(1.08) saturate(1.8) hue-rotate(190deg);
-    }
-    body.relief .leaflet-tile-pane .himawari-ir {
-      filter: contrast(2.05) brightness(1.04) saturate(1.65) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.65));
-    }
-    body.relief .leaflet-tile-pane .himawari-vapor {
       filter: contrast(2.15) brightness(1.05) saturate(1.9) hue-rotate(190deg) drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+      transition: opacity 0.35s linear, filter 0.25s linear;
     }
     .leaflet-tile-pane .himawari-ir,
     .leaflet-tile-pane .himawari-vapor {
@@ -155,11 +131,6 @@
       <button id="play" type="button">播放</button>
       <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
       <button id="latest" type="button">最新</button>
-    </div>
-    <div class="mode-row">
-      <button class="secondary" type="button" data-mode="normal">原始</button>
-      <button class="secondary active" type="button" data-mode="enhanced">強化</button>
-      <button class="secondary" type="button" data-mode="relief">厚度感</button>
     </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
     <div class="note">
@@ -191,7 +162,6 @@
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
     const latest = document.getElementById("latest");
-    document.body.classList.add("enhanced");
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -304,16 +274,6 @@
     latest.addEventListener("click", () => {
       stop();
       setFrame(frames.length - 1);
-    });
-    document.querySelectorAll("[data-mode]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const mode = button.dataset.mode;
-        document.body.classList.toggle("enhanced", mode === "enhanced");
-        document.body.classList.toggle("relief", mode === "relief");
-        document.querySelectorAll("[data-mode]").forEach((item) => {
-          item.classList.toggle("active", item === button);
-        });
-      });
     });
     init().catch((error) => {
       console.error(error);

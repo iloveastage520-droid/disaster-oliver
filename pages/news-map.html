@@ -364,6 +364,7 @@
     <button type="button" id="sidebar-toggle" aria-controls="sidebar" aria-expanded="true" onclick="toggleSidebar()">收合</button>
     <div id="radar-control">
         <button type="button" id="radar-toggle" onclick="toggleRadarOverlay()">播放雷達</button>
+        <button type="button" id="radar-close" class="control-close" onclick="closeRadarOverlay()">關閉雷達</button>
         <button type="button" id="rain-nowcast-toggle" onclick="toggleRainNowcastOverlay()">短延時降雨預報</button>
         <button type="button" id="tv-event-toggle" class="active" onclick="toggleTvEventLayer()">AI事件</button>
         <input type="range" id="radar-timeline" min="0" max="0" value="0" step="1" aria-label="雷達時間軸" oninput="seekRadarFrame(this.value)">
@@ -371,8 +372,14 @@
     </div>
     <div id="typhoon-control">
         <button type="button" id="typhoon-play-toggle" onclick="toggleTyphoonPlayback()">播放颱風</button>
+        <button type="button" id="typhoon-close" class="control-close" onclick="closeTyphoonLayer()">關閉颱風</button>
         <input type="range" id="typhoon-timeline" min="0" max="0" value="0" step="1" aria-label="颱風時間軸" oninput="seekTyphoonFrame(this.value)">
         <span id="typhoon-status">颱風路徑未載入</span>
+    </div>
+    <div id="himawari-control">
+        <button type="button" id="himawari-play-toggle" onclick="toggleHimawariPlayback()">播放向日葵</button>
+        <input type="range" id="himawari-timeline" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸" oninput="seekHimawariFrame(this.value)">
+        <span id="himawari-status">向日葵未載入</span>
     </div>
     <style>
         #sidebar {
@@ -722,10 +729,31 @@
         body.sidebar-collapsed #typhoon-control {
             left: 52px;
         }
+        #himawari-control {
+            position: fixed;
+            left: 426px;
+            bottom: 224px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #bbb;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+            transition: left 0.22s ease;
+        }
+        body.sidebar-collapsed #himawari-control {
+            left: 52px;
+        }
         #radar-toggle,
         #rain-nowcast-toggle,
         #tv-event-toggle,
-        #typhoon-play-toggle {
+        #typhoon-play-toggle,
+        #himawari-play-toggle,
+        .control-close {
             border: 0;
             border-radius: 4px;
             background: #1f6feb;
@@ -745,6 +773,9 @@
         #tv-event-toggle:disabled { background: #888; cursor: wait; }
         #typhoon-play-toggle { background: #dc2626; }
         #typhoon-play-toggle.active { background: #b91c1c; }
+        #himawari-play-toggle { background: #0891b2; }
+        #himawari-play-toggle.active { background: #0e7490; }
+        .control-close { background: #475569; }
         #radar-timeline {
             width: 180px;
             accent-color: #1f6feb;
@@ -753,14 +784,22 @@
             width: 220px;
             accent-color: #dc2626;
         }
+        #himawari-timeline {
+            width: 220px;
+            accent-color: #0891b2;
+        }
         #typhoon-timeline:disabled {
             opacity: 0.45;
         }
         #radar-timeline:disabled {
             opacity: 0.45;
         }
+        #himawari-timeline:disabled {
+            opacity: 0.45;
+        }
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
         #typhoon-status { color: #333; font-size: 12px; white-space: nowrap; }
+        #himawari-status { color: #333; font-size: 12px; white-space: nowrap; }
         #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; transition: left 0.22s ease; }
         body.sidebar-collapsed #map { left: 0; }
         .news-card.active,
@@ -980,11 +1019,22 @@
                 max-width: none;
                 flex-wrap: wrap;
             }
+            #himawari-control {
+                left: 10px;
+                right: 10px;
+                bottom: calc(32vh + 214px);
+                max-width: none;
+                flex-wrap: wrap;
+            }
             #radar-timeline {
                 flex: 1 1 180px;
                 min-width: 140px;
             }
             #typhoon-timeline {
+                flex: 1 1 180px;
+                min-width: 140px;
+            }
+            #himawari-timeline {
                 flex: 1 1 180px;
                 min-width: 140px;
             }
@@ -1000,6 +1050,9 @@
             }
             body.sidebar-collapsed #typhoon-control {
                 bottom: 164px;
+            }
+            body.sidebar-collapsed #himawari-control {
+                bottom: 214px;
             }
             .tv-ai-event-legend {
                 right: 10px;
@@ -1024,6 +1077,9 @@
             body.sidebar-collapsed #typhoon-control {
                 bottom: 154px;
             }
+            body.sidebar-collapsed #himawari-control {
+                bottom: 204px;
+            }
             #timeline { height: 96px; }
             .timeline-item {
                 flex-basis: 200px;
@@ -1031,6 +1087,7 @@
             }
             #radar-control { bottom: calc(34vh + 106px); }
             #typhoon-control { bottom: calc(34vh + 156px); }
+            #himawari-control { bottom: calc(34vh + 206px); }
             #map { bottom: calc(34vh + 96px); }
             body.sidebar-collapsed #map { bottom: 96px; }
             .tv-ai-event-legend {
@@ -1163,7 +1220,6 @@
             if (timeline) timeline.value = String(radarFrameIndex);
             const status = document.getElementById("radar-status");
             if (status) status.textContent = `雷達動畫：${formatRadarTime(frame)} (${radarFrameIndex + 1}/${radarFrames.length})`;
-            updateHimawariFrameForTime(frame.time);
         }
         function setupRadarTimeline() {
             const timeline = document.getElementById("radar-timeline");
@@ -1190,6 +1246,20 @@
                 window.clearInterval(radarTimer);
                 radarTimer = null;
             }
+        }
+        function closeRadarOverlay() {
+            const map = currentLeafletMap();
+            stopRadarAnimation();
+            if (map && radarLayer && map.hasLayer(radarLayer)) map.removeLayer(radarLayer);
+            radarVisible = false;
+            const button = document.getElementById("radar-toggle");
+            if (button) {
+                button.classList.remove("active");
+                button.textContent = "播放雷達";
+                button.disabled = false;
+            }
+            const status = document.getElementById("radar-status");
+            if (status) status.textContent = "雷達已關閉";
         }
         async function ensureRadarLayer() {
             if (radarLayer) return radarLayer;
@@ -1324,6 +1394,8 @@
         let himawariFrames = [];
         let himawariInfraredChannel = null;
         let himawariWaterVaporChannel = null;
+        let himawariFrameIndex = 0;
+        let himawariTimer = null;
         function parseCsvRows(text) {
             const rows = [];
             let row = [];
@@ -1616,11 +1688,26 @@
                 button.textContent = "播放颱風";
             }
         }
+        function closeTyphoonLayer() {
+            const map = currentLeafletMap();
+            stopTyphoonPlayback();
+            if (map && typhoonTrackLayer && map.hasLayer(typhoonTrackLayer)) map.removeLayer(typhoonTrackLayer);
+            if (map && typhoonPlaybackLayer && map.hasLayer(typhoonPlaybackLayer)) map.removeLayer(typhoonPlaybackLayer);
+            typhoonTrackVisible = false;
+            typhoonPlaybackLayer = null;
+            const status = document.getElementById("typhoon-status");
+            if (status) status.textContent = "颱風路徑已關閉";
+        }
         function toggleTyphoonPlayback() {
             if (!typhoonFrames.length) return;
             if (typhoonTimer) {
                 stopTyphoonPlayback();
                 return;
+            }
+            const map = currentLeafletMap();
+            if (map && typhoonTrackLayer && !map.hasLayer(typhoonTrackLayer)) {
+                typhoonTrackLayer.addTo(map);
+                typhoonTrackVisible = true;
             }
             const button = document.getElementById("typhoon-play-toggle");
             if (button) {
@@ -1699,6 +1786,68 @@
             fadeHimawariChannel(himawariInfraredChannel, frame);
             fadeHimawariChannel(himawariWaterVaporChannel, frame);
         }
+        function formatHimawariTime(frame) {
+            if (!frame || !Number.isFinite(frame.epoch)) return "未知時間";
+            return new Date(frame.epoch * 1000).toLocaleString("zh-TW", {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+        function setupHimawariTimeline() {
+            const timeline = document.getElementById("himawari-timeline");
+            if (!timeline) return;
+            timeline.disabled = !himawariFrames.length;
+            timeline.min = "0";
+            timeline.max = String(Math.max(0, himawariFrames.length - 1));
+            timeline.value = String(himawariFrameIndex);
+        }
+        function updateHimawariFrame() {
+            const frame = himawariFrames[himawariFrameIndex];
+            const timeline = document.getElementById("himawari-timeline");
+            if (timeline) timeline.value = String(himawariFrameIndex);
+            if (!frame) {
+                const status = document.getElementById("himawari-status");
+                if (status) status.textContent = "向日葵未載入";
+                return;
+            }
+            updateHimawariFrameForTime(frame.epoch);
+            const status = document.getElementById("himawari-status");
+            if (status) status.textContent = `向日葵：${formatHimawariTime(frame)} (${himawariFrameIndex + 1}/${himawariFrames.length})`;
+        }
+        function seekHimawariFrame(value) {
+            if (!himawariFrames.length) return;
+            himawariFrameIndex = Math.max(0, Math.min(himawariFrames.length - 1, Number(value) || 0));
+            updateHimawariFrame();
+        }
+        function stopHimawariPlayback() {
+            if (himawariTimer) {
+                clearInterval(himawariTimer);
+                himawariTimer = null;
+            }
+            const button = document.getElementById("himawari-play-toggle");
+            if (button) {
+                button.classList.remove("active");
+                button.textContent = "播放向日葵";
+            }
+        }
+        function toggleHimawariPlayback() {
+            if (!himawariFrames.length) return;
+            if (himawariTimer) {
+                stopHimawariPlayback();
+                return;
+            }
+            const button = document.getElementById("himawari-play-toggle");
+            if (button) {
+                button.classList.add("active");
+                button.textContent = "暫停向日葵";
+            }
+            himawariTimer = setInterval(() => {
+                himawariFrameIndex = (himawariFrameIndex + 1) % himawariFrames.length;
+                updateHimawariFrame();
+            }, 850);
+        }
         async function loadHimawariLayers(map) {
             if (!map || himawariLayersLoaded) return;
             himawariLayersLoaded = true;
@@ -1716,6 +1865,7 @@
                     .filter((time) => time.basetime && time.validtime && Number.isFinite(time.epoch));
                 const latest = himawariFrames[himawariFrames.length - 1] || null;
                 if (!latest?.basetime || !latest?.validtime) throw new Error("No Himawari target time");
+                himawariFrameIndex = Math.max(0, himawariFrames.length - 1);
                 const options = {
                     attribution: "Himawari &copy; JMA",
                     opacity: 0.65,
@@ -1734,7 +1884,8 @@
                 });
                 control.addOverlay(himawariInfraredChannel.group, "向日葵紅外線");
                 control.addOverlay(himawariWaterVaporChannel.group, "向日葵水氣");
-                updateHimawariFrameForTime(radarFrames[radarFrameIndex]?.time);
+                setupHimawariTimeline();
+                updateHimawariFrame();
             } catch (error) {
                 himawariLayersLoaded = false;
                 console.warn("Himawari satellite layers unavailable", error);

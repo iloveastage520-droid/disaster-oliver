@@ -85,7 +85,7 @@ export function renderRecoveryDataList(features) {
     row.append(
       tableCell(properties.reportDate || "--"),
       tableCell(properties.responsibleUnit || "--"),
-      tableCell(properties.roadName || "--", "road-name-cell")
+      tableCell(mainWorkText(properties), "road-name-cell")
     );
     row.title = [
       `支援廠商：${properties.contractor || "--"}`,
@@ -181,6 +181,12 @@ function bindMapSelectionHighlight() {
 
 function unitText(properties) {
   return [properties.responsibleUnit, properties.contractor].filter(Boolean).join(" / ") || "--";
+}
+
+function mainWorkText(properties) {
+  const value = properties.roadName || "";
+  if (!value || value === properties.reportDate) return "--";
+  return value;
 }
 
 function statusLabel(status) {

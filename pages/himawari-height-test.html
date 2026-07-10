@@ -15,6 +15,17 @@
       background: #0f172a;
     }
     #map { position: absolute; inset: 0; }
+    #himawari-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 500;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      filter: contrast(2.05) brightness(1.05) saturate(1.7) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.6));
+      opacity: 0.88;
+    }
     .panel {
       position: fixed;
       left: 16px;
@@ -65,20 +76,6 @@
       line-height: 1.55;
       color: #475569;
     }
-    .leaflet-tile-pane .himawari-ir {
-      mix-blend-mode: screen;
-      filter: contrast(2.05) brightness(1.04) saturate(1.65) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.65));
-      transition: opacity 0.22s linear, filter 0.25s linear;
-    }
-    .leaflet-tile-pane .himawari-vapor {
-      mix-blend-mode: screen;
-      filter: contrast(2.15) brightness(1.05) saturate(1.9) hue-rotate(190deg) drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
-      transition: opacity 0.22s linear, filter 0.25s linear;
-    }
-    .leaflet-tile-pane .himawari-ir,
-    .leaflet-tile-pane .himawari-vapor {
-      transition: opacity 0.22s linear, filter 0.25s linear;
-    }
     @media (max-width: 720px) {
       .panel {
         left: 10px;
@@ -89,6 +86,7 @@
 </head>
 <body>
   <div id="map"></div>
+  <canvas id="himawari-canvas"></canvas>
   <section class="panel">
     <h1>向日葵雲頂高度感測試</h1>
     <div class="controls">
@@ -114,7 +112,11 @@
     let frameIndex = 0;
     let timer = null;
     let playRequestId = 0;
-    const channels = {};
+    let renderRequestId = 0;
+    const canvas = document.getElementById("himawari-canvas");
+    const ctx = canvas.getContext("2d");
+    const tileZoom = 5;
+    const frameCache = new Map();
     const status = document.getElementById("status");
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
@@ -140,69 +142,109 @@
         minute: "2-digit"
       });
     }
-    function tileUrl(frame, product) {
-      return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/${product}/{z}/{x}/{y}.jpg`;
+    function tileUrl(frame, product, z, x, y) {
+      return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/${product}/${z}/${x}/${y}.jpg`;
     }
-    function createLayer(frame, product, className, opacity, zIndex) {
-      return L.tileLayer(tileUrl(frame, product), {
-        opacity,
-        className,
-        attribution: "Himawari &copy; JMA",
-        minZoom: 3,
-        maxZoom: 11,
-        maxNativeZoom: 5,
-        zIndex
-      });
+    function lngToTileX(lng, z) {
+      return Math.floor((lng + 180) / 360 * Math.pow(2, z));
     }
-    function createChannel(name, product, className, opacity, zIndex, frame) {
-      const layers = [
-        createLayer(frame, product, className, opacity, zIndex).addTo(map),
-        createLayer(frame, product, className, 0, zIndex).addTo(map)
-      ];
-      channels[name] = { product, layers, activeSlot: 0, opacity };
+    function latToTileY(lat, z) {
+      const rad = lat * Math.PI / 180;
+      return Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, z));
     }
-    function updateChannel(name, frame) {
-      const channel = channels[name];
-      const nextIndex = channel.activeSlot ? 0 : 1;
-      const currentLayer = channel.layers[channel.activeSlot];
-      const nextLayer = channel.layers[nextIndex];
-      nextLayer.setOpacity(0);
-      nextLayer.setUrl(tileUrl(frame, channel.product));
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        nextLayer.setOpacity(channel.opacity);
-        currentLayer.setOpacity(0);
-        channel.activeSlot = nextIndex;
-      };
-      nextLayer.once("load", finish);
-      window.setTimeout(finish, 260);
+    function tileXToLng(x, z) {
+      return x / Math.pow(2, z) * 360 - 180;
     }
-    function preloadImage(url) {
+    function tileYToLat(y, z) {
+      const n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+      return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    }
+    function visibleTiles() {
+      const bounds = map.getBounds();
+      const max = Math.pow(2, tileZoom) - 1;
+      const xMin = Math.max(0, lngToTileX(bounds.getWest(), tileZoom) - 1);
+      const xMax = Math.min(max, lngToTileX(bounds.getEast(), tileZoom) + 1);
+      const yMin = Math.max(0, latToTileY(bounds.getNorth(), tileZoom) - 1);
+      const yMax = Math.min(max, latToTileY(bounds.getSouth(), tileZoom) + 1);
+      const tiles = [];
+      for (let x = xMin; x <= xMax; x++) {
+        for (let y = yMin; y <= yMax; y++) tiles.push({ x, y, z: tileZoom });
+      }
+      return tiles;
+    }
+    function loadTile(frame, product, tile) {
+      const url = tileUrl(frame, product, tile.z, tile.x, tile.y);
+      const key = `${frame.validtime}:${product}:${tile.z}:${tile.x}:${tile.y}`;
+      if (frameCache.has(key)) return Promise.resolve(frameCache.get(key));
       return new Promise((resolve) => {
         const img = new Image();
-        img.onload = resolve;
-        img.onerror = resolve;
+        img.onload = () => {
+          frameCache.set(key, img);
+          resolve(img);
+        };
+        img.onerror = () => resolve(null);
         img.src = url;
       });
+    }
+    function sizeCanvas(target) {
+      const size = map.getSize();
+      const dpr = window.devicePixelRatio || 1;
+      target.width = Math.max(1, Math.floor(size.x * dpr));
+      target.height = Math.max(1, Math.floor(size.y * dpr));
+      target.style.width = `${size.x}px`;
+      target.style.height = `${size.y}px`;
+      const targetCtx = target.getContext("2d");
+      targetCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { size, targetCtx };
+    }
+    async function renderFrame(frame) {
+      const offscreen = document.createElement("canvas");
+      const { targetCtx } = sizeCanvas(offscreen);
+      const tiles = visibleTiles();
+      targetCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      const products = [
+        { name: "B13/TBB", alpha: 0.72 },
+        { name: "B08/TBB", alpha: 0.32 }
+      ];
+      for (const product of products) {
+        targetCtx.globalAlpha = product.alpha;
+        for (const tile of tiles) {
+          const img = await loadTile(frame, product.name, tile);
+          if (!img) continue;
+          const west = tileXToLng(tile.x, tile.z);
+          const east = tileXToLng(tile.x + 1, tile.z);
+          const north = tileYToLat(tile.y, tile.z);
+          const south = tileYToLat(tile.y + 1, tile.z);
+          const topLeft = map.latLngToContainerPoint([north, west]);
+          const bottomRight = map.latLngToContainerPoint([south, east]);
+          targetCtx.drawImage(img, topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y);
+        }
+      }
+      targetCtx.globalAlpha = 1;
+      return offscreen;
+    }
+    async function drawFrame(index) {
+      if (!frames.length) return;
+      const requestId = renderRequestId + 1;
+      renderRequestId = requestId;
+      frameIndex = Math.max(0, Math.min(frames.length - 1, index));
+      const frame = frames[frameIndex];
+      timeline.value = String(frameIndex);
+      const bitmap = await renderFrame(frame);
+      if (renderRequestId !== requestId) return;
+      sizeCanvas(canvas);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width / (window.devicePixelRatio || 1), canvas.height / (window.devicePixelRatio || 1));
+      status.textContent = `Canvas 厚度感：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
+      preloadFrame(frameIndex + 1);
     }
     function preloadFrame(index) {
       if (!frames.length) return Promise.resolve();
       const frame = frames[(index + frames.length) % frames.length];
-      const tiles = [
-        ["5", "26", "13"],
-        ["5", "27", "13"],
-        ["5", "28", "13"],
-        ["5", "26", "14"],
-        ["5", "27", "14"],
-        ["5", "28", "14"]
-      ];
+      const tiles = visibleTiles();
       const requests = [];
       ["B13/TBB", "B08/TBB"].forEach((product) => {
-        tiles.forEach(([z, x, y]) => {
-          requests.push(preloadImage(tileUrl(frame, product).replace("{z}", z).replace("{x}", x).replace("{y}", y)));
-        });
+        tiles.forEach((tile) => requests.push(loadTile(frame, product, tile)));
       });
       return Promise.all(requests);
     }
@@ -215,23 +257,22 @@
       return Promise.race([Promise.all(requests), timeout]);
     }
     function setFrame(index) {
-      if (!frames.length) return;
-      frameIndex = Math.max(0, Math.min(frames.length - 1, index));
-      const frame = frames[frameIndex];
-      timeline.value = String(frameIndex);
-      updateChannel("ir", frame);
-      updateChannel("vapor", frame);
-      status.textContent = `紅外線亮溫：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
-      preloadFrame(frameIndex + 1);
+      drawFrame(index);
     }
     function stop() {
       playRequestId += 1;
       if (timer) {
-        clearInterval(timer);
+        clearTimeout(timer);
         timer = null;
       }
       play.classList.remove("active");
       play.textContent = "播放";
+    }
+    function queueNextFrame() {
+      timer = window.setTimeout(async () => {
+        await drawFrame((frameIndex + 1) % frames.length);
+        if (timer) queueNextFrame();
+      }, 360);
     }
     async function togglePlay() {
       if (!frames.length) return;
@@ -249,9 +290,7 @@
       play.disabled = false;
       play.classList.add("active");
       play.textContent = "暫停";
-      timer = setInterval(() => {
-        setFrame((frameIndex + 1) % frames.length);
-      }, 360);
+      queueNextFrame();
     }
     async function init() {
       const response = await fetch(timesUrl, { cache: "no-store" });
@@ -272,11 +311,12 @@
       timeline.min = "0";
       timeline.max = String(frames.length - 1);
       timeline.value = String(frameIndex);
-      createChannel("ir", "B13/TBB", "himawari-ir", 0.7, 620, frames[frameIndex]);
-      createChannel("vapor", "B08/TBB", "himawari-vapor", 0.3, 621, frames[frameIndex]);
-      status.textContent = `紅外線亮溫：${formatTime(frames[frameIndex])} (${frameIndex + 1}/${frames.length})`;
+      await drawFrame(frameIndex);
     }
     timeline.addEventListener("input", () => setFrame(Number(timeline.value)));
+    map.on("moveend zoomend resize", () => {
+      if (frames.length) drawFrame(frameIndex);
+    });
     play.addEventListener("click", togglePlay);
     latest.addEventListener("click", () => {
       stop();

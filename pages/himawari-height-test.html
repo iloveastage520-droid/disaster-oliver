@@ -40,6 +40,12 @@
       gap: 8px;
       margin-top: 10px;
     }
+    .mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
     button {
       border: 0;
       border-radius: 4px;
@@ -50,6 +56,12 @@
       cursor: pointer;
     }
     button.active { background: #0e7490; }
+    button.secondary {
+      background: #475569;
+    }
+    button.secondary.active {
+      background: #7c3aed;
+    }
     input[type="range"] {
       width: 100%;
       accent-color: #0891b2;
@@ -98,7 +110,28 @@
     .leaflet-tile-pane .himawari-ir {
       mix-blend-mode: screen;
       filter: contrast(1.22) saturate(1.2);
-      transition: opacity 0.35s linear;
+      transition: opacity 0.35s linear, filter 0.25s linear;
+    }
+    .leaflet-tile-pane .himawari-vapor {
+      mix-blend-mode: screen;
+      filter: contrast(1.5) saturate(1.35) hue-rotate(185deg);
+      transition: opacity 0.35s linear, filter 0.25s linear;
+    }
+    body.enhanced .leaflet-tile-pane .himawari-ir {
+      filter: contrast(1.75) brightness(1.08) saturate(1.45);
+    }
+    body.enhanced .leaflet-tile-pane .himawari-vapor {
+      filter: contrast(1.95) brightness(1.08) saturate(1.8) hue-rotate(190deg);
+    }
+    body.relief .leaflet-tile-pane .himawari-ir {
+      filter: contrast(2.05) brightness(1.04) saturate(1.65) drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.65));
+    }
+    body.relief .leaflet-tile-pane .himawari-vapor {
+      filter: contrast(2.15) brightness(1.05) saturate(1.9) hue-rotate(190deg) drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+    }
+    .leaflet-tile-pane .himawari-ir,
+    .leaflet-tile-pane .himawari-vapor {
+      transition: opacity 0.35s linear, filter 0.25s linear;
     }
     @media (max-width: 720px) {
       .panel {
@@ -123,13 +156,18 @@
       <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
       <button id="latest" type="button">最新</button>
     </div>
+    <div class="mode-row">
+      <button class="secondary" type="button" data-mode="normal">原始</button>
+      <button class="secondary active" type="button" data-mode="enhanced">強化</button>
+      <button class="secondary" type="button" data-mode="relief">厚度感</button>
+    </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
     <div class="note">
-      這頁先用紅外線亮溫做「高度感」測試：雲頂越冷，通常代表雲頂越高。這不是正式雲頂高度數值圖層。
+      這頁用紅外線亮溫加水氣影像做「高度感」測試：雲頂越冷通常越高，水氣疊層用來增加厚雲和高層雲的層次。這不是正式雲頂高度數值圖層。
     </div>
   </section>
   <aside class="legend">
-    <div class="legend-title">概念色階：雲頂溫度到高度感</div>
+    <div class="legend-title">概念色階：雲頂溫度與厚度感</div>
     <div class="bar"></div>
     <div class="ticks">
       <span>暖 / 低雲</span>
@@ -148,13 +186,12 @@
     let frames = [];
     let frameIndex = 0;
     let timer = null;
-    let activeLayer = null;
-    let standbyLayer = null;
-    let activeSlot = 0;
+    const channels = {};
     const status = document.getElementById("status");
     const timeline = document.getElementById("timeline");
     const play = document.getElementById("play");
     const latest = document.getElementById("latest");
+    document.body.classList.add("enhanced");
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -176,39 +213,52 @@
         minute: "2-digit"
       });
     }
-    function tileUrl(frame) {
-      return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/B13/TBB/{z}/{x}/{y}.jpg`;
+    function tileUrl(frame, product) {
+      return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/${product}/{z}/{x}/{y}.jpg`;
     }
-    function createLayer(frame, opacity) {
-      return L.tileLayer(tileUrl(frame), {
+    function createLayer(frame, product, className, opacity, zIndex) {
+      return L.tileLayer(tileUrl(frame, product), {
         opacity,
-        className: "himawari-ir",
+        className,
         attribution: "Himawari &copy; JMA",
         minZoom: 3,
         maxZoom: 11,
         maxNativeZoom: 5,
-        zIndex: 620
+        zIndex
       });
+    }
+    function createChannel(name, product, className, opacity, zIndex, frame) {
+      const layers = [
+        createLayer(frame, product, className, opacity, zIndex).addTo(map),
+        createLayer(frame, product, className, 0, zIndex).addTo(map)
+      ];
+      channels[name] = { product, layers, activeSlot: 0, opacity };
+    }
+    function updateChannel(name, frame) {
+      const channel = channels[name];
+      const nextIndex = channel.activeSlot ? 0 : 1;
+      const currentLayer = channel.layers[channel.activeSlot];
+      const nextLayer = channel.layers[nextIndex];
+      nextLayer.setOpacity(0);
+      nextLayer.setUrl(tileUrl(frame, channel.product));
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        nextLayer.setOpacity(channel.opacity);
+        currentLayer.setOpacity(0);
+        channel.activeSlot = nextIndex;
+      };
+      nextLayer.once("load", finish);
+      window.setTimeout(finish, 450);
     }
     function setFrame(index) {
       if (!frames.length) return;
       frameIndex = Math.max(0, Math.min(frames.length - 1, index));
       const frame = frames[frameIndex];
       timeline.value = String(frameIndex);
-      const nextLayer = activeSlot ? activeLayer : standbyLayer;
-      const currentLayer = activeSlot ? standbyLayer : activeLayer;
-      nextLayer.setOpacity(0);
-      nextLayer.setUrl(tileUrl(frame));
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        nextLayer.setOpacity(0.68);
-        currentLayer.setOpacity(0);
-        activeSlot = activeSlot ? 0 : 1;
-      };
-      nextLayer.once("load", finish);
-      window.setTimeout(finish, 450);
+      updateChannel("ir", frame);
+      updateChannel("vapor", frame);
       status.textContent = `紅外線亮溫：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
     }
     function stop() {
@@ -245,8 +295,8 @@
       timeline.min = "0";
       timeline.max = String(frames.length - 1);
       timeline.value = String(frameIndex);
-      activeLayer = createLayer(frames[frameIndex], 0.68).addTo(map);
-      standbyLayer = createLayer(frames[frameIndex], 0).addTo(map);
+      createChannel("ir", "B13/TBB", "himawari-ir", 0.7, 620, frames[frameIndex]);
+      createChannel("vapor", "B08/TBB", "himawari-vapor", 0.3, 621, frames[frameIndex]);
       status.textContent = `紅外線亮溫：${formatTime(frames[frameIndex])} (${frameIndex + 1}/${frames.length})`;
     }
     timeline.addEventListener("input", () => setFrame(Number(timeline.value)));
@@ -254,6 +304,16 @@
     latest.addEventListener("click", () => {
       stop();
       setFrame(frames.length - 1);
+    });
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const mode = button.dataset.mode;
+        document.body.classList.toggle("enhanced", mode === "enhanced");
+        document.body.classList.toggle("relief", mode === "relief");
+        document.querySelectorAll("[data-mode]").forEach((item) => {
+          item.classList.toggle("active", item === button);
+        });
+      });
     });
     init().catch((error) => {
       console.error(error);

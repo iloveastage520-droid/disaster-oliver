@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>向日葵雲頂高度感測試</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      background: #0f172a;
+    }
+    #map { position: absolute; inset: 0; }
+    .panel {
+      position: fixed;
+      left: 16px;
+      top: 16px;
+      z-index: 1000;
+      width: min(430px, calc(100vw - 32px));
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+      padding: 12px;
+    }
+    .panel h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    button {
+      border: 0;
+      border-radius: 4px;
+      background: #0891b2;
+      color: #fff;
+      padding: 6px 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.active { background: #0e7490; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #0891b2;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .note {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #475569;
+    }
+    .legend {
+      position: fixed;
+      right: 16px;
+      bottom: 18px;
+      z-index: 1000;
+      width: min(330px, calc(100vw - 32px));
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .legend-title {
+      font-weight: 900;
+      margin-bottom: 7px;
+    }
+    .bar {
+      height: 14px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #1f2937 0%, #64748b 22%, #e5e7eb 44%, #38bdf8 62%, #7c3aed 80%, #ef4444 100%);
+      border: 1px solid rgba(15, 23, 42, 0.22);
+    }
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      color: #475569;
+    }
+    .leaflet-tile-pane .himawari-ir {
+      mix-blend-mode: screen;
+      filter: contrast(1.22) saturate(1.2);
+      transition: opacity 0.35s linear;
+    }
+    @media (max-width: 720px) {
+      .panel {
+        left: 10px;
+        top: 10px;
+      }
+      .legend {
+        left: 10px;
+        right: 10px;
+        bottom: 12px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <section class="panel">
+    <h1>向日葵雲頂高度感測試</h1>
+    <div class="controls">
+      <button id="play" type="button">播放</button>
+      <input id="timeline" type="range" min="0" max="0" value="0" step="1" aria-label="向日葵時間軸">
+      <button id="latest" type="button">最新</button>
+    </div>
+    <div id="status" class="status">載入向日葵時間序列中...</div>
+    <div class="note">
+      這頁先用紅外線亮溫做「高度感」測試：雲頂越冷，通常代表雲頂越高。這不是正式雲頂高度數值圖層。
+    </div>
+  </section>
+  <aside class="legend">
+    <div class="legend-title">概念色階：雲頂溫度到高度感</div>
+    <div class="bar"></div>
+    <div class="ticks">
+      <span>暖 / 低雲</span>
+      <span>冷 / 高雲</span>
+      <span>深對流</span>
+    </div>
+  </aside>
+  <script>
+    const timesUrl = "https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json";
+    const map = L.map("map", { center: [23.8, 121.1], zoom: 5, zoomControl: true });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    let frames = [];
+    let frameIndex = 0;
+    let timer = null;
+    let activeLayer = null;
+    let standbyLayer = null;
+    let activeSlot = 0;
+    const status = document.getElementById("status");
+    const timeline = document.getElementById("timeline");
+    const play = document.getElementById("play");
+    const latest = document.getElementById("latest");
+
+    function parseJmaTime(value) {
+      const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+      if (!match) return NaN;
+      return Date.UTC(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3]),
+        Number(match[4]),
+        Number(match[5]),
+        Number(match[6])
+      );
+    }
+    function formatTime(frame) {
+      return new Date(frame.epoch).toLocaleString("zh-TW", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+    function tileUrl(frame) {
+      return `https://www.jma.go.jp/bosai/himawari/data/satimg/${frame.basetime}/fd/${frame.validtime}/B13/TBB/{z}/{x}/{y}.jpg`;
+    }
+    function createLayer(frame, opacity) {
+      return L.tileLayer(tileUrl(frame), {
+        opacity,
+        className: "himawari-ir",
+        attribution: "Himawari &copy; JMA",
+        minZoom: 3,
+        maxZoom: 11,
+        maxNativeZoom: 5,
+        zIndex: 620
+      });
+    }
+    function setFrame(index) {
+      if (!frames.length) return;
+      frameIndex = Math.max(0, Math.min(frames.length - 1, index));
+      const frame = frames[frameIndex];
+      timeline.value = String(frameIndex);
+      const nextLayer = activeSlot ? activeLayer : standbyLayer;
+      const currentLayer = activeSlot ? standbyLayer : activeLayer;
+      nextLayer.setOpacity(0);
+      nextLayer.setUrl(tileUrl(frame));
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        nextLayer.setOpacity(0.68);
+        currentLayer.setOpacity(0);
+        activeSlot = activeSlot ? 0 : 1;
+      };
+      nextLayer.once("load", finish);
+      window.setTimeout(finish, 450);
+      status.textContent = `紅外線亮溫：${formatTime(frame)} (${frameIndex + 1}/${frames.length})`;
+    }
+    function stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      play.classList.remove("active");
+      play.textContent = "播放";
+    }
+    function togglePlay() {
+      if (!frames.length) return;
+      if (timer) {
+        stop();
+        return;
+      }
+      play.classList.add("active");
+      play.textContent = "暫停";
+      timer = setInterval(() => {
+        setFrame((frameIndex + 1) % frames.length);
+      }, 520);
+    }
+    async function init() {
+      const response = await fetch(timesUrl, { cache: "no-store" });
+      const times = await response.json();
+      frames = (Array.isArray(times) ? times : [])
+        .map((frame) => ({ ...frame, epoch: parseJmaTime(frame.validtime) }))
+        .filter((frame) => frame.basetime && frame.validtime && Number.isFinite(frame.epoch));
+      if (!frames.length) {
+        status.textContent = "向日葵資料目前無法載入";
+        return;
+      }
+      frameIndex = frames.length - 1;
+      timeline.min = "0";
+      timeline.max = String(frames.length - 1);
+      timeline.value = String(frameIndex);
+      activeLayer = createLayer(frames[frameIndex], 0.68).addTo(map);
+      standbyLayer = createLayer(frames[frameIndex], 0).addTo(map);
+      status.textContent = `紅外線亮溫：${formatTime(frames[frameIndex])} (${frameIndex + 1}/${frames.length})`;
+    }
+    timeline.addEventListener("input", () => setFrame(Number(timeline.value)));
+    play.addEventListener("click", togglePlay);
+    latest.addEventListener("click", () => {
+      stop();
+      setFrame(frames.length - 1);
+    });
+    init().catch((error) => {
+      console.error(error);
+      status.textContent = "向日葵資料載入失敗";
+    });
+  </script>
+</body>
+</html>

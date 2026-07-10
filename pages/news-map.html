@@ -212,7 +212,7 @@
                 <button type="button" data-filter="all" class="active">全部</button>
                 <button type="button" data-filter="today">今天</button>
                 <button type="button" data-filter="yesterday">昨天</button>
-                <button type="button" data-filter="older">更多</button>
+                <button type="button" data-filter="hidden">不顯示</button>
             </div>
         </div>
         <div class="timeline-track">
@@ -1694,6 +1694,7 @@
         }
         function filteredLiveItems() {
             if (activeDateFilter === "all") return liveSheetAllItems;
+            if (activeDateFilter === "hidden") return [];
             return liveSheetAllItems.filter((item) => dateFilterKey(item) === activeDateFilter);
         }
         function setDateFilter(filter) {

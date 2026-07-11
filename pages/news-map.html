@@ -1621,7 +1621,10 @@
                     };
                 })
                 .filter((frame) => Number.isFinite(frame.point[0]) && Number.isFinite(frame.point[1]));
-            typhoonFrameIndex = Math.min(typhoonFrameIndex, Math.max(0, typhoonFrames.length - 1));
+            const firstCircleFrameIndex = typhoonFrames.findIndex((frame) => frame.circles?.length);
+            typhoonFrameIndex = firstCircleFrameIndex >= 0
+                ? firstCircleFrameIndex
+                : Math.min(typhoonFrameIndex, Math.max(0, typhoonFrames.length - 1));
             setupTyphoonTimeline();
             updateTyphoonFrame();
         }

@@ -1619,35 +1619,32 @@
                 .map((frame, index) => frame.circles?.length ? index : -1)
                 .filter((index) => index >= 0);
         }
+        function formatTyphoonDateTime(rawTime, forecastHour = 0) {
+            const date = new Date(rawTime || "");
+            if (Number.isNaN(date.getTime())) return rawTime || "";
+            date.setHours(date.getHours() + (Number(forecastHour) || 0));
+            return date.toLocaleString("zh-TW", {
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
         function typhoonFrameTimeLabel(frame) {
             const p = frame?.properties || {};
-            if (p.forecastHour) return `+${p.forecastHour}h`;
+            if (p.forecastHour) return formatTyphoonDateTime(p.initialTime || p.datetime, p.forecastHour);
             const rawTime = p.datetime || p.initialTime || "";
-            const date = new Date(rawTime);
-            if (!Number.isNaN(date.getTime())) {
-                return date.toLocaleString("zh-TW", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                });
-            }
+            const formattedTime = formatTyphoonDateTime(rawTime);
+            if (formattedTime) return formattedTime;
             return rawTime || p.label || "";
         }
         function typhoonFeatureTimeLabel(feature) {
             const p = feature?.properties || {};
             if (!String(p.kind || "").includes("circle")) return "";
-            if (p.forecastHour) return `+${p.forecastHour}h`;
+            if (p.forecastHour) return formatTyphoonDateTime(p.initialTime || p.datetime, p.forecastHour);
             const rawTime = p.datetime || p.initialTime || "";
-            const date = new Date(rawTime);
-            if (!Number.isNaN(date.getTime())) {
-                return date.toLocaleString("zh-TW", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                });
-            }
+            const formattedTime = formatTyphoonDateTime(rawTime);
+            if (formattedTime) return formattedTime;
             return rawTime || p.label || "";
         }
         function addTyphoonTimeLabel(frame, layerGroup) {

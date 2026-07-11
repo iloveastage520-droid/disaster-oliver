@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>累積雨量粒子測試</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      background: #0f172a;
+    }
+    #map { position: absolute; inset: 0; }
+    #rain-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 520;
+      mix-blend-mode: screen;
+    }
+    #particle-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 650;
+    }
+    .panel {
+      position: fixed;
+      left: 16px;
+      top: 16px;
+      z-index: 1000;
+      width: min(430px, calc(100vw - 32px));
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(15, 23, 42, 0.18);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);
+      padding: 12px;
+    }
+    .panel h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    button {
+      border: 0;
+      border-radius: 4px;
+      background: #0891b2;
+      color: #fff;
+      padding: 7px 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button.active { background: #0e7490; }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #0891b2;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 3px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: #334155;
+    }
+    .legend span {
+      height: 8px;
+      border-radius: 999px;
+    }
+    @media (max-width: 720px) {
+      .panel {
+        left: 10px;
+        top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <canvas id="rain-canvas"></canvas>
+  <canvas id="particle-canvas"></canvas>
+  <section class="panel">
+    <h1>累積雨量降雨圖測試</h1>
+    <div class="controls">
+      <button id="play" type="button">暫停雨效</button>
+      <input id="intensity" type="range" min="0" max="100" value="72" step="1" aria-label="雨滴密度">
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span style="background:#38bdf8"></span>
+      <span style="background:#22c55e"></span>
+      <span style="background:#eab308"></span>
+      <span style="background:#f97316"></span>
+      <span style="background:#ef4444"></span>
+      <span style="background:#a855f7"></span>
+    </div>
+    <div id="status" class="status">Canvas 雨量場 + 粒子雨效</div>
+  </section>
+  <script>
+    const map = L.map("map", { center: [23.75, 121.0], zoom: 7, zoomControl: true });
+    L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
+      maxZoom: 20,
+      attribution: "Map imagery &copy; Google"
+    }).addTo(map);
+
+    const rainCanvas = document.getElementById("rain-canvas");
+    const rainCtx = rainCanvas.getContext("2d");
+    const particleCanvas = document.getElementById("particle-canvas");
+    const particleCtx = particleCanvas.getContext("2d");
+    const playButton = document.getElementById("play");
+    const intensitySlider = document.getElementById("intensity");
+    const status = document.getElementById("status");
+
+    let particles = [];
+    let running = true;
+    let animationId = 0;
+    let lastFrameTime = 0;
+    let rainField = [];
+
+    const rainfallCenters = [
+      { lat: 25.03, lng: 121.55, amount: 160, radius: 0.55 },
+      { lat: 24.80, lng: 121.05, amount: 260, radius: 0.42 },
+      { lat: 23.98, lng: 121.60, amount: 310, radius: 0.52 },
+      { lat: 22.65, lng: 120.35, amount: 210, radius: 0.58 },
+      { lat: 23.48, lng: 120.65, amount: 190, radius: 0.45 }
+    ];
+
+    function resizeCanvas(canvas, ctx) {
+      const size = map.getSize();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(size.x * dpr));
+      canvas.height = Math.max(1, Math.floor(size.y * dpr));
+      canvas.style.width = `${size.x}px`;
+      canvas.style.height = `${size.y}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return size;
+    }
+
+    function rainfallAt(lat, lng) {
+      let amount = 0;
+      for (const center of rainfallCenters) {
+        const dx = (lng - center.lng) * Math.cos(lat * Math.PI / 180);
+        const dy = lat - center.lat;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        amount += center.amount * Math.exp(-Math.pow(dist / center.radius, 2));
+      }
+      return Math.min(360, amount);
+    }
+
+    function colorForRain(amount) {
+      if (amount >= 300) return [168, 85, 247, 0.68];
+      if (amount >= 220) return [239, 68, 68, 0.62];
+      if (amount >= 150) return [249, 115, 22, 0.56];
+      if (amount >= 80) return [234, 179, 8, 0.48];
+      if (amount >= 30) return [34, 197, 94, 0.36];
+      if (amount >= 8) return [56, 189, 248, 0.26];
+      return [0, 0, 0, 0];
+    }
+
+    function rebuildRainField() {
+      const size = resizeCanvas(rainCanvas, rainCtx);
+      resizeCanvas(particleCanvas, particleCtx);
+      const grid = 26;
+      const cols = Math.ceil(size.x / grid) + 2;
+      const rows = Math.ceil(size.y / grid) + 2;
+      rainField = [];
+      rainCtx.clearRect(0, 0, size.x, size.y);
+
+      for (let y = -1; y < rows; y++) {
+        for (let x = -1; x < cols; x++) {
+          const px = x * grid;
+          const py = y * grid;
+          const latlng = map.containerPointToLatLng([px + grid / 2, py + grid / 2]);
+          const amount = rainfallAt(latlng.lat, latlng.lng);
+          const [r, g, b, alpha] = colorForRain(amount);
+          if (!alpha) continue;
+          rainCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${Math.min(0.54, alpha + 0.08)})`;
+          rainCtx.fillRect(px, py, grid, grid);
+          rainCtx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+          rainCtx.lineWidth = 0.65;
+          rainCtx.strokeRect(px + 0.5, py + 0.5, grid - 1, grid - 1);
+          rainField.push({
+            x: px + grid / 2,
+            y: py + grid / 2,
+            minX: px,
+            maxX: px + grid,
+            minY: py,
+            maxY: py + grid,
+            amount,
+            grid
+          });
+        }
+      }
+
+      status.textContent = `Canvas 雨量格點 ${rainField.length} 格，雨滴密度 ${intensitySlider.value}%`;
+    }
+
+    function weightedRainPoint() {
+      if (!rainField.length) return { x: Math.random() * map.getSize().x, y: 0, amount: 0 };
+      let total = 0;
+      for (const cell of rainField) total += Math.max(1, cell.amount);
+      let target = Math.random() * total;
+      for (const cell of rainField) {
+        target -= Math.max(1, cell.amount);
+        if (target <= 0) return cell;
+      }
+      return rainField[rainField.length - 1];
+    }
+
+    function spawnParticle() {
+      const cell = weightedRainPoint();
+      const strength = Math.min(1, cell.amount / 300);
+      particles.push({
+        x: cell.minX + Math.random() * cell.grid,
+        y: cell.minY - Math.random() * cell.grid * 0.8,
+        vx: -3 + Math.random() * 6,
+        vy: 210 + strength * 280 + Math.random() * 80,
+        length: Math.min(cell.grid * 0.75, 8 + strength * 16),
+        alpha: 0.22 + strength * 0.48,
+        width: 1 + strength * 1.4,
+        minX: cell.minX,
+        maxX: cell.maxX,
+        minY: cell.minY,
+        maxY: cell.maxY
+      });
+    }
+
+    function animateRain(now) {
+      const size = map.getSize();
+      const dt = Math.min(0.04, (now - lastFrameTime) / 1000 || 0.016);
+      lastFrameTime = now;
+      particleCtx.clearRect(0, 0, size.x, size.y);
+
+      if (running) {
+        const density = Number(intensitySlider.value) / 100;
+        const spawnCount = Math.round(4 + density * 24);
+        for (let i = 0; i < spawnCount; i++) spawnParticle();
+      }
+
+      particleCtx.lineCap = "round";
+      for (const drop of particles) {
+        drop.x += drop.vx * dt;
+        drop.y += drop.vy * dt;
+        particleCtx.strokeStyle = `rgba(186, 230, 253, ${drop.alpha})`;
+        particleCtx.lineWidth = drop.width;
+        particleCtx.beginPath();
+        particleCtx.moveTo(drop.x, drop.y);
+        particleCtx.lineTo(drop.x - drop.vx * 0.025, drop.y - drop.length);
+        particleCtx.stroke();
+      }
+      particles = particles.filter((drop) =>
+        drop.y < drop.maxY + drop.length &&
+        drop.x >= drop.minX &&
+        drop.x <= drop.maxX
+      );
+      animationId = requestAnimationFrame(animateRain);
+    }
+
+    function toggleRain() {
+      running = !running;
+      playButton.classList.toggle("active", running);
+      playButton.textContent = running ? "暫停雨效" : "播放雨效";
+    }
+
+    map.on("moveend zoomend resize", () => {
+      particles = [];
+      rebuildRainField();
+    });
+    playButton.addEventListener("click", toggleRain);
+    intensitySlider.addEventListener("input", () => {
+      status.textContent = `Canvas 雨量格點 ${rainField.length} 格，雨滴密度 ${intensitySlider.value}%`;
+    });
+
+    playButton.classList.add("active");
+    rebuildRainField();
+    animationId = requestAnimationFrame(animateRain);
+  </script>
+</body>
+</html>

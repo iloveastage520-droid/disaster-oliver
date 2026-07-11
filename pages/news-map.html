@@ -550,6 +550,16 @@
             background: #f97316;
             box-shadow: 0 2px 8px rgba(124, 45, 18, 0.3);
         }
+        .typhoon-time-label {
+            border: 0;
+            border-radius: 4px;
+            background: rgba(15, 23, 42, 0.82);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 7px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
+        }
         .himawari-fade-layer {
             transition: opacity 0.45s linear;
         }
@@ -1604,6 +1614,56 @@
             }
             return false;
         }
+        function typhoonCircleFrameIndexes() {
+            return typhoonFrames
+                .map((frame, index) => frame.circles?.length ? index : -1)
+                .filter((index) => index >= 0);
+        }
+        function typhoonFrameTimeLabel(frame) {
+            const p = frame?.properties || {};
+            if (p.forecastHour) return `+${p.forecastHour}h`;
+            const rawTime = p.datetime || p.initialTime || "";
+            const date = new Date(rawTime);
+            if (!Number.isNaN(date.getTime())) {
+                return date.toLocaleString("zh-TW", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+            }
+            return rawTime || p.label || "";
+        }
+        function typhoonFeatureTimeLabel(feature) {
+            const p = feature?.properties || {};
+            if (!String(p.kind || "").includes("circle")) return "";
+            if (p.forecastHour) return `+${p.forecastHour}h`;
+            const rawTime = p.datetime || p.initialTime || "";
+            const date = new Date(rawTime);
+            if (!Number.isNaN(date.getTime())) {
+                return date.toLocaleString("zh-TW", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+            }
+            return rawTime || p.label || "";
+        }
+        function addTyphoonTimeLabel(frame, layerGroup) {
+            const label = typhoonFrameTimeLabel(frame);
+            if (!label || !layerGroup) return;
+            L.marker(frame.point, {
+                icon: L.divIcon({
+                    html: `<div class="typhoon-time-label">${liveEscape(label)}</div>`,
+                    className: "empty",
+                    iconSize: null,
+                    iconAnchor: [-12, 30]
+                }),
+                interactive: false,
+                zIndexOffset: 1600
+            }).addTo(layerGroup);
+        }
         function buildTyphoonFrames(geojson) {
             const centerKinds = new Set(["analysis-center", "current-center", "forecast-center"]);
             const circleFeatures = (geojson.features || [])
@@ -1621,7 +1681,7 @@
                     };
                 })
                 .filter((frame) => Number.isFinite(frame.point[0]) && Number.isFinite(frame.point[1]));
-            const firstCircleFrameIndex = typhoonFrames.findIndex((frame) => frame.circles?.length);
+            const firstCircleFrameIndex = typhoonCircleFrameIndexes()[0] ?? -1;
             typhoonFrameIndex = firstCircleFrameIndex >= 0
                 ? firstCircleFrameIndex
                 : Math.min(typhoonFrameIndex, Math.max(0, typhoonFrames.length - 1));
@@ -1666,6 +1726,7 @@
                     onEachFeature: (feature, layer) => layer.bindPopup(typhoonPopup(feature))
                 }).addTo(typhoonPlaybackLayer);
             });
+            if (frame.circles?.length) addTyphoonTimeLabel(frame, typhoonPlaybackLayer);
             L.circleMarker(frame.point, {
                 radius: 9,
                 color: "#ffffff",
@@ -1718,9 +1779,15 @@
                 button.textContent = "暫停颱風";
             }
             typhoonTimer = setInterval(() => {
-                typhoonFrameIndex = (typhoonFrameIndex + 1) % typhoonFrames.length;
+                const circleIndexes = typhoonCircleFrameIndexes();
+                if (circleIndexes.length) {
+                    const currentCirclePosition = circleIndexes.indexOf(typhoonFrameIndex);
+                    typhoonFrameIndex = circleIndexes[(currentCirclePosition + 1) % circleIndexes.length];
+                } else {
+                    typhoonFrameIndex = (typhoonFrameIndex + 1) % typhoonFrames.length;
+                }
                 updateTyphoonFrame();
-            }, 850);
+            }, 650);
         }
         function registerTyphoonTrackOverlay() {
             if (typhoonTrackRegistered || !typhoonTrackLayer) return;
@@ -1935,6 +2002,14 @@
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.bindPopup(typhoonPopup(feature));
+                        const timeLabel = typhoonFeatureTimeLabel(feature);
+                        if (timeLabel && layer.bindTooltip) {
+                            layer.bindTooltip(timeLabel, {
+                                permanent: true,
+                                direction: "center",
+                                className: "typhoon-time-label"
+                            });
+                        }
                     }
                 });
                 if (typhoonTrackVisible) typhoonTrackLayer.addTo(map);

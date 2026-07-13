@@ -33,37 +33,6 @@
       z-index: 650;
       opacity: 0.74;
     }
-    .typhoon-center-marker {
-      display: grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      background: #dc2626;
-      color: #fff;
-      font-size: 18px;
-      font-weight: 900;
-      box-shadow: 0 2px 10px rgba(127, 29, 29, 0.4);
-    }
-    .typhoon-forecast-marker {
-      width: 18px;
-      height: 18px;
-      border: 2px solid #fff;
-      border-radius: 50%;
-      background: #f97316;
-      box-shadow: 0 2px 8px rgba(124, 45, 18, 0.3);
-    }
-    .typhoon-time-label {
-      border: 0;
-      border-radius: 4px;
-      background: rgba(15, 23, 42, 0.82);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 7px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.28);
-    }
     .panel {
       position: fixed;
       left: 16px;
@@ -139,12 +108,8 @@
   </section>
   <script>
     const timesUrl = "https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json";
-    const typhoonTrackDataUrl = "../data/cwa-typhoon-track.geojson";
     const historyHours = 12;
     const map = L.map("map", { center: [23.8, 121.1], zoom: 5, zoomControl: true });
-    map.createPane("typhoonPane");
-    map.getPane("typhoonPane").style.zIndex = 720;
-    map.getPane("typhoonPane").style.pointerEvents = "auto";
     L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
       maxZoom: 20,
       attribution: "Map imagery &copy; Google"
@@ -209,99 +174,6 @@
         '"': "&quot;",
         "'": "&#39;"
       }[char]));
-    }
-    function formatTyphoonDateTime(rawTime, forecastHour = 0) {
-      const date = new Date(rawTime || "");
-      if (Number.isNaN(date.getTime())) return rawTime || "";
-      date.setHours(date.getHours() + (Number(forecastHour) || 0));
-      return date.toLocaleString("zh-TW", {
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-    function typhoonFeatureTimeLabel(feature) {
-      const p = feature?.properties || {};
-      if (!String(p.kind || "").includes("circle")) return "";
-      if (p.forecastHour) return formatTyphoonDateTime(p.initialTime || p.datetime, p.forecastHour);
-      return formatTyphoonDateTime(p.datetime || p.initialTime || "") || p.label || "";
-    }
-    function typhoonPointIcon(feature) {
-      const kind = feature?.properties?.kind || "";
-      if (kind === "current-center") {
-        return L.divIcon({
-          html: '<div class="typhoon-center-marker">颱</div>',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-          popupAnchor: [0, -16],
-          className: "empty"
-        });
-      }
-      return L.divIcon({
-        html: '<div class="typhoon-forecast-marker"></div>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-        popupAnchor: [0, -10],
-        className: "empty"
-      });
-    }
-    function typhoonStyle(feature) {
-      const kind = feature?.properties?.kind || "";
-      if (kind === "analysis-track") return { color: "#dc2626", weight: 3, opacity: 0.9, pane: "typhoonPane" };
-      if (kind === "forecast-track") return { color: "#f97316", weight: 3, opacity: 0.9, dashArray: "8,6", pane: "typhoonPane" };
-      if (kind === "current-15ms-circle") return { color: "#dc2626", weight: 2, fillColor: "#dc2626", fillOpacity: 0.08, pane: "typhoonPane" };
-      if (kind === "current-25ms-circle") return { color: "#7f1d1d", weight: 2, fillColor: "#7f1d1d", fillOpacity: 0.12, pane: "typhoonPane" };
-      if (kind === "forecast-70prob-circle") return { color: "#f97316", weight: 1, fillColor: "#f97316", fillOpacity: 0.05, dashArray: "4,5", pane: "typhoonPane" };
-      return { color: "#f97316", weight: 2, opacity: 0.8, pane: "typhoonPane" };
-    }
-    function typhoonPopup(feature) {
-      const p = feature.properties || {};
-      const actualTime = p.forecastHour
-        ? formatTyphoonDateTime(p.initialTime || p.datetime, p.forecastHour)
-        : formatTyphoonDateTime(p.datetime || p.initialTime || "");
-      return [
-        `<b>${escapeHtml(p.label || p.name || "颱風資料")}</b>`,
-        p.name || p.intlName ? `${escapeHtml(p.name || "")} ${escapeHtml(p.intlName || "")}` : "",
-        actualTime ? `時間：${escapeHtml(actualTime)}` : "",
-        p.forecastHour ? `預報：${escapeHtml(p.forecastHour)} 小時` : "",
-        p.radius_km ? `半徑：${escapeHtml(p.radius_km)} km` : "",
-        p.circle15ms_km ? `15m/s 半徑：${escapeHtml(p.circle15ms_km)} km` : "",
-        p.circle25ms_km ? `25m/s 半徑：${escapeHtml(p.circle25ms_km)} km` : "",
-        p.maxWindSpeed_ms ? `最大風速：${escapeHtml(p.maxWindSpeed_ms)} m/s` : "",
-        p.pressure_hpa ? `中心氣壓：${escapeHtml(p.pressure_hpa)} hPa` : ""
-      ].filter(Boolean).join("<br>");
-    }
-    async function loadTyphoonTrackLayer() {
-      try {
-        const response = await fetch(typhoonTrackDataUrl, { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const geojson = await response.json();
-        L.geoJSON(geojson, {
-          pane: "typhoonPane",
-          filter: (feature) => feature.properties?.kind !== "analysis-center",
-          style: typhoonStyle,
-          pointToLayer: (feature, latlng) => L.marker(latlng, {
-            icon: typhoonPointIcon(feature),
-            pane: "typhoonPane",
-            zIndexOffset: 1500
-          }),
-          onEachFeature: (feature, layer) => {
-            layer.bindPopup(typhoonPopup(feature));
-            const label = typhoonFeatureTimeLabel(feature);
-            if (label && layer.bindTooltip) {
-              layer.bindTooltip(label, {
-                permanent: true,
-                direction: "center",
-                className: "typhoon-time-label",
-                pane: "typhoonPane"
-              });
-            }
-          }
-        }).addTo(map);
-      } catch (error) {
-        console.warn("Typhoon track layer unavailable", error);
-      }
     }
     function radarTileUrl(frame, tile) {
       return `${radarHost}${frame.path}/256/${tile.z}/${tile.x}/${tile.y}/2/1_1.png`;
@@ -580,7 +452,6 @@
       timeline.min = "0";
       timeline.max = String(frames.length - 1);
       timeline.value = String(frameIndex);
-      loadTyphoonTrackLayer();
       await drawFrame(frameIndex);
     }
     timeline.addEventListener("input", () => setFrame(Number(timeline.value)));

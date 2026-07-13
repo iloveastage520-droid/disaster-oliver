@@ -180,7 +180,7 @@
     function rebuildRainField() {
       const size = resizeCanvas(rainCanvas, rainCtx);
       resizeCanvas(particleCanvas, particleCtx);
-      const grid = 26;
+      const grid = 16;
       const cols = Math.ceil(size.x / grid) + 2;
       const rows = Math.ceil(size.y / grid) + 2;
       rainField = [];
@@ -196,8 +196,8 @@
           if (!alpha) continue;
           rainCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${Math.min(0.54, alpha + 0.08)})`;
           rainCtx.fillRect(px, py, grid, grid);
-          rainCtx.strokeStyle = "rgba(255, 255, 255, 0.18)";
-          rainCtx.lineWidth = 0.65;
+          rainCtx.strokeStyle = "rgba(255, 255, 255, 0.11)";
+          rainCtx.lineWidth = 0.5;
           rainCtx.strokeRect(px + 0.5, py + 0.5, grid - 1, grid - 1);
           rainField.push({
             x: px + grid / 2,

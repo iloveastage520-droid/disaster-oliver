@@ -256,26 +256,46 @@
       rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
     }
 
-    function sampleRainCell() {
+    function typhoonBandWeight(cell, size) {
+      const timelineMax = Math.max(1, maxTimeIndex());
+      const timelineProgress = Math.max(0, Math.min(1, timeIndex / timelineMax));
+      const westProgress = 1 - Math.max(0, Math.min(1, cell.x / Math.max(1, size.x)));
+      const bandCenter = 0.18 + timelineProgress * 0.72;
+      const bandDistance = Math.abs(westProgress - bandCenter);
+      const bandWeight = Math.exp(-Math.pow(bandDistance / 0.28, 2));
+      const rainWeight = Math.max(0.18, Math.min(1, cell.amount / 180));
+      return rainWeight * (0.35 + bandWeight * 0.95);
+    }
+
+    function sampleRainCell(size) {
       if (!rainField.length) return null;
-      for (let attempt = 0; attempt < 8; attempt++) {
+      let fallback = null;
+      let fallbackScore = -1;
+      for (let attempt = 0; attempt < 18; attempt++) {
         const cell = rainField[Math.floor(Math.random() * rainField.length)];
-        if (cell && cell.amount > 15) return cell;
+        if (!cell) continue;
+        const score = typhoonBandWeight(cell, size);
+        if (score > fallbackScore) {
+          fallback = cell;
+          fallbackScore = score;
+        }
+        if (Math.random() < score) return cell;
       }
-      return rainField[Math.floor(Math.random() * rainField.length)];
+      return fallback || rainField[Math.floor(Math.random() * rainField.length)];
     }
 
     function createRainDrop(size) {
-      const cell = sampleRainCell();
+      const cell = sampleRainCell(size);
       if (!cell) return null;
       const intensity = Math.max(0, Math.min(1, cell.amount / 240));
+      const bandPush = typhoonBandWeight(cell, size);
       return {
         x: cell.minX + Math.random() * cell.grid,
         y: cell.minY - Math.random() * 80,
         len: 8 + intensity * 12 + Math.random() * 8,
-        speed: 160 + intensity * 260 + Math.random() * 120,
-        alpha: 0.08 + intensity * 0.16,
-        drift: -18 + Math.random() * 10,
+        speed: 150 + intensity * 230 + bandPush * 90 + Math.random() * 100,
+        alpha: 0.07 + intensity * 0.13 + bandPush * 0.06,
+        drift: -30 + bandPush * -22 + Math.random() * 14,
         size
       };
     }
@@ -283,7 +303,7 @@
     function targetRainDropCount() {
       if (!rainVisible || !rainField.length) return 0;
       const total = rainField.reduce((sum, cell) => sum + Math.min(1, cell.amount / 220), 0);
-      return Math.min(120, Math.max(18, Math.round(total / 18)));
+      return Math.min(150, Math.max(32, Math.round(total / 16)));
     }
 
     function drawRainEffect(now) {
@@ -652,6 +672,7 @@
       const previousIndex = timeIndex;
       timeIndex = nextIndex;
       timeSlider.value = String(timeIndex);
+      resetRainDrops();
       if (animate && previousIndex !== timeIndex && timeIndex > previousIndex) {
         animateBuildup(previousIndex, timeIndex);
       } else {

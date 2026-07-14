@@ -30,7 +30,7 @@
     #rain-effect-canvas {
       z-index: 530;
       mix-blend-mode: screen;
-      opacity: 0.58;
+      opacity: 0.82;
     }
     .panel {
       position: fixed;
@@ -292,9 +292,9 @@
       return {
         x: cell.minX + Math.random() * cell.grid,
         y: cell.minY - Math.random() * 80,
-        len: 8 + intensity * 12 + Math.random() * 8,
-        speed: 150 + intensity * 230 + bandPush * 90 + Math.random() * 100,
-        alpha: 0.07 + intensity * 0.13 + bandPush * 0.06,
+        len: 12 + intensity * 18 + Math.random() * 10,
+        speed: 170 + intensity * 250 + bandPush * 110 + Math.random() * 110,
+        alpha: 0.14 + intensity * 0.2 + bandPush * 0.1,
         drift: -30 + bandPush * -22 + Math.random() * 14,
         size
       };
@@ -303,7 +303,7 @@
     function targetRainDropCount() {
       if (!rainVisible || !rainField.length) return 0;
       const total = rainField.reduce((sum, cell) => sum + Math.min(1, cell.amount / 220), 0);
-      return Math.min(150, Math.max(32, Math.round(total / 16)));
+      return Math.min(230, Math.max(58, Math.round(total / 11)));
     }
 
     function drawRainEffect(now) {
@@ -331,7 +331,7 @@
           if (nextDrop) Object.assign(drop, nextDrop);
         }
         rainEffectCtx.strokeStyle = `rgba(210, 240, 255, ${drop.alpha})`;
-        rainEffectCtx.lineWidth = 1;
+        rainEffectCtx.lineWidth = 1.35;
         rainEffectCtx.beginPath();
         rainEffectCtx.moveTo(drop.x, drop.y);
         rainEffectCtx.lineTo(drop.x + drop.drift * 0.035, drop.y + drop.len);

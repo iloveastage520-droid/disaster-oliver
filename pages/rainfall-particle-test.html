@@ -173,11 +173,14 @@
     let buildupFromIndex = timeIndex;
     let buildupToIndex = timeIndex;
     let buildupProgress = 1;
+    let lastBuildupDrawAt = 0;
     let rebuildFrameId = 0;
     let rainVisible = true;
     let rainDrops = [];
     let rainEffectFrameId = 0;
     let lastRainEffectAt = 0;
+    let rainDropTargetCount = 0;
+    let rainEffectSize = { x: 0, y: 0 };
     let liveRainStations = [];
     let liveRainTimeline = [];
     let stationSourceLabel = "模擬雨量站";
@@ -256,7 +259,7 @@
     function resetRainDrops() {
       rainDrops = [];
       lastRainEffectAt = 0;
-      resizeCanvas(rainEffectCanvas, rainEffectCtx);
+      rainEffectSize = resizeCanvas(rainEffectCanvas, rainEffectCtx);
       rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
     }
 
@@ -304,19 +307,20 @@
       };
     }
 
-    function targetRainDropCount() {
+    function updateRainDropTargetCount() {
       if (!rainVisible || !rainField.length) return 0;
       const total = rainField.reduce((sum, cell) => sum + Math.min(1, cell.amount / 220), 0);
-      return Math.min(230, Math.max(58, Math.round(total / 11)));
+      rainDropTargetCount = Math.min(180, Math.max(44, Math.round(total / 14)));
+      return rainDropTargetCount;
     }
 
     function drawRainEffect(now) {
-      const size = resizeCanvas(rainEffectCanvas, rainEffectCtx);
+      const size = rainEffectSize.x ? rainEffectSize : resizeCanvas(rainEffectCanvas, rainEffectCtx);
       const dt = lastRainEffectAt ? Math.min(0.05, (now - lastRainEffectAt) / 1000) : 0.016;
       lastRainEffectAt = now;
       rainEffectCtx.clearRect(0, 0, size.x, size.y);
 
-      const targetCount = targetRainDropCount();
+      const targetCount = rainDropTargetCount;
       while (rainDrops.length < targetCount) {
         const drop = createRainDrop(size);
         if (!drop) break;
@@ -350,6 +354,7 @@
       if (rainEffectFrameId) return;
       rainEffectCanvas.style.display = "block";
       lastRainEffectAt = 0;
+      rainEffectSize = resizeCanvas(rainEffectCanvas, rainEffectCtx);
       rainEffectFrameId = requestAnimationFrame(drawRainEffect);
     }
 
@@ -357,6 +362,7 @@
       if (rainEffectFrameId) cancelAnimationFrame(rainEffectFrameId);
       rainEffectFrameId = 0;
       rainDrops = [];
+      rainDropTargetCount = 0;
       rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
       rainEffectCanvas.style.display = "none";
     }
@@ -656,6 +662,7 @@
         }
       }
       rainCtx.restore();
+      updateRainDropTargetCount();
 
       status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       updateTopStations(fromIndex, toIndex, progress);
@@ -666,9 +673,13 @@
       buildupFromIndex = fromIndex;
       buildupToIndex = toIndex;
       const startedAt = performance.now();
+      lastBuildupDrawAt = 0;
       function frame(now) {
         buildupProgress = Math.min(1, (now - startedAt) / duration);
-        rebuildRainField(buildupFromIndex, buildupToIndex, buildupProgress);
+        if (!lastBuildupDrawAt || now - lastBuildupDrawAt > 32 || buildupProgress >= 1) {
+          lastBuildupDrawAt = now;
+          rebuildRainField(buildupFromIndex, buildupToIndex, buildupProgress);
+        }
         if (buildupProgress < 1) {
           buildupFrameId = requestAnimationFrame(frame);
         } else {

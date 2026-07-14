@@ -15,22 +15,14 @@
       background: #0f172a;
     }
     #map { position: absolute; inset: 0; }
-    #rain-canvas,
-    #rain-effect-canvas {
+    #rain-canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
-    }
-    #rain-canvas {
       z-index: 520;
       mix-blend-mode: screen;
-    }
-    #rain-effect-canvas {
-      z-index: 530;
-      mix-blend-mode: screen;
-      opacity: 0.82;
     }
     .panel {
       position: fixed;
@@ -131,7 +123,6 @@
 <body>
   <div id="map"></div>
   <canvas id="rain-canvas"></canvas>
-  <canvas id="rain-effect-canvas"></canvas>
   <section class="panel">
     <h1>累積雨量降雨圖測試</h1>
     <div class="controls">
@@ -159,8 +150,6 @@
 
     const rainCanvas = document.getElementById("rain-canvas");
     const rainCtx = rainCanvas.getContext("2d");
-    const rainEffectCanvas = document.getElementById("rain-effect-canvas");
-    const rainEffectCtx = rainEffectCanvas.getContext("2d");
     const timePlayButton = document.getElementById("time-play");
     const timeSlider = document.getElementById("time");
     const rainCloseButton = document.getElementById("rain-close");
@@ -176,11 +165,6 @@
     let lastBuildupDrawAt = 0;
     let rebuildFrameId = 0;
     let rainVisible = true;
-    let rainDrops = [];
-    let rainEffectFrameId = 0;
-    let lastRainEffectAt = 0;
-    let rainDropTargetCount = 0;
-    let rainEffectSize = { x: 0, y: 0 };
     let liveRainStations = [];
     let liveRainTimeline = [];
     let stationSourceLabel = "模擬雨量站";
@@ -254,117 +238,6 @@
       canvas.style.height = `${size.y}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       return size;
-    }
-
-    function resetRainDrops() {
-      rainDrops = [];
-      lastRainEffectAt = 0;
-      rainEffectSize = resizeCanvas(rainEffectCanvas, rainEffectCtx);
-      rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
-    }
-
-    function typhoonBandWeight(cell, size) {
-      const timelineMax = Math.max(1, maxTimeIndex());
-      const timelineProgress = Math.max(0, Math.min(1, timeIndex / timelineMax));
-      const westProgress = 1 - Math.max(0, Math.min(1, cell.x / Math.max(1, size.x)));
-      const bandCenter = 0.18 + timelineProgress * 0.72;
-      const bandDistance = Math.abs(westProgress - bandCenter);
-      const bandWeight = Math.exp(-Math.pow(bandDistance / 0.28, 2));
-      const rainWeight = Math.max(0.18, Math.min(1, cell.amount / 180));
-      return rainWeight * (0.35 + bandWeight * 0.95);
-    }
-
-    function sampleRainCell(size) {
-      if (!rainField.length) return null;
-      let fallback = null;
-      let fallbackScore = -1;
-      for (let attempt = 0; attempt < 18; attempt++) {
-        const cell = rainField[Math.floor(Math.random() * rainField.length)];
-        if (!cell) continue;
-        const score = typhoonBandWeight(cell, size);
-        if (score > fallbackScore) {
-          fallback = cell;
-          fallbackScore = score;
-        }
-        if (Math.random() < score) return cell;
-      }
-      return fallback || rainField[Math.floor(Math.random() * rainField.length)];
-    }
-
-    function createRainDrop(size) {
-      const cell = sampleRainCell(size);
-      if (!cell) return null;
-      const intensity = Math.max(0, Math.min(1, cell.amount / 240));
-      const bandPush = typhoonBandWeight(cell, size);
-      return {
-        x: cell.minX + Math.random() * cell.grid,
-        y: cell.minY - Math.random() * 80,
-        len: 12 + intensity * 18 + Math.random() * 10,
-        speed: 170 + intensity * 250 + bandPush * 110 + Math.random() * 110,
-        alpha: 0.14 + intensity * 0.2 + bandPush * 0.1,
-        drift: -30 + bandPush * -22 + Math.random() * 14,
-        size
-      };
-    }
-
-    function updateRainDropTargetCount() {
-      if (!rainVisible || !rainField.length) return 0;
-      const total = rainField.reduce((sum, cell) => sum + Math.min(1, cell.amount / 220), 0);
-      rainDropTargetCount = Math.min(180, Math.max(44, Math.round(total / 14)));
-      return rainDropTargetCount;
-    }
-
-    function drawRainEffect(now) {
-      const size = rainEffectSize.x ? rainEffectSize : resizeCanvas(rainEffectCanvas, rainEffectCtx);
-      const dt = lastRainEffectAt ? Math.min(0.05, (now - lastRainEffectAt) / 1000) : 0.016;
-      lastRainEffectAt = now;
-      rainEffectCtx.clearRect(0, 0, size.x, size.y);
-
-      const targetCount = rainDropTargetCount;
-      while (rainDrops.length < targetCount) {
-        const drop = createRainDrop(size);
-        if (!drop) break;
-        rainDrops.push(drop);
-      }
-      if (rainDrops.length > targetCount) rainDrops.length = targetCount;
-
-      rainEffectCtx.save();
-      clipToTaiwanMask(rainEffectCtx);
-      rainEffectCtx.lineCap = "round";
-      for (const drop of rainDrops) {
-        drop.x += drop.drift * dt;
-        drop.y += drop.speed * dt;
-        if (drop.y > size.y + drop.len || drop.x < -40) {
-          const nextDrop = createRainDrop(size);
-          if (nextDrop) Object.assign(drop, nextDrop);
-        }
-        rainEffectCtx.strokeStyle = `rgba(210, 240, 255, ${drop.alpha})`;
-        rainEffectCtx.lineWidth = 1.35;
-        rainEffectCtx.beginPath();
-        rainEffectCtx.moveTo(drop.x, drop.y);
-        rainEffectCtx.lineTo(drop.x + drop.drift * 0.035, drop.y + drop.len);
-        rainEffectCtx.stroke();
-      }
-      rainEffectCtx.restore();
-
-      rainEffectFrameId = requestAnimationFrame(drawRainEffect);
-    }
-
-    function startRainEffect() {
-      if (rainEffectFrameId) return;
-      rainEffectCanvas.style.display = "block";
-      lastRainEffectAt = 0;
-      rainEffectSize = resizeCanvas(rainEffectCanvas, rainEffectCtx);
-      rainEffectFrameId = requestAnimationFrame(drawRainEffect);
-    }
-
-    function stopRainEffect() {
-      if (rainEffectFrameId) cancelAnimationFrame(rainEffectFrameId);
-      rainEffectFrameId = 0;
-      rainDrops = [];
-      rainDropTargetCount = 0;
-      rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
-      rainEffectCanvas.style.display = "none";
     }
 
     function distanceKm(lat1, lng1, lat2, lng2) {
@@ -662,8 +535,6 @@
         }
       }
       rainCtx.restore();
-      updateRainDropTargetCount();
-
       status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       updateTopStations(fromIndex, toIndex, progress);
     }
@@ -706,7 +577,6 @@
       const previousIndex = timeIndex;
       timeIndex = nextIndex;
       timeSlider.value = String(timeIndex);
-      resetRainDrops();
       if (animate && previousIndex !== timeIndex && timeIndex > previousIndex) {
         animateBuildup(previousIndex, timeIndex);
       } else {
@@ -719,16 +589,13 @@
     function toggleRainLayer() {
       rainVisible = !rainVisible;
       rainCanvas.style.display = rainVisible ? "block" : "none";
-      rainEffectCanvas.style.display = rainVisible ? "block" : "none";
       rainCloseButton.textContent = rainVisible ? "關閉雨量" : "顯示雨量";
       if (rainVisible) {
         rebuildRainField(timeIndex, timeIndex, 1);
-        startRainEffect();
         if (!map.hasLayer(stationLayer)) stationLayer.addTo(map);
         status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       } else {
         stopTimePlayback();
-        stopRainEffect();
         stationLayer.clearLayers();
         status.textContent = "累積雨量已關閉";
       }
@@ -767,7 +634,6 @@
       if (rebuildFrameId) cancelAnimationFrame(rebuildFrameId);
       rebuildFrameId = 0;
       rebuildRainField(timeIndex, timeIndex, 1);
-      resetRainDrops();
     });
     timePlayButton.addEventListener("click", toggleTimePlayback);
     rainCloseButton.addEventListener("click", toggleRainLayer);
@@ -777,7 +643,6 @@
       setTimeIndex(timeSlider.value);
     });
     rebuildRainField(timeIndex, timeIndex, 1);
-    startRainEffect();
     loadLiveRainStations();
   </script>
 </body>

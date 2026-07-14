@@ -15,14 +15,22 @@
       background: #0f172a;
     }
     #map { position: absolute; inset: 0; }
-    #rain-canvas {
+    #rain-canvas,
+    #rain-effect-canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       pointer-events: none;
+    }
+    #rain-canvas {
       z-index: 520;
       mix-blend-mode: screen;
+    }
+    #rain-effect-canvas {
+      z-index: 530;
+      mix-blend-mode: screen;
+      opacity: 0.58;
     }
     .panel {
       position: fixed;
@@ -123,6 +131,7 @@
 <body>
   <div id="map"></div>
   <canvas id="rain-canvas"></canvas>
+  <canvas id="rain-effect-canvas"></canvas>
   <section class="panel">
     <h1>累積雨量降雨圖測試</h1>
     <div class="controls">
@@ -150,6 +159,8 @@
 
     const rainCanvas = document.getElementById("rain-canvas");
     const rainCtx = rainCanvas.getContext("2d");
+    const rainEffectCanvas = document.getElementById("rain-effect-canvas");
+    const rainEffectCtx = rainEffectCanvas.getContext("2d");
     const timePlayButton = document.getElementById("time-play");
     const timeSlider = document.getElementById("time");
     const rainCloseButton = document.getElementById("rain-close");
@@ -164,6 +175,9 @@
     let buildupProgress = 1;
     let rebuildFrameId = 0;
     let rainVisible = true;
+    let rainDrops = [];
+    let rainEffectFrameId = 0;
+    let lastRainEffectAt = 0;
     let liveRainStations = [];
     let liveRainTimeline = [];
     let stationSourceLabel = "模擬雨量站";
@@ -233,6 +247,94 @@
       canvas.style.height = `${size.y}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       return size;
+    }
+
+    function resetRainDrops() {
+      rainDrops = [];
+      lastRainEffectAt = 0;
+      resizeCanvas(rainEffectCanvas, rainEffectCtx);
+      rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
+    }
+
+    function sampleRainCell() {
+      if (!rainField.length) return null;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const cell = rainField[Math.floor(Math.random() * rainField.length)];
+        if (cell && cell.amount > 15) return cell;
+      }
+      return rainField[Math.floor(Math.random() * rainField.length)];
+    }
+
+    function createRainDrop(size) {
+      const cell = sampleRainCell();
+      if (!cell) return null;
+      const intensity = Math.max(0, Math.min(1, cell.amount / 240));
+      return {
+        x: cell.minX + Math.random() * cell.grid,
+        y: cell.minY - Math.random() * 80,
+        len: 8 + intensity * 12 + Math.random() * 8,
+        speed: 160 + intensity * 260 + Math.random() * 120,
+        alpha: 0.08 + intensity * 0.16,
+        drift: -18 + Math.random() * 10,
+        size
+      };
+    }
+
+    function targetRainDropCount() {
+      if (!rainVisible || !rainField.length) return 0;
+      const total = rainField.reduce((sum, cell) => sum + Math.min(1, cell.amount / 220), 0);
+      return Math.min(120, Math.max(18, Math.round(total / 18)));
+    }
+
+    function drawRainEffect(now) {
+      const size = resizeCanvas(rainEffectCanvas, rainEffectCtx);
+      const dt = lastRainEffectAt ? Math.min(0.05, (now - lastRainEffectAt) / 1000) : 0.016;
+      lastRainEffectAt = now;
+      rainEffectCtx.clearRect(0, 0, size.x, size.y);
+
+      const targetCount = targetRainDropCount();
+      while (rainDrops.length < targetCount) {
+        const drop = createRainDrop(size);
+        if (!drop) break;
+        rainDrops.push(drop);
+      }
+      if (rainDrops.length > targetCount) rainDrops.length = targetCount;
+
+      rainEffectCtx.save();
+      clipToTaiwanMask(rainEffectCtx);
+      rainEffectCtx.lineCap = "round";
+      for (const drop of rainDrops) {
+        drop.x += drop.drift * dt;
+        drop.y += drop.speed * dt;
+        if (drop.y > size.y + drop.len || drop.x < -40) {
+          const nextDrop = createRainDrop(size);
+          if (nextDrop) Object.assign(drop, nextDrop);
+        }
+        rainEffectCtx.strokeStyle = `rgba(210, 240, 255, ${drop.alpha})`;
+        rainEffectCtx.lineWidth = 1;
+        rainEffectCtx.beginPath();
+        rainEffectCtx.moveTo(drop.x, drop.y);
+        rainEffectCtx.lineTo(drop.x + drop.drift * 0.035, drop.y + drop.len);
+        rainEffectCtx.stroke();
+      }
+      rainEffectCtx.restore();
+
+      rainEffectFrameId = requestAnimationFrame(drawRainEffect);
+    }
+
+    function startRainEffect() {
+      if (rainEffectFrameId) return;
+      rainEffectCanvas.style.display = "block";
+      lastRainEffectAt = 0;
+      rainEffectFrameId = requestAnimationFrame(drawRainEffect);
+    }
+
+    function stopRainEffect() {
+      if (rainEffectFrameId) cancelAnimationFrame(rainEffectFrameId);
+      rainEffectFrameId = 0;
+      rainDrops = [];
+      rainEffectCtx.clearRect(0, 0, rainEffectCanvas.width, rainEffectCanvas.height);
+      rainEffectCanvas.style.display = "none";
     }
 
     function distanceKm(lat1, lng1, lat2, lng2) {
@@ -562,13 +664,16 @@
     function toggleRainLayer() {
       rainVisible = !rainVisible;
       rainCanvas.style.display = rainVisible ? "block" : "none";
+      rainEffectCanvas.style.display = rainVisible ? "block" : "none";
       rainCloseButton.textContent = rainVisible ? "關閉雨量" : "顯示雨量";
       if (rainVisible) {
         rebuildRainField(timeIndex, timeIndex, 1);
+        startRainEffect();
         if (!map.hasLayer(stationLayer)) stationLayer.addTo(map);
         status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       } else {
         stopTimePlayback();
+        stopRainEffect();
         stationLayer.clearLayers();
         status.textContent = "累積雨量已關閉";
       }
@@ -607,6 +712,7 @@
       if (rebuildFrameId) cancelAnimationFrame(rebuildFrameId);
       rebuildFrameId = 0;
       rebuildRainField(timeIndex, timeIndex, 1);
+      resetRainDrops();
     });
     timePlayButton.addEventListener("click", toggleTimePlayback);
     rainCloseButton.addEventListener("click", toggleRainLayer);
@@ -616,6 +722,7 @@
       setTimeIndex(timeSlider.value);
     });
     rebuildRainField(timeIndex, timeIndex, 1);
+    startRainEffect();
     loadLiveRainStations();
   </script>
 </body>

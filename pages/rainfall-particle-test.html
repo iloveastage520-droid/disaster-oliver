@@ -165,9 +165,11 @@
     let rebuildFrameId = 0;
     let rainVisible = true;
     let liveRainStations = [];
+    let liveRainTimeline = [];
     let stationSourceLabel = "模擬雨量站";
     const stationLayer = L.layerGroup().addTo(map);
     const rainfallStationApiUrl = "https://script.google.com/macros/s/AKfycbxA9P8pTtc_OQqASqZTWckMijL1jfTjpqpMj0N5zzMpEZYX9hOhGSzI3UTNhIqFgNwJ/exec?type=rainfall-top10";
+    const rainfallHistoryApiUrl = "https://script.google.com/macros/s/AKfycbxA9P8pTtc_OQqASqZTWckMijL1jfTjpqpMj0N5zzMpEZYX9hOhGSzI3UTNhIqFgNwJ/exec?type=rainfall-history";
 
     const rainfallCenters = [
       { lat: 25.03, lng: 121.55, amount: 160, radius: 0.55 },
@@ -233,7 +235,49 @@
       return size;
     }
 
+    function distanceKm(lat1, lng1, lat2, lng2) {
+      const meanLat = ((lat1 + lat2) / 2) * Math.PI / 180;
+      const dx = (lng1 - lng2) * Math.cos(meanLat) * 111;
+      const dy = (lat1 - lat2) * 111;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function activeRainStationsAt(index = timeIndex) {
+      if (liveRainTimeline.length) {
+        const safeIndex = Math.max(0, Math.min(liveRainTimeline.length - 1, Number(index) || 0));
+        return liveRainTimeline[safeIndex].stations;
+      }
+      return liveRainStations;
+    }
+
+    function activeTimeLabel(index = timeIndex) {
+      if (liveRainTimeline.length) {
+        const safeIndex = Math.max(0, Math.min(liveRainTimeline.length - 1, Number(index) || 0));
+        return liveRainTimeline[safeIndex].label;
+      }
+      return timeSteps[Math.max(0, Math.min(timeSteps.length - 1, index))].label;
+    }
+
+    function maxTimeIndex() {
+      return (liveRainTimeline.length || timeSteps.length) - 1;
+    }
+
+    function stationFieldRainfallAt(lat, lng, stations) {
+      if (!stations.length) return 0;
+      let amount = 0;
+      for (const station of stations) {
+        const stationAmount = Number(station.amount) || 0;
+        const dist = distanceKm(lat, lng, station.lat, station.lng);
+        const radius = Math.max(20, Math.min(42, 18 + stationAmount * 0.08));
+        amount += stationAmount * Math.exp(-Math.pow(dist / radius, 2));
+      }
+      return Math.min(360, amount);
+    }
+
     function rainfallAt(lat, lng, untilIndex = timeIndex) {
+      const stations = activeRainStationsAt(untilIndex);
+      if (stations.length) return stationFieldRainfallAt(lat, lng, stations);
+
       let amount = 0;
       for (let stepIndex = 0; stepIndex <= untilIndex; stepIndex++) {
         const step = timeSteps[stepIndex];
@@ -317,21 +361,67 @@
       };
     }
 
+    function buildRainTimeline(items) {
+      const grouped = new Map();
+      for (const item of items) {
+        const station = normalizeLiveRainStation(item, Number(item.rank) - 1);
+        if (!station) continue;
+        const key = String(item.snapshot_ms || item.snapshot_time || item.fetched_at || station.observedAt);
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            key,
+            label: String(item.snapshot_time || item.fetched_at || station.observedAt || key),
+            timestamp: Number(item.snapshot_ms) || Date.parse(item.snapshot_time || station.observedAt) || 0,
+            stations: []
+          });
+        }
+        grouped.get(key).stations.push(station);
+      }
+
+      return Array.from(grouped.values())
+        .map((snapshot) => ({
+          ...snapshot,
+          stations: snapshot.stations
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 20)
+            .map((station, index) => ({ ...station, rank: index + 1 }))
+        }))
+        .filter((snapshot) => snapshot.stations.length)
+        .sort((a, b) => a.timestamp - b.timestamp);
+    }
+
     async function loadLiveRainStations() {
       try {
-        const response = await fetch(`${rainfallStationApiUrl}&t=${Date.now()}`, { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
+        const [latestResponse, historyResponse] = await Promise.all([
+          fetch(`${rainfallStationApiUrl}&t=${Date.now()}`, { cache: "no-store" }),
+          fetch(`${rainfallHistoryApiUrl}&t=${Date.now()}`, { cache: "no-store" })
+        ]);
+        if (!latestResponse.ok) throw new Error(`latest HTTP ${latestResponse.status}`);
+        const payload = await latestResponse.json();
         const items = Array.isArray(payload.items) ? payload.items : [];
         liveRainStations = items
           .map(normalizeLiveRainStation)
           .filter(Boolean)
           .sort((a, b) => b.amount - a.amount)
-          .slice(0, 10);
-        if (liveRainStations.length) {
-          stationSourceLabel = "氣象署雨量站";
-          updateTopStations(timeIndex, timeIndex, 1);
+          .slice(0, 20);
+
+        if (historyResponse.ok) {
+          const historyPayload = await historyResponse.json();
+          if (historyPayload.ok && Array.isArray(historyPayload.items)) {
+            liveRainTimeline = buildRainTimeline(historyPayload.items);
+          }
         }
+
+        if (liveRainTimeline.length) {
+          timeSlider.max = String(liveRainTimeline.length - 1);
+          stationSourceLabel = `氣象署歷史雨量站 ${liveRainTimeline.length} 期`;
+          setTimeIndex(liveRainTimeline.length - 1, false);
+        } else if (liveRainStations.length) {
+          timeSlider.max = "0";
+          stationSourceLabel = "氣象署雨量站";
+          setTimeIndex(0, false);
+        }
+        updateTopStations(timeIndex, timeIndex, 1);
       } catch (error) {
         stationSourceLabel = "模擬雨量站";
         console.warn("Rainfall station API failed, using fallback stations.", error);
@@ -341,7 +431,8 @@
     function updateTopStations(fromIndex = timeIndex, toIndex = timeIndex, progress = 1) {
       stationLayer.clearLayers();
       if (!rainVisible) return;
-      const sourceStations = liveRainStations.length ? liveRainStations : rainStations;
+      const activeStations = activeRainStationsAt(toIndex);
+      const sourceStations = activeStations.length ? activeStations : rainStations;
       const topStations = sourceStations
         .map((station) => ({
           ...station,
@@ -421,7 +512,7 @@
       }
       rainCtx.restore();
 
-      status.textContent = `累積雨量：${timeSteps[timeIndex].label} / ${rainField.length} 格 / ${stationSourceLabel}`;
+      status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       updateTopStations(fromIndex, toIndex, progress);
     }
 
@@ -455,7 +546,7 @@
     }
 
     function setTimeIndex(index, animate = true) {
-      const nextIndex = Math.max(0, Math.min(timeSteps.length - 1, Number(index) || 0));
+      const nextIndex = Math.max(0, Math.min(maxTimeIndex(), Number(index) || 0));
       const previousIndex = timeIndex;
       timeIndex = nextIndex;
       timeSlider.value = String(timeIndex);
@@ -475,7 +566,7 @@
       if (rainVisible) {
         rebuildRainField(timeIndex, timeIndex, 1);
         if (!map.hasLayer(stationLayer)) stationLayer.addTo(map);
-        status.textContent = `累積雨量：${timeSteps[timeIndex].label} / ${rainField.length} 格 / ${stationSourceLabel}`;
+        status.textContent = `累積雨量：${activeTimeLabel(timeIndex)} / ${rainField.length} 格 / ${stationSourceLabel}`;
       } else {
         stopTimePlayback();
         stationLayer.clearLayers();
@@ -498,7 +589,7 @@
       timePlayButton.classList.add("active");
       timePlayButton.textContent = "暫停時序";
       timeTimer = setInterval(() => {
-        const nextIndex = (timeIndex + 1) % timeSteps.length;
+        const nextIndex = (timeIndex + 1) % (maxTimeIndex() + 1);
         setTimeIndex(nextIndex, nextIndex > timeIndex);
       }, 1250);
     }

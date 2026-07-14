@@ -181,16 +181,20 @@
     let liveRainStations = [];
     let liveRainTimeline = [];
     let stationSourceLabel = "模擬雨量站";
+    const useLiveRainData = false;
     const stationLayer = L.layerGroup().addTo(map);
     const rainfallStationApiUrl = "https://script.google.com/macros/s/AKfycbxA9P8pTtc_OQqASqZTWckMijL1jfTjpqpMj0N5zzMpEZYX9hOhGSzI3UTNhIqFgNwJ/exec?type=rainfall-top10";
     const rainfallHistoryApiUrl = "https://script.google.com/macros/s/AKfycbxA9P8pTtc_OQqASqZTWckMijL1jfTjpqpMj0N5zzMpEZYX9hOhGSzI3UTNhIqFgNwJ/exec?type=rainfall-history";
 
-    const rainfallCenters = [
-      { lat: 25.03, lng: 121.55, amount: 160, radius: 0.55 },
-      { lat: 24.80, lng: 121.05, amount: 260, radius: 0.42 },
-      { lat: 23.98, lng: 121.60, amount: 310, radius: 0.52 },
-      { lat: 22.65, lng: 120.35, amount: 210, radius: 0.58 },
-      { lat: 23.48, lng: 120.65, amount: 190, radius: 0.45 }
+    const typhoonPath = [
+      { lat: 23.85, lng: 123.10, strength: 0.55 },
+      { lat: 23.95, lng: 122.50, strength: 0.72 },
+      { lat: 24.05, lng: 121.95, strength: 0.92 },
+      { lat: 24.05, lng: 121.45, strength: 1.0 },
+      { lat: 23.95, lng: 120.95, strength: 0.95 },
+      { lat: 23.82, lng: 120.45, strength: 0.82 },
+      { lat: 23.72, lng: 119.95, strength: 0.65 },
+      { lat: 23.62, lng: 119.45, strength: 0.48 }
     ];
     const timeSteps = [
       { label: "第 1 小時", driftLat: -0.18, driftLng: -0.10, weights: [0.08, 0.10, 0.18, 0.55, 0.20] },
@@ -365,6 +369,7 @@
     }
 
     function activeRainStationsAt(index = timeIndex) {
+      if (!useLiveRainData) return [];
       if (liveRainTimeline.length) {
         const safeIndex = Math.max(0, Math.min(liveRainTimeline.length - 1, Number(index) || 0));
         return liveRainTimeline[safeIndex].stations;
@@ -373,6 +378,9 @@
     }
 
     function activeTimeLabel(index = timeIndex) {
+      if (!useLiveRainData) {
+        return timeSteps[Math.max(0, Math.min(timeSteps.length - 1, index))].label;
+      }
       if (liveRainTimeline.length) {
         const safeIndex = Math.max(0, Math.min(liveRainTimeline.length - 1, Number(index) || 0));
         return liveRainTimeline[safeIndex].label;
@@ -381,6 +389,7 @@
     }
 
     function maxTimeIndex() {
+      if (!useLiveRainData) return timeSteps.length - 1;
       return (liveRainTimeline.length || timeSteps.length) - 1;
     }
 
@@ -402,16 +411,21 @@
 
       let amount = 0;
       for (let stepIndex = 0; stepIndex <= untilIndex; stepIndex++) {
-        const step = timeSteps[stepIndex];
-        for (let centerIndex = 0; centerIndex < rainfallCenters.length; centerIndex++) {
-          const center = rainfallCenters[centerIndex];
-          const centerLat = center.lat + step.driftLat;
-          const centerLng = center.lng + step.driftLng;
-          const dx = (lng - centerLng) * Math.cos(lat * Math.PI / 180);
-          const dy = lat - centerLat;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          amount += center.amount * step.weights[centerIndex] * 0.18 * Math.exp(-Math.pow(dist / center.radius, 2));
-        }
+        const pathIndex = Math.min(typhoonPath.length - 1, Math.floor(stepIndex / Math.max(1, timeSteps.length - 1) * (typhoonPath.length - 1)));
+        const core = typhoonPath[pathIndex];
+        const dx = (lng - core.lng) * Math.cos(lat * Math.PI / 180);
+        const dy = lat - core.lat;
+        const eastExposure = Math.max(0, Math.min(1, (lng - 120.0) / 2.0));
+        const mountainLift = Math.exp(-Math.pow((lng - 121.0) / 0.32, 2)) * Math.exp(-Math.pow((lat - 23.75) / 1.1, 2));
+        const spiralBand = Math.exp(-Math.pow((Math.sqrt(dx * dx + dy * dy) - 0.62) / 0.42, 2));
+        const coreRain = Math.exp(-Math.pow(dx / 0.58, 2) - Math.pow(dy / 0.82, 2));
+        const westSpill = Math.max(0, Math.min(1, (121.4 - core.lng) / 1.65)) * Math.exp(-Math.pow((lng - 120.45) / 0.62, 2));
+        amount += core.strength * (
+          18 * coreRain +
+          12 * spiralBand +
+          16 * mountainLift * (0.45 + eastExposure) +
+          11 * westSpill
+        );
       }
       return Math.min(360, amount);
     }
@@ -513,6 +527,15 @@
     }
 
     async function loadLiveRainStations() {
+      if (!useLiveRainData) {
+        liveRainStations = [];
+        liveRainTimeline = [];
+        stationSourceLabel = "颱風路徑模擬";
+        timeSlider.max = String(timeSteps.length - 1);
+        rebuildRainField(timeIndex, timeIndex, 1);
+        updateTopStations(timeIndex, timeIndex, 1);
+        return;
+      }
       try {
         const [latestResponse, historyResponse] = await Promise.all([
           fetch(`${rainfallStationApiUrl}&t=${Date.now()}`, { cache: "no-store" }),

@@ -31,7 +31,8 @@
     }
     #radar-canvas {
       z-index: 650;
-      opacity: 0.74;
+      opacity: 0.96;
+      filter: contrast(1.18) saturate(1.35);
     }
     .panel {
       position: fixed;
@@ -678,7 +679,7 @@
       const { targetCtx } = sizeCanvas(offscreen);
       const tiles = visibleTiles();
       targetCtx.clearRect(0, 0, offscreen.width, offscreen.height);
-      targetCtx.globalAlpha = 0.72;
+      targetCtx.globalAlpha = 0.95;
       for (const tile of tiles) {
         const img = await loadRadarTile(frame, tile);
         if (!img) continue;

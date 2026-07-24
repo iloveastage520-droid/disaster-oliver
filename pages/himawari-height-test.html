@@ -261,25 +261,6 @@
         "'": "&#39;"
       }[char]));
     }
-    function geodesicCircleCoords(lat, lng, radiusKm, steps = 144) {
-      const coords = [];
-      const radius = radiusKm / 6371;
-      const lat1 = lat * Math.PI / 180;
-      const lon1 = lng * Math.PI / 180;
-      for (let i = 0; i <= steps; i += 1) {
-        const bearing = 2 * Math.PI * i / steps;
-        const lat2 = Math.asin(
-          Math.sin(lat1) * Math.cos(radius) +
-          Math.cos(lat1) * Math.sin(radius) * Math.cos(bearing)
-        );
-        const lon2 = lon1 + Math.atan2(
-          Math.sin(bearing) * Math.sin(radius) * Math.cos(lat1),
-          Math.cos(radius) - Math.sin(lat1) * Math.sin(lat2)
-        );
-        coords.push([lat2 * 180 / Math.PI, lon2 * 180 / Math.PI]);
-      }
-      return coords;
-    }
     function addMarineWarningBoundary() {
       if (marineWarningBoundaryLayer) return;
       const popup = [
@@ -300,32 +281,28 @@
         fillColor: "#38bdf8",
         fillOpacity: 0.035
       };
-      const taiwanReferenceLine = [
-        [26.15, 121.85],
-        [25.85, 122.55],
+      const warningUnionBoundary = [
+        [27.08, 119.95],
+        [26.82, 120.72],
+        [26.18, 121.9],
+        [25.78, 122.55],
         [24.95, 122.95],
         [23.75, 122.95],
         [22.55, 122.55],
         [21.05, 121.65],
         [20.95, 120.35],
         [21.75, 119.35],
-        [23.15, 119.05],
-        [24.65, 119.25],
-        [25.75, 120.35],
-        [26.15, 121.85]
-      ];
-      const islandCircles = [
-        { name: "澎湖 100km", lat: 23.57, lng: 119.58 },
-        { name: "金門 100km", lat: 24.44, lng: 118.33 },
-        { name: "馬祖 100km", lat: 26.16, lng: 119.95 }
+        [22.85, 118.68],
+        [23.55, 117.35],
+        [24.45, 117.22],
+        [25.2, 117.82],
+        [25.65, 118.88],
+        [26.18, 119.05],
+        [26.82, 119.32],
+        [27.08, 119.95]
       ];
       marineWarningBoundaryLayer = L.layerGroup().addTo(map);
-      L.polygon(taiwanReferenceLine, fillStyle).bindPopup(popup).addTo(marineWarningBoundaryLayer);
-      islandCircles.forEach((item) => {
-        L.polygon(geodesicCircleCoords(item.lat, item.lng, 100), fillStyle)
-          .bindPopup(`${popup}<br>${item.name}`)
-          .addTo(marineWarningBoundaryLayer);
-      });
+      L.polygon(warningUnionBoundary, fillStyle).bindPopup(`${popup}<br>目前以單一外框呈現臺灣本島、澎湖、金門、馬祖 100km 範圍連集。`).addTo(marineWarningBoundaryLayer);
       L.marker([25.95, 122.25], {
         icon: L.divIcon({
           html: '<div class="marine-warning-label">海警100km參考線</div>',

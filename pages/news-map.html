@@ -383,6 +383,7 @@
     </div>
     <style>
         #sidebar {
+            box-sizing: border-box;
             position: fixed;
             top: 0;
             left: 0;
@@ -810,8 +811,19 @@
         #radar-status { color: #333; font-size: 12px; white-space: nowrap; }
         #typhoon-status { color: #333; font-size: 12px; white-space: nowrap; }
         #himawari-status { color: #333; font-size: 12px; white-space: nowrap; }
-        #map { position: absolute; top: 0; left: 410px; right: 0; bottom: 132px; transition: left 0.22s ease; }
-        body.sidebar-collapsed #map { left: 0; }
+        #map,
+        .folium-map {
+            position: absolute !important;
+            top: 0 !important;
+            left: 410px !important;
+            right: 0 !important;
+            bottom: 132px !important;
+            width: auto !important;
+            height: auto !important;
+            transition: left 0.22s ease, bottom 0.22s ease !important;
+        }
+        body.sidebar-collapsed #map,
+        body.sidebar-collapsed .folium-map { left: 0 !important; }
         .news-card.active,
         .timeline-item.active {
             background: #e7f1ff;
@@ -1048,12 +1060,14 @@
                 flex: 1 1 180px;
                 min-width: 140px;
             }
-            #map {
-                left: 0;
-                bottom: calc(32vh + 104px);
+            #map,
+            .folium-map {
+                left: 0 !important;
+                bottom: calc(32vh + 104px) !important;
             }
-            body.sidebar-collapsed #map {
-                bottom: 104px;
+            body.sidebar-collapsed #map,
+            body.sidebar-collapsed .folium-map {
+                bottom: 104px !important;
             }
             body.sidebar-collapsed #radar-control {
                 bottom: 114px;
@@ -1098,8 +1112,10 @@
             #radar-control { bottom: calc(34vh + 106px); }
             #typhoon-control { bottom: calc(34vh + 156px); }
             #himawari-control { bottom: calc(34vh + 206px); }
-            #map { bottom: calc(34vh + 96px); }
-            body.sidebar-collapsed #map { bottom: 96px; }
+            #map,
+            .folium-map { bottom: calc(34vh + 96px) !important; }
+            body.sidebar-collapsed #map,
+            body.sidebar-collapsed .folium-map { bottom: 96px !important; }
             .tv-ai-event-legend {
                 bottom: calc(34vh + 104px);
                 font-size: 11px;

@@ -136,6 +136,17 @@
       font-weight: 800;
       white-space: nowrap;
     }
+    .marine-warning-label {
+      color: #075985;
+      background: rgba(240, 249, 255, 0.9);
+      border: 1px solid rgba(14, 116, 144, 0.3);
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+      padding: 3px 6px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
     @media (max-width: 720px) {
       .panel {
         left: 50px;
@@ -211,6 +222,7 @@
     let typhoonFrames = [];
     let typhoonFrameIndex = 0;
     let typhoonTimer = null;
+    let marineWarningBoundaryLayer = null;
 
     function parseJmaTime(value) {
       const match = String(value || "").match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
@@ -248,6 +260,81 @@
         '"': "&quot;",
         "'": "&#39;"
       }[char]));
+    }
+    function geodesicCircleCoords(lat, lng, radiusKm, steps = 144) {
+      const coords = [];
+      const radius = radiusKm / 6371;
+      const lat1 = lat * Math.PI / 180;
+      const lon1 = lng * Math.PI / 180;
+      for (let i = 0; i <= steps; i += 1) {
+        const bearing = 2 * Math.PI * i / steps;
+        const lat2 = Math.asin(
+          Math.sin(lat1) * Math.cos(radius) +
+          Math.cos(lat1) * Math.sin(radius) * Math.cos(bearing)
+        );
+        const lon2 = lon1 + Math.atan2(
+          Math.sin(bearing) * Math.sin(radius) * Math.cos(lat1),
+          Math.cos(radius) - Math.sin(lat1) * Math.sin(lat2)
+        );
+        coords.push([lat2 * 180 / Math.PI, lon2 * 180 / Math.PI]);
+      }
+      return coords;
+    }
+    function addMarineWarningBoundary() {
+      if (marineWarningBoundaryLayer) return;
+      const popup = [
+        "<b>海上颱風警報 100km 參考線</b>",
+        "依發布標準：預測 7 級風暴風範圍可能侵襲臺灣本島、澎湖、金門或馬祖 100 公里以內海域前 24 小時發布海上颱風警報。",
+        "此圖層為視覺參考版，精準判定仍以中央氣象署警報資料為準。"
+      ].join("<br>");
+      const boundaryStyle = {
+        color: "#0ea5e9",
+        weight: 3,
+        opacity: 0.95,
+        dashArray: "10,7",
+        lineCap: "round",
+        lineJoin: "round"
+      };
+      const fillStyle = {
+        ...boundaryStyle,
+        fillColor: "#38bdf8",
+        fillOpacity: 0.035
+      };
+      const taiwanReferenceLine = [
+        [26.15, 121.85],
+        [25.85, 122.55],
+        [24.95, 122.95],
+        [23.75, 122.95],
+        [22.55, 122.55],
+        [21.05, 121.65],
+        [20.95, 120.35],
+        [21.75, 119.35],
+        [23.15, 119.05],
+        [24.65, 119.25],
+        [25.75, 120.35],
+        [26.15, 121.85]
+      ];
+      const islandCircles = [
+        { name: "澎湖 100km", lat: 23.57, lng: 119.58 },
+        { name: "金門 100km", lat: 24.44, lng: 118.33 },
+        { name: "馬祖 100km", lat: 26.16, lng: 119.95 }
+      ];
+      marineWarningBoundaryLayer = L.layerGroup().addTo(map);
+      L.polygon(taiwanReferenceLine, fillStyle).bindPopup(popup).addTo(marineWarningBoundaryLayer);
+      islandCircles.forEach((item) => {
+        L.polygon(geodesicCircleCoords(item.lat, item.lng, 100), fillStyle)
+          .bindPopup(`${popup}<br>${item.name}`)
+          .addTo(marineWarningBoundaryLayer);
+      });
+      L.marker([25.95, 122.25], {
+        icon: L.divIcon({
+          html: '<div class="marine-warning-label">海警100km參考線</div>',
+          className: "empty",
+          iconSize: null
+        }),
+        interactive: false,
+        zIndexOffset: 1200
+      }).addTo(marineWarningBoundaryLayer);
     }
     function typhoonPointIcon(feature) {
       if (feature?.properties?.kind === "current-center") {
@@ -686,6 +773,7 @@
       queueNextFrame();
     }
     async function init() {
+      addMarineWarningBoundary();
       const response = await fetch(timesUrl, { cache: "no-store" });
       const times = await response.json();
       frames = (Array.isArray(times) ? times : [])

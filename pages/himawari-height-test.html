@@ -259,11 +259,23 @@
     function typhoonStyle(feature) {
       const kind = feature?.properties?.kind || "";
       if (kind === "analysis-track") return { color: "#dc2626", weight: 3, opacity: 0.9 };
-      if (kind === "forecast-track") return { color: "#f97316", weight: 3, opacity: 0.9, dashArray: "8,6" };
-      if (kind.includes("25ms-circle")) return { color: "#7f1d1d", weight: 2, fillColor: "#7f1d1d", fillOpacity: 0.12 };
-      if (kind.includes("15ms-circle")) return { color: "#dc2626", weight: 2, fillColor: "#dc2626", fillOpacity: 0.08 };
-      if (kind === "forecast-70prob-circle") return { color: "#f97316", weight: 1, fillColor: "#f97316", fillOpacity: 0.05, dashArray: "4,5" };
+      if (kind === "forecast-track") return { color: "#fb923c", weight: 12, opacity: 0.22, lineCap: "round", lineJoin: "round" };
+      if (kind.includes("25ms-circle")) return { color: "#7f1d1d", weight: 2, fillColor: "#7f1d1d", fillOpacity: 0.08 };
+      if (kind.includes("15ms-circle")) return { color: "#dc2626", weight: 2, fillColor: "#dc2626", fillOpacity: 0.05 };
+      if (kind === "forecast-70prob-circle") return { color: "#f97316", weight: 1, opacity: 0.35, fillColor: "#f97316", fillOpacity: 0.025, dashArray: "4,7" };
       return { color: "#f97316", weight: 2, opacity: 0.8 };
+    }
+    function showTyphoonStaticFeature(feature) {
+      const kind = feature?.properties?.kind || "";
+      return [
+        "analysis-track",
+        "forecast-track",
+        "current-center",
+        "forecast-center",
+        "current-15ms-circle",
+        "current-25ms-circle",
+        "forecast-70prob-circle"
+      ].includes(kind);
     }
     function typhoonPopup(feature) {
       const p = feature.properties || {};
@@ -343,7 +355,7 @@
       const geojson = await response.json();
       buildTyphoonFrames(geojson);
       typhoonTrackLayer = L.geoJSON(geojson, {
-        filter: (feature) => feature.properties?.kind !== "analysis-center",
+        filter: showTyphoonStaticFeature,
         style: typhoonStyle,
         pointToLayer: (feature, latlng) => L.marker(latlng, {
           icon: typhoonPointIcon(feature),

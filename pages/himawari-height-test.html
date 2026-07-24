@@ -125,6 +125,17 @@
       border: 2px solid #fff;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
     }
+    .typhoon-time-label {
+      color: #7f1d1d;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(127, 29, 29, 0.22);
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+      padding: 2px 5px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
     @media (max-width: 720px) {
       .panel {
         left: 50px;
@@ -270,12 +281,27 @@
       return [
         "analysis-track",
         "forecast-track",
+        "analysis-center",
         "current-center",
         "forecast-center",
         "current-15ms-circle",
         "current-25ms-circle",
         "forecast-70prob-circle"
       ].includes(kind);
+    }
+    function typhoonFeatureTimeLabel(feature) {
+      const p = feature?.properties || {};
+      const kind = p.kind || "";
+      if (!["analysis-center", "current-center", "forecast-center"].includes(kind)) return "";
+      if (p.forecastHour) {
+        const date = new Date(p.initialTime || p.datetime || "");
+        if (Number.isNaN(date.getTime())) return `${p.forecastHour}h`;
+        date.setHours(date.getHours() + (Number(p.forecastHour) || 0));
+        return `${date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+      }
+      const date = new Date(p.datetime || "");
+      if (Number.isNaN(date.getTime())) return p.datetime || "";
+      return date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     }
     function typhoonPopup(feature) {
       const p = feature.properties || {};
@@ -361,7 +387,18 @@
           icon: typhoonPointIcon(feature),
           zIndexOffset: 1500
         }),
-        onEachFeature: (feature, layer) => layer.bindPopup(typhoonPopup(feature))
+        onEachFeature: (feature, layer) => {
+          layer.bindPopup(typhoonPopup(feature));
+          const timeLabel = typhoonFeatureTimeLabel(feature);
+          if (timeLabel && layer.bindTooltip) {
+            layer.bindTooltip(timeLabel, {
+              permanent: true,
+              direction: "top",
+              offset: [0, -6],
+              className: "typhoon-time-label"
+            });
+          }
+        }
       }).addTo(map);
       drawTyphoonFrame(typhoonFrameIndex);
     }

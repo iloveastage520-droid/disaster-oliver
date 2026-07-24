@@ -365,6 +365,19 @@
         fillColor: frame.properties.kind === "forecast-center" ? "#f97316" : "#dc2626",
         fillOpacity: 0.95
       }).bindPopup(typhoonPopup({ properties: frame.properties })).addTo(typhoonPlaybackLayer);
+      const timeLabel = typhoonFeatureTimeLabel({ properties: frame.properties });
+      if (timeLabel) {
+        L.marker(frame.point, {
+          icon: L.divIcon({
+            html: `<div class="typhoon-time-label">${escapeHtml(timeLabel)}</div>`,
+            className: "empty",
+            iconSize: null,
+            iconAnchor: [-12, 30]
+          }),
+          interactive: false,
+          zIndexOffset: 1700
+        }).addTo(typhoonPlaybackLayer);
+      }
     }
     function stopTyphoonPlayback() {
       if (typhoonTimer) {
@@ -387,18 +400,7 @@
           icon: typhoonPointIcon(feature),
           zIndexOffset: 1500
         }),
-        onEachFeature: (feature, layer) => {
-          layer.bindPopup(typhoonPopup(feature));
-          const timeLabel = typhoonFeatureTimeLabel(feature);
-          if (timeLabel && layer.bindTooltip) {
-            layer.bindTooltip(timeLabel, {
-              permanent: true,
-              direction: "top",
-              offset: [0, -6],
-              className: "typhoon-time-label"
-            });
-          }
-        }
+        onEachFeature: (feature, layer) => layer.bindPopup(typhoonPopup(feature))
       }).addTo(map);
       drawTyphoonFrame(typhoonFrameIndex);
     }

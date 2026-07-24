@@ -1406,6 +1406,7 @@
         let liveRainStationLayer = null;
         let liveAllRainStationsLayer = null;
         let liveAllRainStationsLoaded = false;
+        let liveAllRainStationsRegistered = false;
         let tvEventLayer = null;
         let tvEventVisible = true;
         let typhoonTrackLayer = null;
@@ -2198,7 +2199,7 @@
                 const response = await fetch(apiUrl);
                 const payload = await response.json();
                 if (!payload || !payload.ok || !Array.isArray(payload.items)) return;
-                liveAllRainStationsLayer = L.layerGroup().addTo(map);
+                if (!liveAllRainStationsLayer) liveAllRainStationsLayer = L.layerGroup();
                 payload.items.forEach((station) => {
                     const point = parseTaiwanPoint(station.lat, station.lng);
                     if (!point) return;
@@ -2229,6 +2230,24 @@
             } catch (error) {
                 console.warn("Rain station layer unavailable", error);
             }
+        }
+        function registerAllRainStationsLayer(map, retryCount = 0) {
+            if (!map || liveAllRainStationsRegistered) return;
+            if (!liveAllRainStationsLayer) liveAllRainStationsLayer = L.layerGroup();
+            const control = currentLayerControl();
+            if (!control || !control.addOverlay) {
+                if (retryCount < 20) {
+                    setTimeout(() => registerAllRainStationsLayer(map, retryCount + 1), 300);
+                }
+                return;
+            }
+            liveAllRainStationsRegistered = true;
+            control.addOverlay(liveAllRainStationsLayer, "CWA 觀測雨量");
+            map.on("overlayadd", (event) => {
+                if (event.layer === liveAllRainStationsLayer) {
+                    loadAllRainStationsLayer(map);
+                }
+            });
         }
         function replaceLiveSidebar(items) {
             const newsList = document.querySelector(".news-list");
@@ -2419,7 +2438,7 @@
             }
             clearStaticNewsUi();
             clearStaticMarkers(map);
-            loadAllRainStationsLayer(map);
+            registerAllRainStationsLayer(map);
             loadTvEventLayer(map);
             loadTyphoonTrackLayer(map);
             loadHimawariLayers(map);

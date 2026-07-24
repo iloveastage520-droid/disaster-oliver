@@ -70,6 +70,7 @@
     }
     .panel.collapsed h1,
     .panel.collapsed .controls,
+    .panel.collapsed .layer-toggles,
     .panel.collapsed .status {
       display: none;
     }
@@ -79,6 +80,31 @@
       align-items: center;
       gap: 8px;
       margin-top: 10px;
+    }
+    .layer-toggles {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .layer-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      color: #0f172a;
+      background: rgba(241, 245, 249, 0.9);
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 4px;
+      padding: 5px 7px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+    .layer-toggle input {
+      margin: 0;
+      accent-color: #0891b2;
     }
     .tools {
       display: flex;
@@ -178,6 +204,13 @@
       <input id="typhoon-timeline" type="range" min="0" max="0" value="0" step="1" aria-label="颱風時間軸" disabled>
       <button id="typhoon-close" type="button">關閉颱風</button>
     </div>
+    <div class="layer-toggles" aria-label="圖層開關">
+      <label class="layer-toggle"><input id="toggle-himawari" type="checkbox" checked>雲圖</label>
+      <label class="layer-toggle"><input id="toggle-radar" type="checkbox" checked>雷達</label>
+      <label class="layer-toggle"><input id="toggle-typhoon" type="checkbox" checked>颱風</label>
+      <label class="layer-toggle"><input id="toggle-marine" type="checkbox" checked>海警100km</label>
+      <label class="layer-toggle"><input id="toggle-wind-probability" type="checkbox" checked>侵襲機率</label>
+    </div>
     <div id="status" class="status">載入向日葵時間序列中...</div>
   </section>
   <script>
@@ -212,6 +245,18 @@
     const typhoonPlay = document.getElementById("typhoon-play");
     const typhoonTimeline = document.getElementById("typhoon-timeline");
     const typhoonClose = document.getElementById("typhoon-close");
+    const toggleHimawari = document.getElementById("toggle-himawari");
+    const toggleRadar = document.getElementById("toggle-radar");
+    const toggleTyphoon = document.getElementById("toggle-typhoon");
+    const toggleMarine = document.getElementById("toggle-marine");
+    const toggleWindProbability = document.getElementById("toggle-wind-probability");
+    const layerVisible = {
+      himawari: true,
+      radar: true,
+      typhoon: true,
+      marine: true,
+      windProbability: true
+    };
     let radarVisible = false;
     let radarFrames = [];
     let radarFrameIndex = 0;
@@ -262,6 +307,68 @@
         '"': "&quot;",
         "'": "&#39;"
       }[char]));
+    }
+    function clearCanvas(target, targetCtx) {
+      sizeCanvas(target);
+      targetCtx.clearRect(0, 0, target.width, target.height);
+    }
+    function setHimawariVisible(visible) {
+      layerVisible.himawari = visible;
+      canvas.style.display = visible ? "block" : "none";
+      if (!visible) {
+        stop();
+        clearCanvas(canvas, ctx);
+        return;
+      }
+      if (frames.length) drawFrame(frameIndex);
+    }
+    function setRadarVisible(visible) {
+      layerVisible.radar = visible;
+      radarCanvas.style.display = visible ? "block" : "none";
+      if (!visible) {
+        stopRadarAnimation();
+        radarVisible = false;
+        clearCanvas(radarCanvas, radarCtx);
+        return;
+      }
+      if (radarFrames.length) {
+        radarVisible = true;
+        drawRadarFrame(radarFrameIndex);
+      }
+    }
+    function setTyphoonVisible(visible) {
+      layerVisible.typhoon = visible;
+      if (!visible) {
+        closeTyphoonLayer();
+        return;
+      }
+      loadTyphoonTrack().catch((error) => {
+        console.error(error);
+        status.textContent = "颱風路徑載入失敗";
+      });
+    }
+    function setMarineVisible(visible) {
+      layerVisible.marine = visible;
+      if (!marineWarningBoundaryLayer) {
+        if (visible) addMarineWarningBoundary();
+        return;
+      }
+      if (visible && !map.hasLayer(marineWarningBoundaryLayer)) marineWarningBoundaryLayer.addTo(map);
+      if (!visible && map.hasLayer(marineWarningBoundaryLayer)) map.removeLayer(marineWarningBoundaryLayer);
+    }
+    function setWindProbabilityVisible(visible) {
+      layerVisible.windProbability = visible;
+      if (!windProbabilityLayer) {
+        if (visible) {
+          loadWindProbabilityLayer().catch((error) => {
+            console.error(error);
+            status.textContent = "暴風圈侵襲機率載入失敗";
+          });
+        }
+        return;
+      }
+      if (visible && !map.hasLayer(windProbabilityLayer)) windProbabilityLayer.addTo(map);
+      if (!visible && map.hasLayer(windProbabilityLayer)) map.removeLayer(windProbabilityLayer);
     }
     function addMarineWarningBoundary() {
       if (marineWarningBoundaryLayer) return;
@@ -509,6 +616,10 @@
       drawTyphoonFrame(typhoonFrameIndex);
     }
     async function toggleTyphoonPlayback() {
+      if (!layerVisible.typhoon) {
+        layerVisible.typhoon = true;
+        if (toggleTyphoon) toggleTyphoon.checked = true;
+      }
       try {
         await loadTyphoonTrack();
         if (typhoonTimer) {
@@ -524,6 +635,8 @@
       }
     }
     function closeTyphoonLayer() {
+      layerVisible.typhoon = false;
+      if (toggleTyphoon) toggleTyphoon.checked = false;
       stopTyphoonPlayback();
       if (typhoonTrackLayer && map.hasLayer(typhoonTrackLayer)) map.removeLayer(typhoonTrackLayer);
       if (typhoonPlaybackLayer && map.hasLayer(typhoonPlaybackLayer)) map.removeLayer(typhoonPlaybackLayer);
@@ -581,7 +694,7 @@
       return offscreen;
     }
     async function drawRadarFrame(index) {
-      if (!radarVisible || !radarFrames.length) return;
+      if (!layerVisible.radar || !radarVisible || !radarFrames.length) return;
       radarFrameIndex = Math.max(0, Math.min(radarFrames.length - 1, index));
       const frame = radarFrames[radarFrameIndex];
       radarTimeline.value = String(radarFrameIndex);
@@ -618,6 +731,10 @@
       queueNextRadarFrame();
     }
     async function toggleRadarPlayback() {
+      if (!layerVisible.radar) {
+        setRadarVisible(true);
+        if (toggleRadar) toggleRadar.checked = true;
+      }
       if (!radarVisible) {
         try {
           radarPlay.disabled = true;
@@ -721,7 +838,7 @@
       return offscreen;
     }
     async function drawFrame(index) {
-      if (!frames.length) return;
+      if (!layerVisible.himawari || !frames.length) return;
       const requestId = renderRequestId + 1;
       renderRequestId = requestId;
       frameIndex = Math.max(0, Math.min(frames.length - 1, index));
@@ -773,6 +890,10 @@
     }
     async function togglePlay() {
       if (!frames.length) return;
+      if (!layerVisible.himawari) {
+        setHimawariVisible(true);
+        if (toggleHimawari) toggleHimawari.checked = true;
+      }
       if (timer) {
         stop();
         return;
@@ -829,6 +950,11 @@
     radarPlay.addEventListener("click", toggleRadarPlayback);
     typhoonPlay.addEventListener("click", toggleTyphoonPlayback);
     typhoonClose.addEventListener("click", closeTyphoonLayer);
+    toggleHimawari.addEventListener("change", () => setHimawariVisible(toggleHimawari.checked));
+    toggleRadar.addEventListener("change", () => setRadarVisible(toggleRadar.checked));
+    toggleTyphoon.addEventListener("change", () => setTyphoonVisible(toggleTyphoon.checked));
+    toggleMarine.addEventListener("change", () => setMarineVisible(toggleMarine.checked));
+    toggleWindProbability.addEventListener("change", () => setWindProbabilityVisible(toggleWindProbability.checked));
     panelToggle.addEventListener("click", () => {
       const collapsed = controlPanel.classList.toggle("collapsed");
       panelToggle.textContent = collapsed ? "展開" : "收合";

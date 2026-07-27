@@ -9,7 +9,12 @@ const data = JSON.parse(raw);
 const cyclones = data.records?.TropicalCyclones?.TropicalCyclone
   || data.records?.tropicalCyclones?.tropicalCyclone
   || [];
-const tc = Array.isArray(cyclones) ? cyclones[0] : cyclones;
+const list = Array.isArray(cyclones) ? cyclones : [cyclones].filter(Boolean);
+const tc = list[0];
+
+if (!tc) {
+  throw new Error("No active tropical cyclone found in CWA W-C0034-005 data.");
+}
 
 function number(value) {
   return Number.parseFloat(value);
@@ -22,6 +27,11 @@ function point(fix) {
 function isValidFix(fix) {
   const [lng, lat] = point(fix);
   return Number.isFinite(lng) && Number.isFinite(lat);
+}
+
+function asArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
 }
 
 function circleGeometry(lng, lat, radiusKm, steps = 72) {
@@ -50,15 +60,11 @@ function circleGeometry(lng, lat, radiusKm, steps = 72) {
 }
 
 const features = [];
-const name = "紅霞";
-const intlName = tc.TyphoonName || "NOUL";
-const label = `${intlName} ${name}`;
-const analysis = (Array.isArray(tc.AnalysisData?.Fix) ? tc.AnalysisData.Fix : [tc.AnalysisData?.Fix])
-  .filter(Boolean)
-  .filter(isValidFix);
-const forecast = (Array.isArray(tc.ForecastData?.Fix) ? tc.ForecastData.Fix : [tc.ForecastData?.Fix])
-  .filter(Boolean)
-  .filter(isValidFix);
+const name = tc.CwaTyphoonName || tc.CwaTdName || tc.TyphoonName || "熱帶氣旋";
+const intlName = tc.TyphoonName || "";
+const label = [intlName, name].filter(Boolean).join(" ");
+const analysis = asArray(tc.AnalysisData?.Fix).filter(isValidFix);
+const forecast = asArray(tc.ForecastData?.Fix).filter(isValidFix);
 
 if (analysis.length > 1) {
   features.push({
@@ -167,7 +173,7 @@ forecast.forEach((fix, index) => {
         forecastHour: fix.ForecastHour,
         initialTime,
         radius_km: String(radius70),
-        label: `70%機率圈 ${fix.ForecastHour}小時`
+        label: `70%機率半徑 ${fix.ForecastHour}小時`
       },
       geometry: circleGeometry(lng, lat, radius70)
     });

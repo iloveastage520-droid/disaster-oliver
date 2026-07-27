@@ -269,6 +269,7 @@
     let typhoonFrames = [];
     let typhoonFrameIndex = 0;
     let typhoonTimer = null;
+    let didAutoFitTyphoon = false;
     let marineWarningBoundaryLayer = null;
     let windProbabilityLayer = null;
 
@@ -371,6 +372,19 @@
       if (visible && !map.hasLayer(windProbabilityLayer)) windProbabilityLayer.addTo(map);
       if (!visible && map.hasLayer(windProbabilityLayer)) map.removeLayer(windProbabilityLayer);
     }
+    function fitToActiveTyphoonLayers() {
+      if (didAutoFitTyphoon) return;
+      let bounds = null;
+      [windProbabilityLayer, typhoonTrackLayer].forEach((layer) => {
+        if (!layer || !map.hasLayer(layer) || typeof layer.getBounds !== "function") return;
+        const layerBounds = layer.getBounds();
+        if (!layerBounds.isValid()) return;
+        bounds = bounds ? bounds.extend(layerBounds) : layerBounds;
+      });
+      if (!bounds || !bounds.isValid()) return;
+      didAutoFitTyphoon = true;
+      map.fitBounds(bounds.pad(0.18), { animate: true, maxZoom: 5 });
+    }
     function addMarineWarningBoundary() {
       if (marineWarningBoundaryLayer) return;
       const popup = [
@@ -460,6 +474,7 @@
           layer.bindPopup(`<b>暴風圈侵襲機率 ${escapeHtml(name)}</b><br>CWA W-C0034-003 KMZ`);
         }
       }).addTo(map);
+      fitToActiveTyphoonLayers();
     }
     function typhoonPointIcon(feature) {
       if (feature?.properties?.kind === "current-center") {
@@ -615,6 +630,7 @@
         onEachFeature: (feature, layer) => layer.bindPopup(typhoonPopup(feature))
       }).addTo(map);
       drawTyphoonFrame(typhoonFrameIndex);
+      fitToActiveTyphoonLayers();
     }
     async function toggleTyphoonPlayback() {
       if (!layerVisible.typhoon) {
@@ -914,6 +930,7 @@
     async function init() {
       addMarineWarningBoundary();
       await loadWindProbabilityLayer();
+      await loadTyphoonTrack();
       const response = await fetch(timesUrl, { cache: "no-store" });
       const times = await response.json();
       frames = (Array.isArray(times) ? times : [])

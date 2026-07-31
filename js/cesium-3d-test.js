@@ -530,7 +530,8 @@ function setRadarFrame(index) {
   const provider = new CesiumLib.UrlTemplateImageryProvider({
     url: `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
     credit: "Radar © RainViewer",
-    maximumLevel: 8
+    minimumLevel: 0,
+    maximumLevel: 7
   });
   if (radarLayer) viewer.imageryLayers.remove(radarLayer, false);
   radarLayer = viewer.imageryLayers.addImageryProvider(provider);

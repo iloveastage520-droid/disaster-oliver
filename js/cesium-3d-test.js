@@ -84,10 +84,10 @@ const eventSites = [
 const TAIPEI_BUILDING_LAYER =
   "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
 const REAL_BUILDING_BOUNDS = {
-  xmin: 121.5596,
-  ymin: 25.0304,
-  xmax: 121.5700,
-  ymax: 25.0372
+  xmin: 121.5620,
+  ymin: 25.0320,
+  xmax: 121.5680,
+  ymax: 25.0360
 };
 
 const testBuildings = [

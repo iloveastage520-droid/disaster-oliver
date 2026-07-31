@@ -9,7 +9,7 @@
     button.textContent = collapsed ? "控制" : "收合";
   };
 
-  setCollapsed(window.matchMedia("(max-width: 700px)").matches);
+  setCollapsed(true);
   button.addEventListener("click", () => {
     setCollapsed(!panel.classList.contains("is-collapsed"));
   });

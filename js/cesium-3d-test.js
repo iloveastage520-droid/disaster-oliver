@@ -188,16 +188,16 @@ function checkCesiumCanvas() {
 }
 
 function buildingColor(height) {
-  if (height >= 120) return CesiumLib.Color.fromCssColorString("#f97316");
-  if (height >= 70) return CesiumLib.Color.fromCssColorString("#facc15");
-  if (height >= 35) return CesiumLib.Color.fromCssColorString("#38bdf8");
-  return CesiumLib.Color.fromCssColorString("#34d399");
+  if (height >= 120) return CesiumLib.Color.fromCssColorString("#f8fafc");
+  if (height >= 70) return CesiumLib.Color.fromCssColorString("#e5e7eb");
+  if (height >= 35) return CesiumLib.Color.fromCssColorString("#cbd5e1");
+  return CesiumLib.Color.fromCssColorString("#94a3b8");
 }
 
-function radarTintColor(level) {
-  if (level === "extreme") return CesiumLib.Color.fromCssColorString("#c084fc");
-  if (level === "heavy") return CesiumLib.Color.fromCssColorString("#fb7185");
-  if (level === "moderate") return CesiumLib.Color.fromCssColorString("#fde047");
+function radarGlowColor(dbz) {
+  if (dbz >= 55) return CesiumLib.Color.fromCssColorString("#c084fc");
+  if (dbz >= 45) return CesiumLib.Color.fromCssColorString("#fb7185");
+  if (dbz >= 35) return CesiumLib.Color.fromCssColorString("#fde047");
   return CesiumLib.Color.fromCssColorString("#4ade80");
 }
 
@@ -313,7 +313,7 @@ function addRealBuilding(feature) {
   const properties = feature.properties || {};
   const height = parseBuildingHeight(properties);
   const center = polygonCenter(ring);
-  const baseColor = buildingColor(height).withAlpha(0.66);
+  const baseColor = buildingColor(height);
   const entity = viewer.entities.add({
     name: `真實建物 ${properties.NO || properties.OBJECTID || ""}`,
     description: [
@@ -327,7 +327,7 @@ function addRealBuilding(feature) {
       extrudedHeight: height,
       material: baseColor,
       outline: true,
-      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.26)
+      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.34)
     },
     point: {
       pixelSize: Math.min(22, Math.max(8, height / 8)),
@@ -339,7 +339,7 @@ function addRealBuilding(feature) {
     },
     position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 5)
   });
-  entity.realBuildingMeta = { center, height, baseColor };
+  entity.realBuildingMeta = { center, height };
   return entity;
 }
 
@@ -457,11 +457,11 @@ function formatRadarTime(epochSeconds) {
 function addSimulatedRadar() {
   if (simulatedRadarEntities.length) return;
   const cells = [
-    { lon: 121.5450, lat: 25.0338, width: 0.026, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.34, top: 280, speed: 0.0027 },
-    { lon: 121.5385, lat: 25.0378, width: 0.038, depth: 0.022, level: "heavy", color: "#ef4444", alpha: 0.30, top: 230, speed: 0.0030 },
-    { lon: 121.5525, lat: 25.0300, width: 0.036, depth: 0.020, level: "heavy", color: "#ef4444", alpha: 0.28, top: 210, speed: 0.0023 },
-    { lon: 121.5280, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", color: "#facc15", alpha: 0.26, top: 170, speed: 0.0033 },
-    { lon: 121.5350, lat: 25.0268, width: 0.052, depth: 0.014, level: "rainband", color: "#22c55e", alpha: 0.20, top: 150, speed: 0.0025 }
+    { lon: 121.5450, lat: 25.0338, width: 0.026, depth: 0.018, level: "extreme", dbz: 58, color: "#a855f7", alpha: 0.34, top: 280, speed: 0.0027 },
+    { lon: 121.5385, lat: 25.0378, width: 0.038, depth: 0.022, level: "heavy", dbz: 48, color: "#ef4444", alpha: 0.30, top: 230, speed: 0.0030 },
+    { lon: 121.5525, lat: 25.0300, width: 0.036, depth: 0.020, level: "heavy", dbz: 44, color: "#ef4444", alpha: 0.28, top: 210, speed: 0.0023 },
+    { lon: 121.5280, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", dbz: 36, color: "#facc15", alpha: 0.26, top: 170, speed: 0.0033 },
+    { lon: 121.5350, lat: 25.0268, width: 0.052, depth: 0.014, level: "rainband", dbz: 28, color: "#22c55e", alpha: 0.20, top: 150, speed: 0.0025 }
   ];
   simulatedRadarEntities = cells.map((cell, index) => {
     const entity = viewer.entities.add({
@@ -503,7 +503,7 @@ function updateSimulatedRadarFrame() {
     const phase = simulatedRadarFrame + cell.index * 2;
     const alphaPulse = cell.alpha + (phase % 4) * 0.045;
     const bounds = simulatedRadarBounds(cell, phase);
-    activeCells.push({ ...bounds, cell, color: radarTintColor(cell.level), alpha: alphaPulse });
+    activeCells.push({ ...bounds, cell, color: radarGlowColor(cell.dbz), alpha: alphaPulse });
     entity.rectangle.coordinates = CesiumLib.Rectangle.fromDegrees(
       bounds.west,
       bounds.south,
@@ -514,7 +514,7 @@ function updateSimulatedRadarFrame() {
       .fromCssColorString(cell.color)
       .withAlpha(Math.min(alphaPulse, 0.52));
   });
-  updateBuildingRadarTint(activeCells);
+  updateBuildingRadarGlow(activeCells);
   viewer.scene.requestRender();
 }
 
@@ -534,7 +534,7 @@ function simulatedRadarBounds(cell, phase) {
   };
 }
 
-function updateBuildingRadarTint(activeCells) {
+function updateBuildingRadarGlow(activeCells) {
   realBuildingEntities.slice(0, BUILDING_RAIN_TINT_LIMIT).forEach((entity) => {
     const meta = entity.realBuildingMeta;
     if (!meta) return;
@@ -544,19 +544,19 @@ function updateBuildingRadarTint(activeCells) {
       meta.center.lat >= bounds.south &&
       meta.center.lat <= bounds.north
     ));
-    const nextColor = hit
-      ? hit.color.withAlpha(Math.min(0.95, 0.62 + hit.alpha))
-      : meta.baseColor;
-    entity.polygon.material = nextColor;
+    const glowStrength = hit ? Math.min(1, Math.max(0.2, hit.cell.dbz / 60)) : 0;
     entity.polygon.outlineColor = hit
-      ? CesiumLib.Color.WHITE.withAlpha(0.72)
-      : CesiumLib.Color.WHITE.withAlpha(0.26);
+      ? hit.color.withAlpha(0.42 + glowStrength * 0.42)
+      : CesiumLib.Color.WHITE.withAlpha(0.34);
     entity.point.show = Boolean(hit);
+    entity.point.pixelSize = hit
+      ? Math.min(34, Math.max(10, meta.height / 7) + glowStrength * 10)
+      : Math.min(22, Math.max(8, meta.height / 8));
     entity.point.color = hit
-      ? hit.color.withAlpha(0.86)
+      ? hit.color.withAlpha(0.55 + glowStrength * 0.35)
       : CesiumLib.Color.WHITE.withAlpha(0);
     entity.point.outlineColor = hit
-      ? CesiumLib.Color.WHITE.withAlpha(0.86)
+      ? CesiumLib.Color.WHITE.withAlpha(0.78)
       : CesiumLib.Color.WHITE.withAlpha(0);
   });
 }

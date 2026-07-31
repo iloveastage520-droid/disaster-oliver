@@ -92,6 +92,8 @@ let radarFrameIndex = 0;
 let radarLayer = null;
 let radarTimer = null;
 let simulatedRadarEntities = [];
+let simulatedRadarTimer = null;
+let simulatedRadarFrame = 0;
 let realBuildingEntities = [];
 
 function flyToView(viewName) {
@@ -140,12 +142,18 @@ simulatedRadarToggle.addEventListener("change", () => {
   simulatedRadarEntities.forEach((entity) => {
     entity.show = simulatedRadarToggle.checked;
   });
+  if (simulatedRadarToggle.checked) {
+    startSimulatedRadarAnimation();
+  } else {
+    stopSimulatedRadarAnimation();
+  }
 });
 
 flyToView("overview");
 loadRealBuildings();
 loadRadarLayer();
 addSimulatedRadar();
+startSimulatedRadarAnimation();
 setTimeout(checkCesiumCanvas, 2500);
 
 function showCesiumError(message) {
@@ -420,26 +428,65 @@ function formatRadarTime(epochSeconds) {
 function addSimulatedRadar() {
   if (simulatedRadarEntities.length) return;
   const cells = [
-    { lon: 121.5635, lat: 25.0338, width: 0.026, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.34, top: 280 },
-    { lon: 121.5585, lat: 25.0378, width: 0.038, depth: 0.022, level: "heavy", color: "#ef4444", alpha: 0.30, top: 230 },
-    { lon: 121.5725, lat: 25.0300, width: 0.036, depth: 0.020, level: "heavy", color: "#ef4444", alpha: 0.28, top: 210 },
-    { lon: 121.5480, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", color: "#facc15", alpha: 0.26, top: 170 }
+    { lon: 121.5450, lat: 25.0338, width: 0.026, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.34, top: 280, speed: 0.0027 },
+    { lon: 121.5385, lat: 25.0378, width: 0.038, depth: 0.022, level: "heavy", color: "#ef4444", alpha: 0.30, top: 230, speed: 0.0030 },
+    { lon: 121.5525, lat: 25.0300, width: 0.036, depth: 0.020, level: "heavy", color: "#ef4444", alpha: 0.28, top: 210, speed: 0.0023 },
+    { lon: 121.5280, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", color: "#facc15", alpha: 0.26, top: 170, speed: 0.0033 },
+    { lon: 121.5350, lat: 25.0268, width: 0.052, depth: 0.014, level: "rainband", color: "#22c55e", alpha: 0.20, top: 150, speed: 0.0025 }
   ];
-  simulatedRadarEntities = cells.map((cell) => viewer.entities.add({
-    name: `假雷達強回波 ${cell.level}`,
-    rectangle: {
-      coordinates: CesiumLib.Rectangle.fromDegrees(
-        cell.lon - cell.width / 2,
-        cell.lat - cell.depth / 2,
-        cell.lon + cell.width / 2,
-        cell.lat + cell.depth / 2
-      ),
-      height: cell.top,
-      extrudedHeight: 0,
-      material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
-      outline: true,
-      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.28)
-    },
-    show: simulatedRadarToggle.checked
-  }));
+  simulatedRadarEntities = cells.map((cell, index) => {
+    const entity = viewer.entities.add({
+      name: `假雷達強回波 ${cell.level}`,
+      rectangle: {
+        coordinates: simulatedRadarRectangle(cell, 0),
+        height: cell.top,
+        extrudedHeight: 0,
+        material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
+        outline: true,
+        outlineColor: CesiumLib.Color.WHITE.withAlpha(0.28)
+      },
+      show: simulatedRadarToggle.checked
+    });
+    entity.simulatedRadarCell = { ...cell, index };
+    return entity;
+  });
+  updateSimulatedRadarFrame();
+}
+
+function startSimulatedRadarAnimation() {
+  if (simulatedRadarTimer) return;
+  simulatedRadarTimer = window.setInterval(() => {
+    simulatedRadarFrame += 1;
+    updateSimulatedRadarFrame();
+  }, 520);
+}
+
+function stopSimulatedRadarAnimation() {
+  if (!simulatedRadarTimer) return;
+  window.clearInterval(simulatedRadarTimer);
+  simulatedRadarTimer = null;
+}
+
+function updateSimulatedRadarFrame() {
+  simulatedRadarEntities.forEach((entity) => {
+    const cell = entity.simulatedRadarCell;
+    const phase = simulatedRadarFrame + cell.index * 2;
+    const alphaPulse = cell.alpha + (phase % 4) * 0.045;
+    entity.rectangle.coordinates = simulatedRadarRectangle(cell, phase);
+    entity.rectangle.material = CesiumLib.Color
+      .fromCssColorString(cell.color)
+      .withAlpha(Math.min(alphaPulse, 0.52));
+  });
+  viewer.scene.requestRender();
+}
+
+function simulatedRadarRectangle(cell, phase) {
+  const offset = (phase * cell.speed) % 0.055;
+  const lon = cell.lon + offset;
+  return CesiumLib.Rectangle.fromDegrees(
+    lon - cell.width / 2,
+    cell.lat - cell.depth / 2,
+    lon + cell.width / 2,
+    cell.lat + cell.depth / 2
+  );
 }

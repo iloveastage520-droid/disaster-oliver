@@ -1,0 +1,302 @@
+body.laonong-command-page .site-header {
+  display: none;
+}
+
+body.laonong-command-page .cesium-page {
+  height: 100vh;
+  height: 100svh;
+}
+
+.laonong-command-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(2, 7, 17, 0.72) 0%, transparent 24%, transparent 72%, rgba(2, 7, 17, 0.58) 100%),
+    linear-gradient(180deg, rgba(2, 7, 17, 0.42) 0%, transparent 32%, rgba(2, 7, 17, 0.34) 100%);
+}
+
+.laonong-rain-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.38;
+  background-image:
+    repeating-linear-gradient(104deg, transparent 0 28px, rgba(191, 219, 254, 0.34) 29px, transparent 31px),
+    repeating-linear-gradient(104deg, transparent 0 70px, rgba(125, 211, 252, 0.18) 72px, transparent 74px);
+  background-size: 220px 220px, 360px 360px;
+  animation: laonongRain 1.2s linear infinite;
+}
+
+@keyframes laonongRain {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: -70px 210px, -110px 310px; }
+}
+
+.laonong-title-panel,
+.laonong-alert-banner,
+.laonong-mode-switch,
+.laonong-lifecycle,
+.laonong-focus-card {
+  position: absolute;
+  z-index: 6;
+}
+
+.laonong-title-panel {
+  top: 28px;
+  left: clamp(18px, 3vw, 42px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.65);
+}
+
+.laonong-title-panel h1 {
+  margin: 0;
+  font-size: clamp(24px, 2.8vw, 38px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.laonong-title-panel p {
+  margin: 4px 0 0;
+  color: #b7d7f5;
+  font-size: 15px;
+}
+
+.laonong-logo-mark {
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(56, 189, 248, 0.8);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 56%, rgba(56, 189, 248, 0.95) 0 5px, transparent 6px),
+    conic-gradient(from 45deg, transparent 0 12%, rgba(56, 189, 248, 0.9) 13% 24%, transparent 25% 38%, rgba(14, 165, 233, 0.75) 39% 52%, transparent 53% 100%);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.56);
+}
+
+.laonong-alert-banner {
+  top: 34px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 28px;
+  border: 1px solid rgba(251, 146, 60, 0.72);
+  border-radius: 8px;
+  color: #fff7ed;
+  background: linear-gradient(90deg, rgba(67, 20, 7, 0.72), rgba(7, 17, 31, 0.82), rgba(67, 20, 7, 0.72));
+  box-shadow: 0 0 34px rgba(249, 115, 22, 0.22);
+  transform: translateX(-50%);
+}
+
+.laonong-alert-banner strong {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: #ef4444;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+}
+
+.laonong-mode-switch {
+  top: 28px;
+  right: clamp(18px, 3vw, 42px);
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(125, 211, 252, 0.34);
+  border-radius: 8px;
+  background: rgba(7, 17, 31, 0.72);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+}
+
+.laonong-mode-switch button {
+  min-width: 52px;
+  min-height: 40px;
+  border: 0;
+  color: #b7c7dc;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+}
+
+.laonong-mode-switch .is-active {
+  color: #fff;
+  background: linear-gradient(180deg, #38bdf8, #0b74d1);
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.58);
+}
+
+.laonong-command-stage .cesium-control-panel {
+  top: 112px;
+  background: rgba(2, 11, 22, 0.72);
+}
+
+.laonong-command-stage .cesium-legend {
+  right: 28px;
+  bottom: 150px;
+  color: #dbeafe;
+  background: rgba(2, 11, 22, 0.78);
+  border-color: rgba(125, 211, 252, 0.28);
+  backdrop-filter: blur(16px);
+}
+
+.cesium-station { background: #0ea5e9; }
+
+.laonong-lifecycle {
+  left: clamp(18px, 3vw, 42px);
+  right: min(440px, 34vw);
+  bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  padding: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  border-radius: 8px;
+  background: rgba(2, 11, 22, 0.78);
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+}
+
+.laonong-lifecycle div {
+  min-height: 72px;
+  padding: 12px 16px;
+  border-left: 1px solid rgba(125, 211, 252, 0.18);
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.10), transparent);
+}
+
+.laonong-lifecycle div:first-child {
+  border-left: 0;
+}
+
+.laonong-lifecycle strong {
+  display: block;
+  color: #e0f2fe;
+  font-size: 20px;
+}
+
+.laonong-lifecycle span {
+  display: block;
+  margin-top: 6px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.laonong-focus-card {
+  right: 28px;
+  bottom: 24px;
+  width: min(380px, calc(100vw - 56px));
+  min-height: 106px;
+  padding: 18px;
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(2, 11, 22, 0.92), rgba(8, 47, 73, 0.48)),
+    linear-gradient(135deg, rgba(239, 68, 68, 0.28), transparent 58%);
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+}
+
+.laonong-focus-card span {
+  color: #cbd5e1;
+}
+
+.laonong-focus-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff;
+  font-size: 19px;
+}
+
+.laonong-focus-card p {
+  margin: 10px 0 0;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .laonong-title-panel {
+    top: 16px;
+    left: 16px;
+  }
+
+  .laonong-title-panel h1 {
+    max-width: 64vw;
+    font-size: 24px;
+  }
+
+  .laonong-title-panel p,
+  .laonong-alert-banner {
+    display: none;
+  }
+
+  .laonong-mode-switch {
+    top: 16px;
+    right: 16px;
+  }
+
+  .laonong-command-stage .cesium-control-panel {
+    top: 78px;
+  }
+
+  .laonong-command-stage .cesium-legend {
+    bottom: 116px;
+  }
+
+  .laonong-lifecycle {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: repeat(5, minmax(84px, 1fr));
+    overflow-x: auto;
+  }
+
+  .laonong-focus-card {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .laonong-command-stage {
+    min-height: 100svh;
+  }
+
+  .laonong-command-stage .cesium-legend {
+    right: 10px;
+    bottom: 102px;
+    min-width: 164px;
+    font-size: 12px;
+  }
+
+  .laonong-logo-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .laonong-title-panel h1 {
+    max-width: 58vw;
+    font-size: 20px;
+  }
+
+  .laonong-lifecycle {
+    padding: 8px;
+  }
+
+  .laonong-lifecycle div {
+    min-height: 60px;
+    padding: 9px 10px;
+  }
+
+  .laonong-lifecycle strong {
+    font-size: 16px;
+  }
+
+  .laonong-lifecycle span {
+    font-size: 12px;
+  }
+}

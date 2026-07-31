@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver Laonong River radar and river particle 3D visualization test.">
+  <title>荖濃溪雷達河道測試 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-page="cesium-3d-test">
+  <header class="site-header">
+    <a class="brand" href="../../index.html" aria-label="Disaster Oliver 首頁">
+      <span class="brand-mark">DO</span>
+      <span class="brand-text">Disaster Oliver</span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="../news-map.html">新聞地圖</a>
+      <a href="../flood-potential.html">淹水潛勢</a>
+      <a href="../himawari-height-test.html">向日葵高度感</a>
+      <a href="../cesium-3d-test/">Cesium 3D</a>
+      <a href="./">荖濃溪測試</a>
+    </nav>
+  </header>
+
+  <main class="cesium-page">
+    <section class="cesium-stage" aria-label="荖濃溪雷達河道 3D 測試場景">
+      <div id="cesium-container" class="cesium-container"></div>
+
+      <aside class="cesium-control-panel" aria-label="荖濃溪測試控制">
+        <p class="eyebrow">CesiumJS</p>
+        <h1>荖濃溪雷達河道測試</h1>
+        <div class="cesium-status-grid">
+          <div>
+            <span>場景</span>
+            <strong>荖濃溪</strong>
+          </div>
+          <div>
+            <span>效果</span>
+            <strong>河道粒子</strong>
+          </div>
+          <div>
+            <span>建物</span>
+            <strong>模擬河岸</strong>
+          </div>
+        </div>
+        <div class="cesium-actions" role="group" aria-label="鏡頭控制">
+          <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+          <button class="button button-secondary" type="button" data-camera="river">沿河斜視</button>
+          <button class="button button-secondary" type="button" data-camera="village">河岸建物</button>
+        </div>
+        <label class="check-field cesium-toggle">
+          <input id="laonong-radar-toggle" type="checkbox" checked>
+          <span>雷達回波 <strong id="laonong-radar-status">載入中</strong></span>
+        </label>
+        <label class="check-field cesium-toggle">
+          <input id="laonong-storm-toggle" type="checkbox" checked>
+          <span>假強回波掃描</span>
+        </label>
+        <label class="check-field cesium-toggle">
+          <input id="laonong-river-toggle" type="checkbox" checked>
+          <span>河道流動粒子</span>
+        </label>
+        <label class="check-field cesium-toggle">
+          <input id="laonong-building-toggle" type="checkbox" checked>
+          <span>河岸建物外框發光 <strong id="laonong-building-status">模擬</strong></span>
+        </label>
+      </aside>
+
+      <div class="cesium-legend" aria-label="荖濃溪圖例">
+        <strong>圖層</strong>
+        <span><i class="cesium-radar"></i>雷達回波</span>
+        <span><i class="cesium-simulated-radar"></i>假強回波</span>
+        <span><i class="cesium-river-flow"></i>河道粒子</span>
+        <span><i class="cesium-real-building"></i>河岸建物外框</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../../js/laonong-river-radar-test.js?v=20260731-laonong-river-glow"></script>
+</body>
+</html>

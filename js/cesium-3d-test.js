@@ -18,6 +18,7 @@ Cesium.Ion.defaultAccessToken = "";
 
 const viewer = new Cesium.Viewer("cesium-container", {
   animation: false,
+  baseLayer: false,
   baseLayerPicker: false,
   fullscreenButton: false,
   geocoder: false,
@@ -28,13 +29,20 @@ const viewer = new Cesium.Viewer("cesium-container", {
   timeline: false,
   navigationHelpButton: false,
   shouldAnimate: true,
-  terrainProvider: new Cesium.EllipsoidTerrainProvider(),
-  imageryProvider: new Cesium.OpenStreetMapImageryProvider({
-    url: "https://tile.openstreetmap.org/"
-  })
+  terrainProvider: new Cesium.EllipsoidTerrainProvider()
 });
 
+viewer.imageryLayers.removeAll();
+viewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+  url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  credit: "© OpenStreetMap contributors",
+  maximumLevel: 19
+}));
+
+viewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#07111f");
 viewer.scene.globe.depthTestAgainstTerrain = false;
+viewer.scene.globe.enableLighting = false;
+viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#102033");
 viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
 
@@ -153,8 +161,9 @@ document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => flyToView(button.dataset.camera));
 });
 
-let spinning = true;
+let spinning = false;
 const spinToggle = document.querySelector("#cesium-spin-toggle");
+spinToggle.checked = false;
 spinToggle.addEventListener("change", () => {
   spinning = spinToggle.checked;
 });
@@ -165,6 +174,7 @@ viewer.clock.onTick.addEventListener(() => {
 });
 
 flyToView("overview");
+setTimeout(checkCesiumCanvas, 2500);
 
 function showCesiumError(message) {
   const container = document.querySelector("#cesium-container");
@@ -173,4 +183,16 @@ function showCesiumError(message) {
   panel.className = "cesium-error-panel";
   panel.textContent = message;
   container.append(panel);
+}
+
+function checkCesiumCanvas() {
+  const canvas = document.querySelector("#cesium-container canvas");
+  if (!canvas) {
+    showCesiumError("Cesium canvas 沒有建立，請重新整理或確認瀏覽器支援 WebGL。");
+    return;
+  }
+  const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
+  if (!context) {
+    showCesiumError("瀏覽器沒有啟用 WebGL，Cesium 3D 地圖無法顯示。");
+  }
 }

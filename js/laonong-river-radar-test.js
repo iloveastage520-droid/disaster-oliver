@@ -347,7 +347,8 @@ function stormBounds(band, phase) {
 
 function stormCenter(band, phase) {
   const drift = (phase * band.speed) % 0.160;
-  const wave = Math.sin((phase + band.index * 4) * 0.35) * 0.004;
+  const bandIndex = band.index || 0;
+  const wave = Math.sin((phase + bandIndex * 4) * 0.35) * 0.004;
   return {
     lon: band.lon + drift,
     lat: band.lat + drift * 0.16 + wave

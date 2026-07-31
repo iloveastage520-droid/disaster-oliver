@@ -38,8 +38,8 @@ viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
 
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
-const STORM_CLOUD_BOTTOM = 1600;
-const STORM_CLOUD_TOP = 2100;
+const STORM_CLOUD_BOTTOM = 1880;
+const STORM_CLOUD_TOP = 2020;
 const riverPath = [
   [120.704, 23.226],
   [120.686, 23.198],
@@ -196,22 +196,23 @@ function addStormBands() {
       { lonOffset: 0, latOffset: 0, scale: 1 },
       { lonOffset: -0.018, latOffset: 0.010, scale: 0.72 },
       { lonOffset: 0.020, latOffset: -0.008, scale: 0.64 },
-      { lonOffset: 0.006, latOffset: 0.018, scale: 0.52 }
+      { lonOffset: 0.006, latOffset: 0.018, scale: 0.52 },
+      { lonOffset: -0.030, latOffset: -0.006, scale: 0.44 },
+      { lonOffset: 0.032, latOffset: 0.012, scale: 0.40 }
     ];
     blobs.forEach((blob, blobIndex) => {
       const entity = viewer.entities.add({
-      name: `假雷達回波 ${band.dbz} dBZ`,
-      position: stormPosition(band, blob, 0),
-      ellipse: {
-        semiMajorAxis: degreesToMeters(band.width * blob.scale) / 2,
-        semiMinorAxis: degreesToMeters(band.depth * blob.scale) / 2,
-        height: STORM_CLOUD_TOP,
-        extrudedHeight: STORM_CLOUD_BOTTOM,
-        material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
-        outline: true,
-        outlineColor: CesiumLib.Color.WHITE.withAlpha(0.18)
-      }
-    });
+        name: `假雷達回波 ${band.dbz} dBZ`,
+        position: stormPosition(band, blob, 0),
+        ellipse: {
+          semiMajorAxis: degreesToMeters(band.width * blob.scale) / 2,
+          semiMinorAxis: degreesToMeters(band.depth * blob.scale) / 2,
+          height: STORM_CLOUD_TOP,
+          extrudedHeight: STORM_CLOUD_BOTTOM,
+          material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
+          outline: false
+        }
+      });
       entity.stormBand = { ...band, index, blob, blobIndex };
       stormEntities.push(entity);
     });

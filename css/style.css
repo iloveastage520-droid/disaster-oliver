@@ -687,8 +687,10 @@ body[data-page="cesium-3d-test"] main {
 }
 
 .cesium-control-panel.is-collapsed {
-  max-height: 64px;
-  padding-bottom: 12px;
+  width: 96px;
+  min-height: 54px;
+  max-height: 54px;
+  padding: 9px;
   overflow: hidden;
 }
 
@@ -720,6 +722,8 @@ body[data-page="cesium-3d-test"] main {
 }
 
 .cesium-control-panel.is-collapsed .cesium-panel-toggle {
+  position: static;
+  width: 100%;
   box-shadow: var(--shadow);
 }
 
@@ -947,7 +951,7 @@ body[data-page="cesium-3d-test"] main {
   }
 
   .cesium-control-panel.is-collapsed {
-    width: min(170px, calc(100vw - 28px));
+    width: 96px;
   }
 
   .cesium-legend {

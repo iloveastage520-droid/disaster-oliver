@@ -84,13 +84,13 @@ const eventSites = [
 const TAIPEI_BUILDING_LAYER =
   "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
 const REAL_BUILDING_BOUNDS = {
-  xmin: 121.5500,
-  ymin: 25.0100,
-  xmax: 121.5950,
-  ymax: 25.0450
+  xmin: 121.5350,
+  ymin: 25.0000,
+  xmax: 121.6100,
+  ymax: 25.0600
 };
-const REAL_BUILDING_GRID = { columns: 10, rows: 10 };
-const MAX_REAL_BUILDINGS = 3000;
+const REAL_BUILDING_GRID = { columns: 12, rows: 12 };
+const MAX_REAL_BUILDINGS = 6000;
 
 const testBuildings = [
   { name: "市府塔樓 A", lon: 121.5640, lat: 25.0343, width: 0.00030, depth: 0.00024, height: 96, floors: 30 },

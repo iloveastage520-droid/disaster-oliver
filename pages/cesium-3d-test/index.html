@@ -32,11 +32,11 @@
         <div class="cesium-status-grid">
           <div>
             <span>場景</span>
-            <strong>台北測試區</strong>
+            <strong>台北東側</strong>
           </div>
           <div>
             <span>資料</span>
-            <strong>本機假資料</strong>
+            <strong>真實建物</strong>
           </div>
           <div>
             <span>Token</span>
@@ -57,27 +57,14 @@
         </div>
         <label class="check-field cesium-toggle">
           <input id="cesium-real-building-toggle" type="checkbox" checked>
-          <span>信義區真實建物 <strong id="cesium-real-building-status">讀取中</strong></span>
-        </label>
-        <label class="check-field cesium-toggle">
-          <input id="cesium-building-toggle" type="checkbox" checked>
-          <span>顯示建物高度</span>
-        </label>
-        <label class="check-field cesium-toggle">
-          <input id="cesium-spin-toggle" type="checkbox">
-          <span>自動慢速旋轉</span>
+          <span>真實 3D 建物 <strong id="cesium-real-building-status">讀取中</strong></span>
         </label>
       </aside>
 
       <div class="cesium-legend" aria-label="3D 圖例">
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>雷達回波</span>
-        <span><i class="cesium-flood"></i>半透明淹水面</span>
-        <span><i class="cesium-real-building"></i>信義區真實建物</span>
-        <span><i class="cesium-building"></i>測試建物高度</span>
-        <span><i class="cesium-round-building"></i>圓形測試建物</span>
-        <span><i class="cesium-column"></i>災情強度柱</span>
-        <span><i class="cesium-route"></i>應變路徑</span>
+        <span><i class="cesium-real-building"></i>真實 3D 建物</span>
       </div>
     </section>
   </main>
@@ -86,6 +73,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/cesium-3d-test.js?v=20260731-radar-zoom-fix"></script>
+  <script src="../../js/cesium-3d-test.js?v=20260731-clean-radar-buildings"></script>
 </body>
 </html>

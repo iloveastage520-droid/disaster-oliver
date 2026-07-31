@@ -794,13 +794,8 @@ body[data-page="cesium-3d-test"] main {
   line-height: 1.7;
 }
 
-.cesium-flood { background: rgba(30, 144, 255, 0.68); }
 .cesium-radar { background: linear-gradient(90deg, #22c55e, #facc15, #ef4444, #a855f7); }
 .cesium-real-building { background: #38bdf8; }
-.cesium-building { background: #facc15; }
-.cesium-round-building { background: #a855f7; }
-.cesium-column { background: #dc143c; }
-.cesium-route { background: #32cd32; }
 
 .cesium-viewer-bottom,
 .cesium-viewer-toolbar {

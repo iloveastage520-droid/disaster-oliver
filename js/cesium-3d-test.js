@@ -81,6 +81,19 @@ const eventSites = [
   { name: "南港排水巡查", lon: 121.6072, lat: 25.0531, height: 260, level: "低", color: CesiumLib.Color.CYAN }
 ];
 
+const testBuildings = [
+  { name: "市府塔樓 A", lon: 121.5640, lat: 25.0343, width: 0.00030, depth: 0.00024, height: 96, floors: 30 },
+  { name: "市府塔樓 B", lon: 121.5650, lat: 25.0346, width: 0.00026, depth: 0.00030, height: 128, floors: 40 },
+  { name: "信義商辦 1", lon: 121.5660, lat: 25.0339, width: 0.00036, depth: 0.00022, height: 72, floors: 22 },
+  { name: "信義商辦 2", lon: 121.5632, lat: 25.0331, width: 0.00022, depth: 0.00028, height: 48, floors: 15 },
+  { name: "防災中心", lon: 121.5624, lat: 25.0340, width: 0.00024, depth: 0.00022, height: 36, floors: 11 },
+  { name: "住宅群 A", lon: 121.5618, lat: 25.0328, width: 0.00018, depth: 0.00020, height: 28, floors: 9 },
+  { name: "住宅群 B", lon: 121.5657, lat: 25.0327, width: 0.00020, depth: 0.00020, height: 32, floors: 10 },
+  { name: "避難據點", lon: 121.5668, lat: 25.0348, width: 0.00028, depth: 0.00018, height: 22, floors: 7 },
+  { name: "高樓示範", lon: 121.5673, lat: 25.0333, width: 0.00024, depth: 0.00024, height: 180, floors: 56 },
+  { name: "低樓層街廓", lon: 121.5629, lat: 25.0321, width: 0.00036, depth: 0.00018, height: 18, floors: 5 }
+];
+
 viewer.entities.add({
   name: "半透明淹水測試面",
   polygon: {
@@ -133,6 +146,39 @@ eventSites.forEach((site) => {
   });
 });
 
+const buildingEntities = testBuildings.map((building) => {
+  const coordinates = rectangleDegrees(
+    building.lon,
+    building.lat,
+    building.width,
+    building.depth
+  );
+  return viewer.entities.add({
+    name: building.name,
+    description: `樓層：${building.floors}F<br>估算高度：${building.height}m`,
+    polygon: {
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(coordinates),
+      height: 0,
+      extrudedHeight: building.height,
+      material: buildingColor(building.height).withAlpha(0.78),
+      outline: true,
+      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.38)
+    },
+    label: {
+      text: `${building.height}m`,
+      font: "13px sans-serif",
+      fillColor: CesiumLib.Color.WHITE,
+      outlineColor: CesiumLib.Color.BLACK,
+      outlineWidth: 3,
+      style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new CesiumLib.Cartesian2(0, -12),
+      verticalOrigin: CesiumLib.VerticalOrigin.BOTTOM,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY
+    },
+    position: CesiumLib.Cartesian3.fromDegrees(building.lon, building.lat, building.height + 8)
+  });
+});
+
 viewer.entities.add({
   name: "應變巡查路徑",
   polyline: {
@@ -168,6 +214,13 @@ spinToggle.addEventListener("change", () => {
   spinning = spinToggle.checked;
 });
 
+const buildingToggle = document.querySelector("#cesium-building-toggle");
+buildingToggle.addEventListener("change", () => {
+  buildingEntities.forEach((entity) => {
+    entity.show = buildingToggle.checked;
+  });
+});
+
 viewer.clock.onTick.addEventListener(() => {
   if (!spinning) return;
   viewer.scene.camera.rotate(taipei, -0.00018);
@@ -195,4 +248,22 @@ function checkCesiumCanvas() {
   if (!context) {
     showCesiumError("瀏覽器沒有啟用 WebGL，Cesium 3D 地圖無法顯示。");
   }
+}
+
+function rectangleDegrees(centerLon, centerLat, width, depth) {
+  const halfWidth = width / 2;
+  const halfDepth = depth / 2;
+  return [
+    centerLon - halfWidth, centerLat - halfDepth,
+    centerLon + halfWidth, centerLat - halfDepth,
+    centerLon + halfWidth, centerLat + halfDepth,
+    centerLon - halfWidth, centerLat + halfDepth
+  ];
+}
+
+function buildingColor(height) {
+  if (height >= 120) return CesiumLib.Color.fromCssColorString("#f97316");
+  if (height >= 70) return CesiumLib.Color.fromCssColorString("#facc15");
+  if (height >= 35) return CesiumLib.Color.fromCssColorString("#38bdf8");
+  return CesiumLib.Color.fromCssColorString("#34d399");
 }

@@ -49,6 +49,10 @@
           <button class="button button-secondary" type="button" data-camera="tower">高度柱</button>
         </div>
         <label class="check-field cesium-toggle">
+          <input id="cesium-building-toggle" type="checkbox" checked>
+          <span>顯示建物高度</span>
+        </label>
+        <label class="check-field cesium-toggle">
           <input id="cesium-spin-toggle" type="checkbox">
           <span>自動慢速旋轉</span>
         </label>
@@ -57,6 +61,7 @@
       <div class="cesium-legend" aria-label="3D 圖例">
         <strong>圖層</strong>
         <span><i class="cesium-flood"></i>半透明淹水面</span>
+        <span><i class="cesium-building"></i>測試建物高度</span>
         <span><i class="cesium-column"></i>災情強度柱</span>
         <span><i class="cesium-route"></i>應變路徑</span>
       </div>

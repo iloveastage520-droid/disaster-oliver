@@ -84,6 +84,7 @@ const REAL_BUILDING_BOUNDS = {
 const REAL_BUILDING_GRID = { columns: 24, rows: 24 };
 const MAX_REAL_BUILDINGS = 18000;
 const BUILDING_QUERY_CONCURRENCY = 10;
+const BUILDING_RAIN_TINT_LIMIT = 2600;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -184,6 +185,13 @@ function buildingColor(height) {
   return CesiumLib.Color.fromCssColorString("#34d399");
 }
 
+function radarTintColor(level) {
+  if (level === "extreme") return CesiumLib.Color.fromCssColorString("#c084fc");
+  if (level === "heavy") return CesiumLib.Color.fromCssColorString("#fb7185");
+  if (level === "moderate") return CesiumLib.Color.fromCssColorString("#fde047");
+  return CesiumLib.Color.fromCssColorString("#4ade80");
+}
+
 async function loadRealBuildings() {
   setRealBuildingStatus("讀取中");
   try {
@@ -195,6 +203,7 @@ async function loadRealBuildings() {
       entity.show = realBuildingToggle.checked;
     });
     setRealBuildingStatus(`${realBuildingEntities.length} 棟`);
+    updateSimulatedRadarFrame();
   } catch (error) {
     setRealBuildingStatus("讀取失敗");
     showCesiumError(`真實建物資料讀取失敗：${error.message}`);
@@ -295,7 +304,8 @@ function addRealBuilding(feature) {
   const properties = feature.properties || {};
   const height = parseBuildingHeight(properties);
   const center = polygonCenter(ring);
-  return viewer.entities.add({
+  const baseColor = buildingColor(height).withAlpha(0.66);
+  const entity = viewer.entities.add({
     name: `真實建物 ${properties.NO || properties.OBJECTID || ""}`,
     description: [
       `高度：${height.toFixed(1)}m`,
@@ -306,12 +316,14 @@ function addRealBuilding(feature) {
       hierarchy: CesiumLib.Cartesian3.fromDegreesArray(ring.flat()),
       height: 0,
       extrudedHeight: height,
-      material: buildingColor(height).withAlpha(0.58),
+      material: baseColor,
       outline: true,
       outlineColor: CesiumLib.Color.WHITE.withAlpha(0.26)
     },
     position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 5)
   });
+  entity.realBuildingMeta = { center, height, baseColor };
+  return entity;
 }
 
 function parseBuildingHeight(properties) {
@@ -468,25 +480,59 @@ function stopSimulatedRadarAnimation() {
 }
 
 function updateSimulatedRadarFrame() {
+  const activeCells = [];
   simulatedRadarEntities.forEach((entity) => {
     const cell = entity.simulatedRadarCell;
     const phase = simulatedRadarFrame + cell.index * 2;
     const alphaPulse = cell.alpha + (phase % 4) * 0.045;
-    entity.rectangle.coordinates = simulatedRadarRectangle(cell, phase);
+    const bounds = simulatedRadarBounds(cell, phase);
+    activeCells.push({ ...bounds, cell, color: radarTintColor(cell.level), alpha: alphaPulse });
+    entity.rectangle.coordinates = CesiumLib.Rectangle.fromDegrees(
+      bounds.west,
+      bounds.south,
+      bounds.east,
+      bounds.north
+    );
     entity.rectangle.material = CesiumLib.Color
       .fromCssColorString(cell.color)
       .withAlpha(Math.min(alphaPulse, 0.52));
   });
+  updateBuildingRadarTint(activeCells);
   viewer.scene.requestRender();
 }
 
 function simulatedRadarRectangle(cell, phase) {
+  const bounds = simulatedRadarBounds(cell, phase);
+  return CesiumLib.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north);
+}
+
+function simulatedRadarBounds(cell, phase) {
   const offset = (phase * cell.speed) % 0.055;
   const lon = cell.lon + offset;
-  return CesiumLib.Rectangle.fromDegrees(
-    lon - cell.width / 2,
-    cell.lat - cell.depth / 2,
-    lon + cell.width / 2,
-    cell.lat + cell.depth / 2
-  );
+  return {
+    west: lon - cell.width / 2,
+    south: cell.lat - cell.depth / 2,
+    east: lon + cell.width / 2,
+    north: cell.lat + cell.depth / 2
+  };
+}
+
+function updateBuildingRadarTint(activeCells) {
+  realBuildingEntities.slice(0, BUILDING_RAIN_TINT_LIMIT).forEach((entity) => {
+    const meta = entity.realBuildingMeta;
+    if (!meta) return;
+    const hit = activeCells.find((bounds) => (
+      meta.center.lon >= bounds.west &&
+      meta.center.lon <= bounds.east &&
+      meta.center.lat >= bounds.south &&
+      meta.center.lat <= bounds.north
+    ));
+    const nextColor = hit
+      ? hit.color.withAlpha(Math.min(0.95, 0.62 + hit.alpha))
+      : meta.baseColor;
+    entity.polygon.material = nextColor;
+    entity.polygon.outlineColor = hit
+      ? CesiumLib.Color.WHITE.withAlpha(0.72)
+      : CesiumLib.Color.WHITE.withAlpha(0.26);
+  });
 }

@@ -205,8 +205,8 @@ function addStormBands() {
         name: `假雷達回波 ${band.dbz} dBZ`,
         position: stormPosition(band, blob, 0),
         ellipse: {
-          semiMajorAxis: degreesToMeters(band.width * blob.scale) / 2,
-          semiMinorAxis: degreesToMeters(band.depth * blob.scale) / 2,
+          semiMajorAxis: cloudAxisMeters(band, blob).major,
+          semiMinorAxis: cloudAxisMeters(band, blob).minor,
           height: STORM_CLOUD_TOP,
           extrudedHeight: STORM_CLOUD_BOTTOM,
           material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
@@ -366,6 +366,15 @@ function stormPosition(band, blob, phase) {
 
 function degreesToMeters(degrees) {
   return degrees * 111000;
+}
+
+function cloudAxisMeters(band, blob) {
+  const width = degreesToMeters(band.width * blob.scale) / 2;
+  const depth = degreesToMeters(band.depth * blob.scale) / 2;
+  return {
+    major: Math.max(width, depth),
+    minor: Math.min(width, depth)
+  };
 }
 
 function radarAt(point, bands) {

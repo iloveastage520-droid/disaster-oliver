@@ -46,13 +46,7 @@ viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString("#102033");
 viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
 if (viewer.scene.postProcessStages.bloom) {
-  viewer.scene.postProcessStages.bloom.enabled = true;
-  viewer.scene.postProcessStages.bloom.uniforms.glowOnly = false;
-  viewer.scene.postProcessStages.bloom.uniforms.contrast = 128;
-  viewer.scene.postProcessStages.bloom.uniforms.brightness = -0.18;
-  viewer.scene.postProcessStages.bloom.uniforms.delta = 1.0;
-  viewer.scene.postProcessStages.bloom.uniforms.sigma = 2.8;
-  viewer.scene.postProcessStages.bloom.uniforms.stepSize = 4.2;
+  viewer.scene.postProcessStages.bloom.enabled = false;
 }
 
 const cameraViews = {
@@ -329,14 +323,6 @@ function addRealBuilding(feature) {
       outline: true,
       outlineColor: CesiumLib.Color.WHITE.withAlpha(0.34)
     },
-    point: {
-      pixelSize: Math.min(22, Math.max(8, height / 8)),
-      color: CesiumLib.Color.WHITE.withAlpha(0),
-      outlineColor: CesiumLib.Color.WHITE.withAlpha(0),
-      outlineWidth: 3,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      show: false
-    },
     position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 5)
   });
   entity.realBuildingMeta = { center, height };
@@ -546,17 +532,7 @@ function updateBuildingRadarGlow(activeCells) {
     ));
     const glowStrength = hit ? Math.min(1, Math.max(0.2, hit.cell.dbz / 60)) : 0;
     entity.polygon.outlineColor = hit
-      ? hit.color.withAlpha(0.42 + glowStrength * 0.42)
+      ? hit.color.withAlpha(0.58 + glowStrength * 0.32)
       : CesiumLib.Color.WHITE.withAlpha(0.34);
-    entity.point.show = Boolean(hit);
-    entity.point.pixelSize = hit
-      ? Math.min(34, Math.max(10, meta.height / 7) + glowStrength * 10)
-      : Math.min(22, Math.max(8, meta.height / 8));
-    entity.point.color = hit
-      ? hit.color.withAlpha(0.55 + glowStrength * 0.35)
-      : CesiumLib.Color.WHITE.withAlpha(0);
-    entity.point.outlineColor = hit
-      ? CesiumLib.Color.WHITE.withAlpha(0.78)
-      : CesiumLib.Color.WHITE.withAlpha(0);
   });
 }

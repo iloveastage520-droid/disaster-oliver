@@ -81,6 +81,15 @@ const eventSites = [
   { name: "南港排水巡查", lon: 121.6072, lat: 25.0531, height: 260, level: "低", color: CesiumLib.Color.CYAN }
 ];
 
+const landmarkRoundBuilding = {
+  name: "圓形建物高度測試",
+  lon: 121.5666,
+  lat: 25.0348,
+  height: 220,
+  radius: 86,
+  floors: 68
+};
+
 const TAIPEI_BUILDING_LAYER =
   "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
 const REAL_BUILDING_BOUNDS = {
@@ -191,6 +200,40 @@ const buildingEntities = testBuildings.map((building) => {
 });
 let realBuildingEntities = [];
 
+const roundBuildingEntity = viewer.entities.add({
+  name: landmarkRoundBuilding.name,
+  description: [
+    "幾何：圓形 cylinder",
+    `高度：${landmarkRoundBuilding.height}m`,
+    `半徑：${landmarkRoundBuilding.radius}m`,
+    `估算樓層：${landmarkRoundBuilding.floors}F`
+  ].join("<br>"),
+  position: CesiumLib.Cartesian3.fromDegrees(
+    landmarkRoundBuilding.lon,
+    landmarkRoundBuilding.lat,
+    landmarkRoundBuilding.height / 2
+  ),
+  cylinder: {
+    length: landmarkRoundBuilding.height,
+    topRadius: landmarkRoundBuilding.radius,
+    bottomRadius: landmarkRoundBuilding.radius,
+    material: CesiumLib.Color.fromCssColorString("#a855f7").withAlpha(0.78),
+    outline: true,
+    outlineColor: CesiumLib.Color.WHITE.withAlpha(0.62)
+  },
+  label: {
+    text: "圓形建物 220m",
+    font: "15px sans-serif",
+    fillColor: CesiumLib.Color.WHITE,
+    outlineColor: CesiumLib.Color.BLACK,
+    outlineWidth: 3,
+    style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+    pixelOffset: new CesiumLib.Cartesian2(0, -16),
+    verticalOrigin: CesiumLib.VerticalOrigin.BOTTOM,
+    disableDepthTestDistance: Number.POSITIVE_INFINITY
+  }
+});
+
 viewer.entities.add({
   name: "應變巡查路徑",
   polyline: {
@@ -231,6 +274,7 @@ buildingToggle.addEventListener("change", () => {
   buildingEntities.forEach((entity) => {
     entity.show = buildingToggle.checked;
   });
+  roundBuildingEntity.show = buildingToggle.checked;
 });
 
 const realBuildingToggle = document.querySelector("#cesium-real-building-toggle");

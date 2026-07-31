@@ -789,6 +789,7 @@ body[data-page="cesium-3d-test"] main {
 .cesium-flood { background: rgba(30, 144, 255, 0.68); }
 .cesium-real-building { background: #38bdf8; }
 .cesium-building { background: #facc15; }
+.cesium-round-building { background: #a855f7; }
 .cesium-column { background: #dc143c; }
 .cesium-route { background: #32cd32; }
 

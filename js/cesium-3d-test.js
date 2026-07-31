@@ -45,6 +45,15 @@ viewer.scene.globe.enableLighting = false;
 viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString("#102033");
 viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
+if (viewer.scene.postProcessStages.bloom) {
+  viewer.scene.postProcessStages.bloom.enabled = true;
+  viewer.scene.postProcessStages.bloom.uniforms.glowOnly = false;
+  viewer.scene.postProcessStages.bloom.uniforms.contrast = 128;
+  viewer.scene.postProcessStages.bloom.uniforms.brightness = -0.18;
+  viewer.scene.postProcessStages.bloom.uniforms.delta = 1.0;
+  viewer.scene.postProcessStages.bloom.uniforms.sigma = 2.8;
+  viewer.scene.postProcessStages.bloom.uniforms.stepSize = 4.2;
+}
 
 const cameraViews = {
   overview: {
@@ -320,6 +329,14 @@ function addRealBuilding(feature) {
       outline: true,
       outlineColor: CesiumLib.Color.WHITE.withAlpha(0.26)
     },
+    point: {
+      pixelSize: Math.min(22, Math.max(8, height / 8)),
+      color: CesiumLib.Color.WHITE.withAlpha(0),
+      outlineColor: CesiumLib.Color.WHITE.withAlpha(0),
+      outlineWidth: 3,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      show: false
+    },
     position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 5)
   });
   entity.realBuildingMeta = { center, height, baseColor };
@@ -534,5 +551,12 @@ function updateBuildingRadarTint(activeCells) {
     entity.polygon.outlineColor = hit
       ? CesiumLib.Color.WHITE.withAlpha(0.72)
       : CesiumLib.Color.WHITE.withAlpha(0.26);
+    entity.point.show = Boolean(hit);
+    entity.point.color = hit
+      ? hit.color.withAlpha(0.86)
+      : CesiumLib.Color.WHITE.withAlpha(0);
+    entity.point.outlineColor = hit
+      ? CesiumLib.Color.WHITE.withAlpha(0.86)
+      : CesiumLib.Color.WHITE.withAlpha(0);
   });
 }

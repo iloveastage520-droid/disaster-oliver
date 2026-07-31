@@ -81,8 +81,8 @@ const REAL_BUILDING_BOUNDS = {
   xmax: 121.6500,
   ymax: 25.1000
 };
-const REAL_BUILDING_GRID = { columns: 16, rows: 16 };
-const MAX_REAL_BUILDINGS = 10000;
+const REAL_BUILDING_GRID = { columns: 24, rows: 24 };
+const MAX_REAL_BUILDINGS = 18000;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -90,6 +90,7 @@ let radarHost = "";
 let radarFrameIndex = 0;
 let radarLayer = null;
 let radarTimer = null;
+let simulatedRadarEntities = [];
 let realBuildingEntities = [];
 
 function flyToView(viewName) {
@@ -116,6 +117,7 @@ realBuildingToggle.addEventListener("change", async () => {
 
 const radarToggle = document.querySelector("#cesium-radar-toggle");
 const radarPlay = document.querySelector("#cesium-radar-play");
+const simulatedRadarToggle = document.querySelector("#cesium-simulated-radar-toggle");
 radarToggle.addEventListener("change", async () => {
   if (radarToggle.checked && !radarLayer) {
     await loadRadarLayer();
@@ -132,10 +134,17 @@ radarPlay.addEventListener("click", async () => {
   }
   startRadarPlayback();
 });
+simulatedRadarToggle.addEventListener("change", () => {
+  if (!simulatedRadarEntities.length) addSimulatedRadar();
+  simulatedRadarEntities.forEach((entity) => {
+    entity.show = simulatedRadarToggle.checked;
+  });
+});
 
 flyToView("overview");
 loadRealBuildings();
 loadRadarLayer();
+addSimulatedRadar();
 setTimeout(checkCesiumCanvas, 2500);
 
 function showCesiumError(message) {
@@ -374,4 +383,30 @@ function formatRadarTime(epochSeconds) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function addSimulatedRadar() {
+  if (simulatedRadarEntities.length) return;
+  const cells = [
+    { lon: 121.552, lat: 25.028, width: 0.032, depth: 0.015, level: "heavy", color: "#ef4444", alpha: 0.62 },
+    { lon: 121.573, lat: 25.036, width: 0.040, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.58 },
+    { lon: 121.590, lat: 25.049, width: 0.030, depth: 0.014, level: "moderate", color: "#facc15", alpha: 0.52 },
+    { lon: 121.536, lat: 25.045, width: 0.034, depth: 0.016, level: "moderate", color: "#22c55e", alpha: 0.42 }
+  ];
+  simulatedRadarEntities = cells.map((cell) => viewer.entities.add({
+    name: `假雷達強回波 ${cell.level}`,
+    rectangle: {
+      coordinates: CesiumLib.Rectangle.fromDegrees(
+        cell.lon - cell.width / 2,
+        cell.lat - cell.depth / 2,
+        cell.lon + cell.width / 2,
+        cell.lat + cell.depth / 2
+      ),
+      height: 260,
+      material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
+      outline: true,
+      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.28)
+    },
+    show: simulatedRadarToggle.checked
+  }));
 }

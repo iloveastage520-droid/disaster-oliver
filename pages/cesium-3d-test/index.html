@@ -56,6 +56,10 @@
           <button class="button button-secondary" id="cesium-radar-play" type="button">播放雷達</button>
         </div>
         <label class="check-field cesium-toggle">
+          <input id="cesium-simulated-radar-toggle" type="checkbox" checked>
+          <span>假雷達強回波</span>
+        </label>
+        <label class="check-field cesium-toggle">
           <input id="cesium-real-building-toggle" type="checkbox" checked>
           <span>真實 3D 建物 <strong id="cesium-real-building-status">讀取中</strong></span>
         </label>
@@ -64,6 +68,7 @@
       <div class="cesium-legend" aria-label="3D 圖例">
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>雷達回波</span>
+        <span><i class="cesium-simulated-radar"></i>假雷達強回波</span>
         <span><i class="cesium-real-building"></i>真實 3D 建物</span>
       </div>
     </section>
@@ -73,6 +78,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/cesium-3d-test.js?v=20260731-clean-radar-buildings"></script>
+  <script src="../../js/cesium-3d-test.js?v=20260731-sim-radar-dense-buildings"></script>
 </body>
 </html>

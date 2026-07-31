@@ -155,7 +155,7 @@ simulatedRadarToggle.addEventListener("change", () => {
   }
 });
 
-flyToView("tower");
+flyToView("low");
 loadRealBuildings();
 loadRadarLayer();
 addSimulatedRadar();

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver CesiumJS 3D disaster map test.">
+  <title>CesiumJS 3D 測試 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-page="cesium-3d-test">
+  <header class="site-header">
+    <a class="brand" href="../index.html" aria-label="Disaster Oliver 首頁">
+      <span class="brand-mark">DO</span>
+      <span class="brand-text">Disaster Oliver</span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="news-map.html">新聞地圖</a>
+      <a href="flood-potential.html">淹水潛勢</a>
+      <a href="himawari-height-test.html">向日葵高度感</a>
+      <a href="cesium-3d-test.html">Cesium 3D</a>
+    </nav>
+  </header>
+
+  <main class="cesium-page">
+    <section class="cesium-stage" aria-label="CesiumJS 3D 測試場景">
+      <div id="cesium-container" class="cesium-container"></div>
+
+      <aside class="cesium-control-panel" aria-label="3D 測試控制">
+        <p class="eyebrow">CesiumJS</p>
+        <h1>3D 災害圖層測試</h1>
+        <div class="cesium-status-grid">
+          <div>
+            <span>場景</span>
+            <strong>台北測試區</strong>
+          </div>
+          <div>
+            <span>資料</span>
+            <strong>本機假資料</strong>
+          </div>
+          <div>
+            <span>Token</span>
+            <strong>不需要</strong>
+          </div>
+        </div>
+        <div class="cesium-actions" role="group" aria-label="鏡頭控制">
+          <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+          <button class="button button-secondary" type="button" data-camera="low">低空斜視</button>
+          <button class="button button-secondary" type="button" data-camera="tower">高度柱</button>
+        </div>
+        <label class="check-field cesium-toggle">
+          <input id="cesium-spin-toggle" type="checkbox" checked>
+          <span>自動慢速旋轉</span>
+        </label>
+      </aside>
+
+      <div class="cesium-legend" aria-label="3D 圖例">
+        <strong>圖層</strong>
+        <span><i class="cesium-flood"></i>半透明淹水面</span>
+        <span><i class="cesium-column"></i>災情強度柱</span>
+        <span><i class="cesium-route"></i>應變路徑</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../js/cesium-3d-test.js"></script>
+</body>
+</html>

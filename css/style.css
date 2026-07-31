@@ -643,6 +643,136 @@ h3 {
   box-shadow: 0 0 0 4px rgba(3, 7, 18, 0.22), 0 10px 22px rgba(0, 0, 0, 0.28);
 }
 
+body[data-page="cesium-3d-test"] {
+  overflow: hidden;
+  background: #020711;
+}
+
+body[data-page="cesium-3d-test"] main {
+  padding: 0;
+}
+
+.cesium-page {
+  height: calc(100vh - 77px);
+}
+
+.cesium-stage {
+  position: relative;
+  height: 100%;
+  min-height: 620px;
+  overflow: hidden;
+}
+
+.cesium-container {
+  position: absolute;
+  inset: 0;
+  background: #020711;
+}
+
+.cesium-control-panel {
+  position: absolute;
+  top: 20px;
+  left: clamp(16px, 4vw, 42px);
+  z-index: 5;
+  width: min(390px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid rgba(145, 180, 220, 0.32);
+  border-radius: 8px;
+  background: rgba(7, 17, 31, 0.82);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.cesium-control-panel h1 {
+  margin-bottom: 14px;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.cesium-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.cesium-status-grid div {
+  display: grid;
+  gap: 7px;
+  min-height: 74px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cesium-status-grid span,
+.cesium-toggle {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cesium-status-grid strong {
+  color: var(--green);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.cesium-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.cesium-actions .button {
+  min-height: 38px;
+  padding: 0 13px;
+}
+
+.cesium-toggle {
+  margin-top: 12px;
+}
+
+.cesium-legend {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+  min-width: 190px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #06111f;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+}
+
+.cesium-legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cesium-legend i {
+  display: inline-block;
+  width: 18px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.cesium-flood { background: rgba(30, 144, 255, 0.68); }
+.cesium-column { background: #dc143c; }
+.cesium-route { background: #32cd32; }
+
+.cesium-viewer-bottom,
+.cesium-viewer-toolbar {
+  display: none !important;
+}
+
 @media (max-width: 900px) {
   .site-header,
   .site-footer {
@@ -686,6 +816,19 @@ h3 {
   .flood-map {
     min-height: 440px;
   }
+
+  body[data-page="cesium-3d-test"] {
+    overflow: auto;
+  }
+
+  .cesium-page {
+    height: calc(100vh - 128px);
+  }
+
+  .cesium-control-panel {
+    left: 14px;
+    top: 14px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -712,6 +855,23 @@ h3 {
   }
 
   .flood-legend {
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .cesium-stage {
+    min-height: 720px;
+  }
+
+  .cesium-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cesium-control-panel {
+    width: calc(100vw - 28px);
+  }
+
+  .cesium-legend {
     right: 10px;
     bottom: 10px;
   }

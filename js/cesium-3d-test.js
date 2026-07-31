@@ -83,6 +83,7 @@ const REAL_BUILDING_BOUNDS = {
 };
 const REAL_BUILDING_GRID = { columns: 24, rows: 24 };
 const MAX_REAL_BUILDINGS = 18000;
+const BUILDING_QUERY_CONCURRENCY = 10;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -195,8 +196,45 @@ async function loadRealBuildings() {
 async function fetchRealBuildingGeojson() {
   const seen = new Set();
   const features = [];
+  const cells = buildBuildingCells();
+  let nextCellIndex = 0;
+
+  async function worker() {
+    while (nextCellIndex < cells.length && features.length < MAX_REAL_BUILDINGS) {
+      const cell = cells[nextCellIndex];
+      nextCellIndex += 1;
+      let data;
+      try {
+        data = await queryRealBuildingCell(cell);
+      } catch (error) {
+        console.warn("Skip building cell", cell, error);
+        continue;
+      }
+      data.features.forEach((feature) => {
+        const key = feature.properties?.OBJECTID || feature.id;
+        if (key == null || seen.has(key) || features.length >= MAX_REAL_BUILDINGS) return;
+        seen.add(key);
+        features.push(feature);
+      });
+      setRealBuildingStatus(`${features.length} 棟`);
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(BUILDING_QUERY_CONCURRENCY, cells.length) },
+    () => worker()
+  );
+  await Promise.all(workers);
+
+  return { type: "FeatureCollection", features };
+}
+
+function buildBuildingCells() {
+  const cells = [];
   const cellWidth = (REAL_BUILDING_BOUNDS.xmax - REAL_BUILDING_BOUNDS.xmin) / REAL_BUILDING_GRID.columns;
   const cellHeight = (REAL_BUILDING_BOUNDS.ymax - REAL_BUILDING_BOUNDS.ymin) / REAL_BUILDING_GRID.rows;
+  const centerLon = (REAL_BUILDING_BOUNDS.xmin + REAL_BUILDING_BOUNDS.xmax) / 2;
+  const centerLat = (REAL_BUILDING_BOUNDS.ymin + REAL_BUILDING_BOUNDS.ymax) / 2;
 
   for (let column = 0; column < REAL_BUILDING_GRID.columns; column += 1) {
     for (let row = 0; row < REAL_BUILDING_GRID.rows; row += 1) {
@@ -208,25 +246,19 @@ async function fetchRealBuildingGeojson() {
       const ymax = row === REAL_BUILDING_GRID.rows - 1
         ? REAL_BUILDING_BOUNDS.ymax
         : ymin + cellHeight;
-      let data;
-      try {
-        data = await queryRealBuildingCell({ xmin, ymin, xmax, ymax });
-      } catch (error) {
-        console.warn("Skip building cell", { xmin, ymin, xmax, ymax }, error);
-        continue;
-      }
-      data.features.forEach((feature) => {
-        const key = feature.properties?.OBJECTID || feature.id;
-        if (key == null || seen.has(key) || features.length >= MAX_REAL_BUILDINGS) return;
-        seen.add(key);
-        features.push(feature);
+      const lon = (xmin + xmax) / 2;
+      const lat = (ymin + ymax) / 2;
+      cells.push({
+        xmin,
+        ymin,
+        xmax,
+        ymax,
+        distance: Math.hypot(lon - centerLon, lat - centerLat)
       });
-      setRealBuildingStatus(`${features.length} 棟`);
-      if (features.length >= MAX_REAL_BUILDINGS) return { type: "FeatureCollection", features };
     }
   }
 
-  return { type: "FeatureCollection", features };
+  return cells.sort((a, b) => a.distance - b.distance);
 }
 
 async function queryRealBuildingCell(bounds) {

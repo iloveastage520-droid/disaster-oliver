@@ -109,6 +109,10 @@ function flyToView(viewName) {
   });
 }
 
+function setCameraView(viewName) {
+  viewer.camera.setView(cameraViews[viewName]);
+}
+
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => flyToView(button.dataset.camera));
 });
@@ -155,7 +159,7 @@ simulatedRadarToggle.addEventListener("change", () => {
   }
 });
 
-flyToView("low");
+setCameraView("low");
 loadRealBuildings();
 loadRadarLayer();
 addSimulatedRadar();

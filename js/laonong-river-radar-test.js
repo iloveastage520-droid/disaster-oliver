@@ -107,7 +107,7 @@ stormToggle.addEventListener("change", updateLayerVisibility);
 riverToggle.addEventListener("change", updateLayerVisibility);
 buildingToggle.addEventListener("change", updateLayerVisibility);
 
-flyToView("overview");
+setCameraView("overview");
 addRiver();
 addRiverbankBuildings();
 addStormBands();
@@ -121,6 +121,10 @@ function flyToView(viewName) {
     ...cameraViews[viewName],
     duration: 1.3
   });
+}
+
+function setCameraView(viewName) {
+  viewer.camera.setView(cameraViews[viewName]);
 }
 
 function addRiver() {

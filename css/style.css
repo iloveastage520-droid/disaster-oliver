@@ -655,6 +655,7 @@ body[data-page="cesium-3d-test"] main {
 
 .cesium-page {
   height: calc(100vh - 77px);
+  height: calc(100svh - 77px);
 }
 
 .cesium-stage {
@@ -881,6 +882,7 @@ body[data-page="cesium-3d-test"] main {
 
   .cesium-page {
     height: calc(100vh - 128px);
+    height: calc(100svh - 128px);
   }
 
   .cesium-control-panel {

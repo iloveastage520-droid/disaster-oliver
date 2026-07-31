@@ -317,12 +317,14 @@ async function fetchRealBuildingGeojson() {
     inSR: "4326",
     outSR: "4326",
     spatialRel: "esriSpatialRelIntersects",
-    resultRecordCount: "450",
     f: "geojson"
   });
   const response = await fetch(`${TAIPEI_BUILDING_LAYER}?${params.toString()}`);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || "ArcGIS query error");
+  if (!Array.isArray(data.features)) throw new Error("ArcGIS response missing features");
+  return data;
 }
 
 function addRealBuilding(feature) {

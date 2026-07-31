@@ -735,6 +735,11 @@ body[data-page="cesium-3d-test"] main {
   margin-top: 12px;
 }
 
+.cesium-toggle strong {
+  color: var(--green);
+  font-weight: 700;
+}
+
 .cesium-legend {
   position: absolute;
   right: 18px;
@@ -782,6 +787,7 @@ body[data-page="cesium-3d-test"] main {
 }
 
 .cesium-flood { background: rgba(30, 144, 255, 0.68); }
+.cesium-real-building { background: #38bdf8; }
 .cesium-building { background: #facc15; }
 .cesium-column { background: #dc143c; }
 .cesium-route { background: #32cd32; }

@@ -81,6 +81,15 @@ const eventSites = [
   { name: "南港排水巡查", lon: 121.6072, lat: 25.0531, height: 260, level: "低", color: CesiumLib.Color.CYAN }
 ];
 
+const TAIPEI_BUILDING_LAYER =
+  "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
+const REAL_BUILDING_BOUNDS = {
+  xmin: 121.5596,
+  ymin: 25.0304,
+  xmax: 121.5700,
+  ymax: 25.0372
+};
+
 const testBuildings = [
   { name: "市府塔樓 A", lon: 121.5640, lat: 25.0343, width: 0.00030, depth: 0.00024, height: 96, floors: 30 },
   { name: "市府塔樓 B", lon: 121.5650, lat: 25.0346, width: 0.00026, depth: 0.00030, height: 128, floors: 40 },
@@ -178,6 +187,7 @@ const buildingEntities = testBuildings.map((building) => {
     position: CesiumLib.Cartesian3.fromDegrees(building.lon, building.lat, building.height + 8)
   });
 });
+let realBuildingEntities = [];
 
 viewer.entities.add({
   name: "應變巡查路徑",
@@ -221,12 +231,24 @@ buildingToggle.addEventListener("change", () => {
   });
 });
 
+const realBuildingToggle = document.querySelector("#cesium-real-building-toggle");
+realBuildingToggle.addEventListener("change", async () => {
+  if (realBuildingToggle.checked && realBuildingEntities.length === 0) {
+    await loadRealBuildings();
+    return;
+  }
+  realBuildingEntities.forEach((entity) => {
+    entity.show = realBuildingToggle.checked;
+  });
+});
+
 viewer.clock.onTick.addEventListener(() => {
   if (!spinning) return;
   viewer.scene.camera.rotate(taipei, -0.00018);
 });
 
 flyToView("overview");
+loadRealBuildings();
 setTimeout(checkCesiumCanvas, 2500);
 
 function showCesiumError(message) {
@@ -266,4 +288,99 @@ function buildingColor(height) {
   if (height >= 70) return CesiumLib.Color.fromCssColorString("#facc15");
   if (height >= 35) return CesiumLib.Color.fromCssColorString("#38bdf8");
   return CesiumLib.Color.fromCssColorString("#34d399");
+}
+
+async function loadRealBuildings() {
+  setRealBuildingStatus("讀取中");
+  try {
+    const data = await fetchRealBuildingGeojson();
+    realBuildingEntities = data.features
+      .map((feature) => addRealBuilding(feature))
+      .filter(Boolean);
+    realBuildingEntities.forEach((entity) => {
+      entity.show = realBuildingToggle.checked;
+    });
+    setRealBuildingStatus(`${realBuildingEntities.length} 棟`);
+  } catch (error) {
+    setRealBuildingStatus("讀取失敗");
+    showCesiumError(`真實建物資料讀取失敗：${error.message}`);
+  }
+}
+
+async function fetchRealBuildingGeojson() {
+  const params = new URLSearchParams({
+    where: "1=1",
+    outFields: "OBJECTID,NO,Height,Floor,樓層註記,屋頂高程,出入口高程",
+    returnGeometry: "true",
+    geometryType: "esriGeometryEnvelope",
+    geometry: `${REAL_BUILDING_BOUNDS.xmin},${REAL_BUILDING_BOUNDS.ymin},${REAL_BUILDING_BOUNDS.xmax},${REAL_BUILDING_BOUNDS.ymax}`,
+    inSR: "4326",
+    outSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    resultRecordCount: "450",
+    f: "geojson"
+  });
+  const response = await fetch(`${TAIPEI_BUILDING_LAYER}?${params.toString()}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+function addRealBuilding(feature) {
+  const ring = feature.geometry?.coordinates?.[0];
+  if (!Array.isArray(ring) || ring.length < 4) return null;
+  const properties = feature.properties || {};
+  const height = parseBuildingHeight(properties);
+  const center = polygonCenter(ring);
+  return viewer.entities.add({
+    name: `台北真實建物 ${properties.NO || properties.OBJECTID || ""}`,
+    description: [
+      `高度：${height.toFixed(1)}m`,
+      `樓層：${properties.Floor ?? "無資料"}`,
+      `樓層註記：${properties["樓層註記"] || "無資料"}`
+    ].join("<br>"),
+    polygon: {
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(ring.flat()),
+      height: 0,
+      extrudedHeight: height,
+      material: buildingColor(height).withAlpha(0.58),
+      outline: true,
+      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.26)
+    },
+    position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 5)
+  });
+}
+
+function parseBuildingHeight(properties) {
+  const directHeight = Number.parseFloat(properties.Height);
+  if (Number.isFinite(directHeight) && directHeight > 0) return directHeight;
+
+  const roof = Number.parseFloat(properties["屋頂高程"]);
+  const entrance = Number.parseFloat(properties["出入口高程"]);
+  if (Number.isFinite(roof) && Number.isFinite(entrance) && roof > entrance) {
+    return roof - entrance;
+  }
+
+  const floor = Number.parseFloat(properties.Floor);
+  if (Number.isFinite(floor) && floor > 0) return floor * 3.2;
+
+  const floorNote = String(properties["樓層註記"] || "").match(/\d+/);
+  if (floorNote) return Number.parseFloat(floorNote[0]) * 3.2;
+
+  return 9.6;
+}
+
+function polygonCenter(ring) {
+  const total = ring.reduce((acc, coordinate) => ({
+    lon: acc.lon + coordinate[0],
+    lat: acc.lat + coordinate[1]
+  }), { lon: 0, lat: 0 });
+  return {
+    lon: total.lon / ring.length,
+    lat: total.lat / ring.length
+  };
+}
+
+function setRealBuildingStatus(text) {
+  const element = document.querySelector("#cesium-real-building-status");
+  if (element) element.textContent = text;
 }

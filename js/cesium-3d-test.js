@@ -88,8 +88,8 @@ const REAL_BUILDING_GRID = { columns: 24, rows: 24 };
 const MAX_REAL_BUILDINGS = 18000;
 const BUILDING_QUERY_CONCURRENCY = 10;
 const BUILDING_RAIN_TINT_LIMIT = 2600;
-const SIMULATED_CLOUD_BOTTOM = 1300;
-const SIMULATED_CLOUD_TOP = 1800;
+const SIMULATED_CLOUD_BOTTOM = 1550;
+const SIMULATED_CLOUD_TOP = 1680;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];

@@ -1,5 +1,19 @@
 const Cesium = window.Cesium;
 
+window.addEventListener("error", (event) => {
+  showCesiumError(`Cesium 場景錯誤：${event.message}`);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  const message = event.reason?.message || String(event.reason || "unknown error");
+  showCesiumError(`Cesium 非同步載入錯誤：${message}`);
+});
+
+if (!Cesium) {
+  showCesiumError("CesiumJS 載入失敗，請確認瀏覽器可以連到 cdnjs.cloudflare.com。");
+  throw new Error("CesiumJS is not available.");
+}
+
 Cesium.Ion.defaultAccessToken = "";
 
 const viewer = new Cesium.Viewer("cesium-container", {
@@ -151,3 +165,12 @@ viewer.clock.onTick.addEventListener(() => {
 });
 
 flyToView("overview");
+
+function showCesiumError(message) {
+  const container = document.querySelector("#cesium-container");
+  if (!container) return;
+  const panel = document.createElement("div");
+  panel.className = "cesium-error-panel";
+  panel.textContent = message;
+  container.append(panel);
+}

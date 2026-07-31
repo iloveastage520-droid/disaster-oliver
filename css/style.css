@@ -764,6 +764,22 @@ body[data-page="cesium-3d-test"] main {
   border-radius: 999px;
 }
 
+.cesium-error-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  width: min(520px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid rgba(255, 95, 122, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(84, 15, 28, 0.92);
+  box-shadow: var(--shadow);
+  transform: translate(-50%, -50%);
+  line-height: 1.7;
+}
+
 .cesium-flood { background: rgba(30, 144, 255, 0.68); }
 .cesium-column { background: #dc143c; }
 .cesium-route { background: #32cd32; }

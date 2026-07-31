@@ -84,11 +84,13 @@ const eventSites = [
 const TAIPEI_BUILDING_LAYER =
   "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
 const REAL_BUILDING_BOUNDS = {
-  xmin: 121.5620,
-  ymin: 25.0320,
-  xmax: 121.5680,
-  ymax: 25.0360
+  xmin: 121.5500,
+  ymin: 25.0100,
+  xmax: 121.5950,
+  ymax: 25.0450
 };
+const REAL_BUILDING_GRID = { columns: 5, rows: 5 };
+const MAX_REAL_BUILDINGS = 3000;
 
 const testBuildings = [
   { name: "市府塔樓 A", lon: 121.5640, lat: 25.0343, width: 0.00030, depth: 0.00024, height: 96, floors: 30 },
@@ -308,12 +310,43 @@ async function loadRealBuildings() {
 }
 
 async function fetchRealBuildingGeojson() {
+  const seen = new Set();
+  const features = [];
+  const cellWidth = (REAL_BUILDING_BOUNDS.xmax - REAL_BUILDING_BOUNDS.xmin) / REAL_BUILDING_GRID.columns;
+  const cellHeight = (REAL_BUILDING_BOUNDS.ymax - REAL_BUILDING_BOUNDS.ymin) / REAL_BUILDING_GRID.rows;
+
+  for (let column = 0; column < REAL_BUILDING_GRID.columns; column += 1) {
+    for (let row = 0; row < REAL_BUILDING_GRID.rows; row += 1) {
+      const xmin = REAL_BUILDING_BOUNDS.xmin + cellWidth * column;
+      const xmax = column === REAL_BUILDING_GRID.columns - 1
+        ? REAL_BUILDING_BOUNDS.xmax
+        : xmin + cellWidth;
+      const ymin = REAL_BUILDING_BOUNDS.ymin + cellHeight * row;
+      const ymax = row === REAL_BUILDING_GRID.rows - 1
+        ? REAL_BUILDING_BOUNDS.ymax
+        : ymin + cellHeight;
+      const data = await queryRealBuildingCell({ xmin, ymin, xmax, ymax });
+      data.features.forEach((feature) => {
+        const key = feature.properties?.OBJECTID || feature.id;
+        if (key == null || seen.has(key) || features.length >= MAX_REAL_BUILDINGS) return;
+        seen.add(key);
+        features.push(feature);
+      });
+      setRealBuildingStatus(`${features.length} 棟`);
+      if (features.length >= MAX_REAL_BUILDINGS) return { type: "FeatureCollection", features };
+    }
+  }
+
+  return { type: "FeatureCollection", features };
+}
+
+async function queryRealBuildingCell(bounds) {
   const params = new URLSearchParams({
     where: "1=1",
     outFields: "OBJECTID,NO,Height,Floor,樓層註記,屋頂高程,出入口高程",
     returnGeometry: "true",
     geometryType: "esriGeometryEnvelope",
-    geometry: `${REAL_BUILDING_BOUNDS.xmin},${REAL_BUILDING_BOUNDS.ymin},${REAL_BUILDING_BOUNDS.xmax},${REAL_BUILDING_BOUNDS.ymax}`,
+    geometry: `${bounds.xmin},${bounds.ymin},${bounds.xmax},${bounds.ymax}`,
     inSR: "4326",
     outSR: "4326",
     spatialRel: "esriSpatialRelIntersects",
@@ -334,7 +367,7 @@ function addRealBuilding(feature) {
   const height = parseBuildingHeight(properties);
   const center = polygonCenter(ring);
   return viewer.entities.add({
-    name: `台北真實建物 ${properties.NO || properties.OBJECTID || ""}`,
+    name: `信義區真實建物 ${properties.NO || properties.OBJECTID || ""}`,
     description: [
       `高度：${height.toFixed(1)}m`,
       `樓層：${properties.Floor ?? "無資料"}`,

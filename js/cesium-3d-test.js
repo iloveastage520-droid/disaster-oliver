@@ -34,8 +34,8 @@ const viewer = new CesiumLib.Viewer("cesium-container", {
 
 viewer.imageryLayers.removeAll();
 viewer.imageryLayers.addImageryProvider(new CesiumLib.UrlTemplateImageryProvider({
-  url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-  credit: "© OpenStreetMap contributors",
+  url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  credit: "Google hybrid satellite",
   maximumLevel: 19
 }));
 

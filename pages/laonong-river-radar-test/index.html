@@ -6,9 +6,9 @@
   <meta name="description" content="Disaster Oliver Laonong River radar and river particle 3D visualization test.">
   <title>荖濃溪雷達河道測試 | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
-  <link rel="stylesheet" href="../../css/style.css?v=20260731-panel-pill-toggle">
+  <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
 </head>
-<body data-page="cesium-3d-test">
+<body class="laonong-command-page" data-page="cesium-3d-test">
   <header class="site-header">
     <a class="brand" href="../../index.html" aria-label="Disaster Oliver 首頁">
       <span class="brand-mark">DO</span>
@@ -24,8 +24,28 @@
   </header>
 
   <main class="cesium-page">
-    <section class="cesium-stage" aria-label="荖濃溪雷達河道 3D 測試場景">
+    <section class="cesium-stage laonong-command-stage" aria-label="荖濃溪雷達河道 3D 測試場景">
       <div id="cesium-container" class="cesium-container"></div>
+
+      <div class="laonong-rain-overlay" aria-hidden="true"></div>
+
+      <section class="laonong-title-panel" aria-label="系統標題">
+        <div class="laonong-logo-mark"></div>
+        <div>
+          <p>整體流域監測與決策支援平台</p>
+          <h1>荖濃溪流域閃洪預警系統</h1>
+        </div>
+      </section>
+
+      <div class="laonong-alert-banner" role="status">
+        <strong>!</strong>
+        <span>荖濃溪上游山區強降雨持續中，請加強戒備！</span>
+      </div>
+
+      <div class="laonong-mode-switch" aria-label="顯示模式">
+        <button class="is-active" type="button">3D</button>
+        <button type="button">2D</button>
+      </div>
 
       <aside class="cesium-control-panel is-collapsed" aria-label="荖濃溪測試控制">
         <button class="cesium-panel-toggle" type="button" aria-expanded="false">控制</button>
@@ -73,10 +93,26 @@
       <div class="cesium-legend" aria-label="荖濃溪圖例">
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>雷達回波</span>
-        <span><i class="cesium-simulated-radar"></i>假強回波</span>
-        <span><i class="cesium-river-flow"></i>流域 / 水位擴張</span>
-        <span><i class="cesium-real-building"></i>沿岸聚落外框</span>
+        <span><i class="cesium-station"></i>雨量站 / 水位站</span>
+        <span><i class="cesium-real-building"></i>聚落</span>
+        <span><i class="risk-high"></i>高風險</span>
+        <span><i class="risk-mid"></i>中風險</span>
+        <span><i class="cesium-river-flow"></i>河道水流</span>
       </div>
+
+      <section class="laonong-lifecycle" aria-label="災害生命週期">
+        <div><strong>降雨</strong><span>雨量雷達監測</span></div>
+        <div><strong>匯流</strong><span>逕流匯集與傳遞</span></div>
+        <div><strong>河道</strong><span>水位上升與流動</span></div>
+        <div><strong>聚落</strong><span>風險影響評估</span></div>
+        <div><strong>預警</strong><span>即時警戒發布</span></div>
+      </section>
+
+      <section class="laonong-focus-card" aria-label="重點聚落資訊">
+        <span>多納里</span>
+        <strong>即時影像</strong>
+        <p>高風險 / 水位快速上升</p>
+      </section>
     </section>
   </main>
 
@@ -84,7 +120,7 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-river-radar-test.js?v=20260731-flash-flood-basin"></script>
+  <script src="../../js/laonong-river-radar-test.js?v=20260731-command-center-style"></script>
   <script src="../../js/cesium-panel-toggle.js?v=20260731-vertical-panel-toggle"></script>
 </body>
 </html>

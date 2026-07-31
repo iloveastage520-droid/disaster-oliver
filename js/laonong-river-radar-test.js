@@ -7,6 +7,8 @@ if (!CesiumLib) {
 
 CesiumLib.Ion.defaultAccessToken = "";
 
+const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
+
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
   baseLayer: false,
@@ -32,10 +34,12 @@ viewer.imageryLayers.addImageryProvider(new CesiumLib.UrlTemplateImageryProvider
 
 viewer.scene.backgroundColor = CesiumLib.Color.fromCssColorString("#07111f");
 viewer.scene.globe.depthTestAgainstTerrain = false;
-viewer.scene.globe.enableLighting = false;
+viewer.scene.globe.enableLighting = true;
 viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString("#102033");
 viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
+viewer.scene.verticalExaggeration = 1.8;
+viewer.scene.verticalExaggerationRelativeHeight = 0;
 
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 const BASIN_GEOJSON_URL = "../../data/laonong-basin-boundary.geojson";
@@ -125,6 +129,7 @@ riverToggle.addEventListener("change", updateLayerVisibility);
 buildingToggle.addEventListener("change", updateLayerVisibility);
 
 setCameraView("overview");
+setupTerrain();
 addRiver();
 addRiverbankBuildings();
 addStormBands();
@@ -145,6 +150,23 @@ function flyToView(viewName) {
 
 function setCameraView(viewName) {
   viewer.camera.setView(cameraViews[viewName]);
+}
+
+async function setupTerrain() {
+  setTerrainStatus("載入中");
+  if (!CesiumLib.ArcGISTiledElevationTerrainProvider) {
+    setTerrainStatus("不支援");
+    return;
+  }
+  try {
+    viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
+    viewer.scene.verticalExaggeration = 2.15;
+    setTerrainStatus("真實地形 x2.15");
+    window.setTimeout(() => setCameraView("overview"), 900);
+  } catch (error) {
+    setTerrainStatus("平面備援");
+    console.warn("Terrain load failed", error);
+  }
 }
 
 function addRiver() {
@@ -616,6 +638,11 @@ function setRadarStatus(text) {
 
 function setBuildingStatus(text) {
   const element = document.querySelector("#laonong-building-status");
+  if (element) element.textContent = text;
+}
+
+function setTerrainStatus(text) {
+  const element = document.querySelector("#laonong-terrain-status");
   if (element) element.textContent = text;
 }
 

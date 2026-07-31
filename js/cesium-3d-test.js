@@ -464,11 +464,19 @@ function addSimulatedRadar() {
     { lon: 121.5280, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", dbz: 36, color: "#facc15", alpha: 0.26, top: 170, speed: 0.0033 },
     { lon: 121.5350, lat: 25.0268, width: 0.052, depth: 0.014, level: "rainband", dbz: 28, color: "#22c55e", alpha: 0.20, top: 150, speed: 0.0025 }
   ];
-  simulatedRadarEntities = cells.map((cell, index) => {
-    const entity = viewer.entities.add({
+  simulatedRadarEntities = cells.flatMap((cell, index) => {
+    const blobs = [
+      { lonOffset: 0, latOffset: 0, scale: 1 },
+      { lonOffset: -0.006, latOffset: 0.003, scale: 0.72 },
+      { lonOffset: 0.007, latOffset: -0.002, scale: 0.64 }
+    ];
+    return blobs.map((blob, blobIndex) => {
+      const entity = viewer.entities.add({
       name: `假雷達強回波 ${cell.level}`,
-      rectangle: {
-        coordinates: simulatedRadarRectangle(cell, 0),
+      position: simulatedRadarPosition(cell, blob, 0),
+      ellipse: {
+        semiMajorAxis: degreesToMeters(cell.width * blob.scale) / 2,
+        semiMinorAxis: degreesToMeters(cell.depth * blob.scale) / 2,
         height: SIMULATED_CLOUD_TOP,
         extrudedHeight: SIMULATED_CLOUD_BOTTOM,
         material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
@@ -477,8 +485,9 @@ function addSimulatedRadar() {
       },
       show: simulatedRadarToggle.checked
     });
-    entity.simulatedRadarCell = { ...cell, index };
-    return entity;
+      entity.simulatedRadarCell = { ...cell, index, blob, blobIndex };
+      return entity;
+    });
   });
   updateSimulatedRadarFrame();
 }
@@ -512,36 +521,52 @@ function updateSimulatedRadarFrame() {
       cloudBottom: SIMULATED_CLOUD_BOTTOM,
       cloudTop: SIMULATED_CLOUD_TOP
     });
-    entity.rectangle.coordinates = CesiumLib.Rectangle.fromDegrees(
-      bounds.west,
-      bounds.south,
-      bounds.east,
-      bounds.north
-    );
-    entity.rectangle.material = CesiumLib.Color
+    entity.position = simulatedRadarPosition(cell, cell.blob, phase);
+    entity.ellipse.material = CesiumLib.Color
       .fromCssColorString(cell.color)
-      .withAlpha(Math.min(alphaPulse, 0.52));
+      .withAlpha(Math.min(alphaPulse * (cell.blobIndex ? 0.78 : 1), 0.48));
   });
   updateBuildingRadarGlow(activeCells);
   viewer.scene.requestRender();
 }
 
-function simulatedRadarRectangle(cell, phase) {
-  const bounds = simulatedRadarBounds(cell, phase);
-  return CesiumLib.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north);
+function simulatedRadarBounds(cell, phase) {
+  const center = simulatedRadarCenter(cell, phase);
+  const scale = cell.blob?.scale || 1;
+  const lonOffset = cell.blob?.lonOffset || 0;
+  const latOffset = cell.blob?.latOffset || 0;
+  const lon = center.lon + lonOffset;
+  const lat = center.lat + latOffset;
+  const width = cell.width * scale;
+  const depth = cell.depth * scale;
+  return {
+    west: lon - width / 2,
+    south: lat - depth / 2,
+    east: lon + width / 2,
+    north: lat + depth / 2
+  };
 }
 
-function simulatedRadarBounds(cell, phase) {
+function simulatedRadarCenter(cell, phase) {
   const drift = (phase * cell.speed) % 0.055;
   const wave = Math.sin((phase + cell.index * 3) * 0.42) * 0.0018;
-  const lon = cell.lon + drift * (WIND_VECTOR.lon / 0.0027);
-  const lat = cell.lat + drift * (WIND_VECTOR.lat / 0.0027) + wave;
   return {
-    west: lon - cell.width / 2,
-    south: lat - cell.depth / 2,
-    east: lon + cell.width / 2,
-    north: lat + cell.depth / 2
+    lon: cell.lon + drift * (WIND_VECTOR.lon / 0.0027),
+    lat: cell.lat + drift * (WIND_VECTOR.lat / 0.0027) + wave
   };
+}
+
+function simulatedRadarPosition(cell, blob, phase) {
+  const center = simulatedRadarCenter(cell, phase);
+  return CesiumLib.Cartesian3.fromDegrees(
+    center.lon + blob.lonOffset,
+    center.lat + blob.latOffset,
+    SIMULATED_CLOUD_TOP
+  );
+}
+
+function degreesToMeters(degrees) {
+  return degrees * 111000;
 }
 
 function addWindIndicators() {

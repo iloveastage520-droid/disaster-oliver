@@ -192,10 +192,19 @@ function addStormBands() {
     { lon: 120.515, lat: 23.115, width: 0.090, depth: 0.042, dbz: 36, color: "#facc15", alpha: 0.22, speed: 0.0028 }
   ];
   bands.forEach((band, index) => {
-    const entity = viewer.entities.add({
+    const blobs = [
+      { lonOffset: 0, latOffset: 0, scale: 1 },
+      { lonOffset: -0.018, latOffset: 0.010, scale: 0.72 },
+      { lonOffset: 0.020, latOffset: -0.008, scale: 0.64 },
+      { lonOffset: 0.006, latOffset: 0.018, scale: 0.52 }
+    ];
+    blobs.forEach((blob, blobIndex) => {
+      const entity = viewer.entities.add({
       name: `假雷達回波 ${band.dbz} dBZ`,
-      rectangle: {
-        coordinates: stormBoundsToRectangle(stormBounds(band, 0)),
+      position: stormPosition(band, blob, 0),
+      ellipse: {
+        semiMajorAxis: degreesToMeters(band.width * blob.scale) / 2,
+        semiMinorAxis: degreesToMeters(band.depth * blob.scale) / 2,
         height: STORM_CLOUD_TOP,
         extrudedHeight: STORM_CLOUD_BOTTOM,
         material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
@@ -203,8 +212,9 @@ function addStormBands() {
         outlineColor: CesiumLib.Color.WHITE.withAlpha(0.18)
       }
     });
-    entity.stormBand = { ...band, index };
-    stormEntities.push(entity);
+      entity.stormBand = { ...band, index, blob, blobIndex };
+      stormEntities.push(entity);
+    });
   });
 }
 
@@ -266,8 +276,10 @@ function animateScenario() {
       cloudBottom: STORM_CLOUD_BOTTOM,
       cloudTop: STORM_CLOUD_TOP
     });
-    entity.rectangle.coordinates = stormBoundsToRectangle(bounds);
-    entity.rectangle.material = CesiumLib.Color.fromCssColorString(band.color).withAlpha(pulse);
+    entity.position = stormPosition(band, band.blob, stormFrame + band.index * 8);
+    entity.ellipse.material = CesiumLib.Color
+      .fromCssColorString(band.color)
+      .withAlpha(Math.min(pulse * (band.blobIndex ? 0.78 : 1), 0.46));
     entity.show = stormToggle.checked;
   });
   updateParticles(activeBands);
@@ -316,17 +328,42 @@ function updateLayerVisibility() {
 }
 
 function stormBounds(band, phase) {
-  const lon = band.lon + ((phase * band.speed) % 0.160);
+  const center = stormCenter(band, phase);
+  const scale = band.blob?.scale || 1;
+  const lonOffset = band.blob?.lonOffset || 0;
+  const latOffset = band.blob?.latOffset || 0;
+  const lon = center.lon + lonOffset;
+  const lat = center.lat + latOffset;
+  const width = band.width * scale;
+  const depth = band.depth * scale;
   return {
-    west: lon - band.width / 2,
-    south: band.lat - band.depth / 2,
-    east: lon + band.width / 2,
-    north: band.lat + band.depth / 2
+    west: lon - width / 2,
+    south: lat - depth / 2,
+    east: lon + width / 2,
+    north: lat + depth / 2
   };
 }
 
-function stormBoundsToRectangle(bounds) {
-  return CesiumLib.Rectangle.fromDegrees(bounds.west, bounds.south, bounds.east, bounds.north);
+function stormCenter(band, phase) {
+  const drift = (phase * band.speed) % 0.160;
+  const wave = Math.sin((phase + band.index * 4) * 0.35) * 0.004;
+  return {
+    lon: band.lon + drift,
+    lat: band.lat + drift * 0.16 + wave
+  };
+}
+
+function stormPosition(band, blob, phase) {
+  const center = stormCenter(band, phase);
+  return CesiumLib.Cartesian3.fromDegrees(
+    center.lon + blob.lonOffset,
+    center.lat + blob.latOffset,
+    STORM_CLOUD_TOP
+  );
+}
+
+function degreesToMeters(degrees) {
+  return degrees * 111000;
 }
 
 function radarAt(point, bands) {

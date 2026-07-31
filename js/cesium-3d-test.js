@@ -89,7 +89,7 @@ const REAL_BUILDING_BOUNDS = {
   xmax: 121.5950,
   ymax: 25.0450
 };
-const REAL_BUILDING_GRID = { columns: 5, rows: 5 };
+const REAL_BUILDING_GRID = { columns: 10, rows: 10 };
 const MAX_REAL_BUILDINGS = 3000;
 
 const testBuildings = [
@@ -325,7 +325,13 @@ async function fetchRealBuildingGeojson() {
       const ymax = row === REAL_BUILDING_GRID.rows - 1
         ? REAL_BUILDING_BOUNDS.ymax
         : ymin + cellHeight;
-      const data = await queryRealBuildingCell({ xmin, ymin, xmax, ymax });
+      let data;
+      try {
+        data = await queryRealBuildingCell({ xmin, ymin, xmax, ymax });
+      } catch (error) {
+        console.warn("Skip building cell", { xmin, ymin, xmax, ymax }, error);
+        continue;
+      }
       data.features.forEach((feature) => {
         const key = feature.properties?.OBJECTID || feature.id;
         if (key == null || seen.has(key) || features.length >= MAX_REAL_BUILDINGS) return;

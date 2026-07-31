@@ -49,6 +49,13 @@
           <button class="button button-secondary" type="button" data-camera="tower">高度柱</button>
         </div>
         <label class="check-field cesium-toggle">
+          <input id="cesium-radar-toggle" type="checkbox" checked>
+          <span>雷達回波 <strong id="cesium-radar-status">載入中</strong></span>
+        </label>
+        <div class="cesium-actions cesium-radar-actions" role="group" aria-label="雷達控制">
+          <button class="button button-secondary" id="cesium-radar-play" type="button">播放雷達</button>
+        </div>
+        <label class="check-field cesium-toggle">
           <input id="cesium-real-building-toggle" type="checkbox" checked>
           <span>信義區真實建物 <strong id="cesium-real-building-status">讀取中</strong></span>
         </label>
@@ -64,6 +71,7 @@
 
       <div class="cesium-legend" aria-label="3D 圖例">
         <strong>圖層</strong>
+        <span><i class="cesium-radar"></i>雷達回波</span>
         <span><i class="cesium-flood"></i>半透明淹水面</span>
         <span><i class="cesium-real-building"></i>信義區真實建物</span>
         <span><i class="cesium-building"></i>測試建物高度</span>
@@ -78,6 +86,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/cesium-3d-test.js?v=20260731-expanded-buildings"></script>
+  <script src="../../js/cesium-3d-test.js?v=20260731-radar-buildings"></script>
 </body>
 </html>

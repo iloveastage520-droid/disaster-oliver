@@ -735,6 +735,14 @@ body[data-page="cesium-3d-test"] main {
   margin-top: 12px;
 }
 
+.cesium-radar-actions {
+  margin-top: 8px;
+}
+
+.cesium-radar-actions .button {
+  min-height: 34px;
+}
+
 .cesium-toggle strong {
   color: var(--green);
   font-weight: 700;
@@ -787,6 +795,7 @@ body[data-page="cesium-3d-test"] main {
 }
 
 .cesium-flood { background: rgba(30, 144, 255, 0.68); }
+.cesium-radar { background: linear-gradient(90deg, #22c55e, #facc15, #ef4444, #a855f7); }
 .cesium-real-building { background: #38bdf8; }
 .cesium-building { background: #facc15; }
 .cesium-round-building { background: #a855f7; }

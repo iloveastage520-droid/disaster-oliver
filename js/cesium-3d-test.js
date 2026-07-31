@@ -100,6 +100,13 @@ const REAL_BUILDING_BOUNDS = {
 };
 const REAL_BUILDING_GRID = { columns: 12, rows: 12 };
 const MAX_REAL_BUILDINGS = 6000;
+const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
+
+let radarFrames = [];
+let radarHost = "";
+let radarFrameIndex = 0;
+let radarLayer = null;
+let radarTimer = null;
 
 const testBuildings = [
   { name: "市府塔樓 A", lon: 121.5640, lat: 25.0343, width: 0.00030, depth: 0.00024, height: 96, floors: 30 },
@@ -288,6 +295,25 @@ realBuildingToggle.addEventListener("change", async () => {
   });
 });
 
+const radarToggle = document.querySelector("#cesium-radar-toggle");
+const radarPlay = document.querySelector("#cesium-radar-play");
+radarToggle.addEventListener("change", async () => {
+  if (radarToggle.checked && !radarLayer) {
+    await loadRadarLayer();
+    return;
+  }
+  if (radarLayer) radarLayer.show = radarToggle.checked;
+  if (!radarToggle.checked) stopRadarPlayback();
+});
+radarPlay.addEventListener("click", async () => {
+  if (!radarLayer) await loadRadarLayer();
+  if (radarTimer) {
+    stopRadarPlayback();
+    return;
+  }
+  startRadarPlayback();
+});
+
 viewer.clock.onTick.addEventListener(() => {
   if (!spinning) return;
   viewer.scene.camera.rotate(taipei, -0.00018);
@@ -295,6 +321,7 @@ viewer.clock.onTick.addEventListener(() => {
 
 flyToView("overview");
 loadRealBuildings();
+loadRadarLayer();
 setTimeout(checkCesiumCanvas, 2500);
 
 function showCesiumError(message) {
@@ -468,4 +495,79 @@ function polygonCenter(ring) {
 function setRealBuildingStatus(text) {
   const element = document.querySelector("#cesium-real-building-status");
   if (element) element.textContent = text;
+}
+
+async function loadRadarLayer() {
+  setRadarStatus("載入中");
+  radarPlay.disabled = true;
+  try {
+    if (!radarFrames.length) await fetchRadarFrames();
+    radarFrameIndex = radarFrames.length - 1;
+    setRadarFrame(radarFrameIndex);
+    radarLayer.show = radarToggle.checked;
+  } catch (error) {
+    radarToggle.checked = false;
+    setRadarStatus("讀取失敗");
+    showCesiumError(`雷達回波讀取失敗：${error.message}`);
+  } finally {
+    radarPlay.disabled = false;
+  }
+}
+
+async function fetchRadarFrames() {
+  const response = await fetch(`${RAINVIEWER_API}?t=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  radarFrames = (data.radar?.past || []).slice(-8);
+  radarHost = data.host || "";
+  if (!radarFrames.length || !radarHost) throw new Error("No radar frames");
+}
+
+function setRadarFrame(index) {
+  if (!radarFrames.length) return;
+  radarFrameIndex = (index + radarFrames.length) % radarFrames.length;
+  const frame = radarFrames[radarFrameIndex];
+  const provider = new CesiumLib.UrlTemplateImageryProvider({
+    url: `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+    credit: "Radar © RainViewer",
+    maximumLevel: 8
+  });
+  if (radarLayer) viewer.imageryLayers.remove(radarLayer, false);
+  radarLayer = viewer.imageryLayers.addImageryProvider(provider);
+  radarLayer.alpha = 0.58;
+  radarLayer.brightness = 1.12;
+  radarLayer.show = radarToggle.checked;
+  setRadarStatus(`${formatRadarTime(frame.time)} (${radarFrameIndex + 1}/${radarFrames.length})`);
+}
+
+function startRadarPlayback() {
+  radarToggle.checked = true;
+  if (radarLayer) radarLayer.show = true;
+  radarPlay.textContent = "暫停雷達";
+  radarTimer = window.setInterval(() => {
+    setRadarFrame(radarFrameIndex + 1);
+  }, 900);
+}
+
+function stopRadarPlayback() {
+  if (radarTimer) {
+    window.clearInterval(radarTimer);
+    radarTimer = null;
+  }
+  radarPlay.textContent = "播放雷達";
+}
+
+function setRadarStatus(text) {
+  const element = document.querySelector("#cesium-radar-status");
+  if (element) element.textContent = text;
+}
+
+function formatRadarTime(epochSeconds) {
+  if (!epochSeconds) return "無時間";
+  return new Date(epochSeconds * 1000).toLocaleString("zh-TW", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }

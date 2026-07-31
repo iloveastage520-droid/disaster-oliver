@@ -683,11 +683,24 @@ body[data-page="cesium-3d-test"] main {
   background: rgba(7, 17, 31, 0.82);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
-  transition: transform 180ms ease;
+  transition: max-height 180ms ease, padding 180ms ease, background-color 180ms ease;
 }
 
 .cesium-control-panel.is-collapsed {
-  transform: translateX(calc(-100% + 58px));
+  max-height: 64px;
+  padding-bottom: 12px;
+  overflow: hidden;
+}
+
+.cesium-panel-content {
+  transition: opacity 140ms ease;
+}
+
+.cesium-control-panel.is-collapsed .cesium-panel-content {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .cesium-panel-toggle {
@@ -707,7 +720,6 @@ body[data-page="cesium-3d-test"] main {
 }
 
 .cesium-control-panel.is-collapsed .cesium-panel-toggle {
-  right: -72px;
   box-shadow: var(--shadow);
 }
 
@@ -935,11 +947,7 @@ body[data-page="cesium-3d-test"] main {
   }
 
   .cesium-control-panel.is-collapsed {
-    transform: translateX(calc(-100% + 38px));
-  }
-
-  .cesium-control-panel.is-collapsed .cesium-panel-toggle {
-    right: -66px;
+    width: min(170px, calc(100vw - 28px));
   }
 
   .cesium-legend {

@@ -38,6 +38,8 @@ viewer.scene.skyAtmosphere.show = true;
 viewer.scene.postProcessStages.fxaa.enabled = true;
 
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
+const STORM_CLOUD_BOTTOM = 1600;
+const STORM_CLOUD_TOP = 2100;
 const riverPath = [
   [120.704, 23.226],
   [120.686, 23.198],
@@ -190,8 +192,8 @@ function addStormBands() {
       name: `假雷達回波 ${band.dbz} dBZ`,
       rectangle: {
         coordinates: stormBoundsToRectangle(stormBounds(band, 0)),
-        height: 520,
-        extrudedHeight: 40,
+        height: STORM_CLOUD_TOP,
+        extrudedHeight: STORM_CLOUD_BOTTOM,
         material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
         outline: true,
         outlineColor: CesiumLib.Color.WHITE.withAlpha(0.18)
@@ -253,7 +255,13 @@ function animateScenario() {
     const band = entity.stormBand;
     const bounds = stormBounds(band, stormFrame + band.index * 8);
     const pulse = band.alpha + (stormFrame % 5) * 0.025;
-    activeBands.push({ ...bounds, dbz: band.dbz, color: CesiumLib.Color.fromCssColorString(band.color) });
+    activeBands.push({
+      ...bounds,
+      dbz: band.dbz,
+      color: CesiumLib.Color.fromCssColorString(band.color),
+      cloudBottom: STORM_CLOUD_BOTTOM,
+      cloudTop: STORM_CLOUD_TOP
+    });
     entity.rectangle.coordinates = stormBoundsToRectangle(bounds);
     entity.rectangle.material = CesiumLib.Color.fromCssColorString(band.color).withAlpha(pulse);
     entity.show = stormToggle.checked;

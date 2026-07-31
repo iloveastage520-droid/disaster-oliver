@@ -88,6 +88,8 @@ const REAL_BUILDING_GRID = { columns: 24, rows: 24 };
 const MAX_REAL_BUILDINGS = 18000;
 const BUILDING_QUERY_CONCURRENCY = 10;
 const BUILDING_RAIN_TINT_LIMIT = 2600;
+const SIMULATED_CLOUD_BOTTOM = 1300;
+const SIMULATED_CLOUD_TOP = 1800;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -454,8 +456,8 @@ function addSimulatedRadar() {
       name: `假雷達強回波 ${cell.level}`,
       rectangle: {
         coordinates: simulatedRadarRectangle(cell, 0),
-        height: cell.top,
-        extrudedHeight: 0,
+        height: SIMULATED_CLOUD_TOP,
+        extrudedHeight: SIMULATED_CLOUD_BOTTOM,
         material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
         outline: true,
         outlineColor: CesiumLib.Color.WHITE.withAlpha(0.28)
@@ -489,7 +491,14 @@ function updateSimulatedRadarFrame() {
     const phase = simulatedRadarFrame + cell.index * 2;
     const alphaPulse = cell.alpha + (phase % 4) * 0.045;
     const bounds = simulatedRadarBounds(cell, phase);
-    activeCells.push({ ...bounds, cell, color: radarGlowColor(cell.dbz), alpha: alphaPulse });
+    activeCells.push({
+      ...bounds,
+      cell,
+      color: radarGlowColor(cell.dbz),
+      alpha: alphaPulse,
+      cloudBottom: SIMULATED_CLOUD_BOTTOM,
+      cloudTop: SIMULATED_CLOUD_TOP
+    });
     entity.rectangle.coordinates = CesiumLib.Rectangle.fromDegrees(
       bounds.west,
       bounds.south,

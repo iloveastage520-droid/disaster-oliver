@@ -90,6 +90,7 @@ const BUILDING_QUERY_CONCURRENCY = 10;
 const BUILDING_RAIN_TINT_LIMIT = 2600;
 const SIMULATED_CLOUD_BOTTOM = 1550;
 const SIMULATED_CLOUD_TOP = 1680;
+const WIND_VECTOR = { lon: 0.0027, lat: 0.00055 };
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -100,6 +101,7 @@ let radarTimer = null;
 let simulatedRadarEntities = [];
 let simulatedRadarTimer = null;
 let simulatedRadarFrame = 0;
+let windEntities = [];
 let realBuildingEntities = [];
 
 function flyToView(viewName) {
@@ -131,6 +133,7 @@ realBuildingToggle.addEventListener("change", async () => {
 const radarToggle = document.querySelector("#cesium-radar-toggle");
 const radarPlay = document.querySelector("#cesium-radar-play");
 const simulatedRadarToggle = document.querySelector("#cesium-simulated-radar-toggle");
+const windToggle = document.querySelector("#cesium-wind-toggle");
 radarToggle.addEventListener("change", async () => {
   if (radarToggle.checked && !radarLayer) {
     await loadRadarLayer();
@@ -158,11 +161,17 @@ simulatedRadarToggle.addEventListener("change", () => {
     stopSimulatedRadarAnimation();
   }
 });
+windToggle.addEventListener("change", () => {
+  windEntities.forEach((entity) => {
+    entity.show = windToggle.checked;
+  });
+});
 
 setCameraView("low");
 loadRealBuildings();
 loadRadarLayer();
 addSimulatedRadar();
+addWindIndicators();
 startSimulatedRadarAnimation();
 setTimeout(checkCesiumCanvas, 2500);
 
@@ -523,14 +532,56 @@ function simulatedRadarRectangle(cell, phase) {
 }
 
 function simulatedRadarBounds(cell, phase) {
-  const offset = (phase * cell.speed) % 0.055;
-  const lon = cell.lon + offset;
+  const drift = (phase * cell.speed) % 0.055;
+  const wave = Math.sin((phase + cell.index * 3) * 0.42) * 0.0018;
+  const lon = cell.lon + drift * (WIND_VECTOR.lon / 0.0027);
+  const lat = cell.lat + drift * (WIND_VECTOR.lat / 0.0027) + wave;
   return {
     west: lon - cell.width / 2,
-    south: cell.lat - cell.depth / 2,
+    south: lat - cell.depth / 2,
     east: lon + cell.width / 2,
-    north: cell.lat + cell.depth / 2
+    north: lat + cell.depth / 2
   };
+}
+
+function addWindIndicators() {
+  if (windEntities.length) return;
+  const anchors = [
+    [121.540, 25.026],
+    [121.552, 25.033],
+    [121.565, 25.039],
+    [121.578, 25.046],
+    [121.590, 25.031]
+  ];
+  windEntities = anchors.flatMap(([lon, lat], index) => {
+    const start = CesiumLib.Cartesian3.fromDegrees(lon, lat, SIMULATED_CLOUD_TOP + 170);
+    const end = CesiumLib.Cartesian3.fromDegrees(lon + 0.010, lat + 0.0024, SIMULATED_CLOUD_TOP + 170);
+    const line = viewer.entities.add({
+      name: "高空風向",
+      polyline: {
+        positions: [start, end],
+        width: 4,
+        material: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.72)
+      },
+      show: windToggle.checked
+    });
+    const label = viewer.entities.add({
+      name: "風向箭頭",
+      position: end,
+      label: {
+        text: "→",
+        font: "700 20px sans-serif",
+        fillColor: CesiumLib.Color.fromCssColorString("#e0f2fe"),
+        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.45),
+        outlineWidth: 2,
+        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new CesiumLib.Cartesian2(index % 2 ? 8 : 0, 0),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      },
+      show: windToggle.checked
+    });
+    return [line, label];
+  });
 }
 
 function updateBuildingRadarGlow(activeCells) {

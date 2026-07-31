@@ -61,6 +61,10 @@
           <span>假雷達強回波</span>
         </label>
         <label class="check-field cesium-toggle">
+          <input id="cesium-wind-toggle" type="checkbox" checked>
+          <span>高空風向</span>
+        </label>
+        <label class="check-field cesium-toggle">
           <input id="cesium-real-building-toggle" type="checkbox" checked>
           <span>真實 3D 建物 <strong id="cesium-real-building-status">讀取中</strong></span>
         </label>
@@ -70,6 +74,7 @@
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>雷達回波</span>
         <span><i class="cesium-simulated-radar"></i>假雷達強回波</span>
+        <span><i class="cesium-wind-flow"></i>高空風向</span>
         <span><i class="cesium-real-building"></i>真實 3D 建物</span>
       </div>
     </section>
@@ -79,7 +84,7 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../js/cesium-3d-test.js?v=20260731-stable-mobile-start"></script>
+  <script src="../js/cesium-3d-test.js?v=20260731-wind-cloud-drift"></script>
   <script src="../js/cesium-panel-toggle.js?v=20260731-stable-collapsed-panel"></script>
 </body>
 </html>

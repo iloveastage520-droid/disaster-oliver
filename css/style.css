@@ -826,6 +826,7 @@ body[data-page="cesium-3d-test"] main {
 .cesium-simulated-radar { background: #ef4444; }
 .cesium-real-building { background: #38bdf8; }
 .cesium-river-flow { background: #67e8f9; }
+.cesium-wind-flow { background: #bae6fd; }
 
 .cesium-viewer-bottom,
 .cesium-viewer-toolbar {

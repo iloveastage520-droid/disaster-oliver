@@ -388,10 +388,10 @@ function formatRadarTime(epochSeconds) {
 function addSimulatedRadar() {
   if (simulatedRadarEntities.length) return;
   const cells = [
-    { lon: 121.552, lat: 25.028, width: 0.032, depth: 0.015, level: "heavy", color: "#ef4444", alpha: 0.62 },
-    { lon: 121.573, lat: 25.036, width: 0.040, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.58 },
-    { lon: 121.590, lat: 25.049, width: 0.030, depth: 0.014, level: "moderate", color: "#facc15", alpha: 0.52 },
-    { lon: 121.536, lat: 25.045, width: 0.034, depth: 0.016, level: "moderate", color: "#22c55e", alpha: 0.42 }
+    { lon: 121.5635, lat: 25.0338, width: 0.026, depth: 0.018, level: "extreme", color: "#a855f7", alpha: 0.34, top: 280 },
+    { lon: 121.5585, lat: 25.0378, width: 0.038, depth: 0.022, level: "heavy", color: "#ef4444", alpha: 0.30, top: 230 },
+    { lon: 121.5725, lat: 25.0300, width: 0.036, depth: 0.020, level: "heavy", color: "#ef4444", alpha: 0.28, top: 210 },
+    { lon: 121.5480, lat: 25.0415, width: 0.030, depth: 0.018, level: "moderate", color: "#facc15", alpha: 0.26, top: 170 }
   ];
   simulatedRadarEntities = cells.map((cell) => viewer.entities.add({
     name: `假雷達強回波 ${cell.level}`,
@@ -402,7 +402,8 @@ function addSimulatedRadar() {
         cell.lon + cell.width / 2,
         cell.lat + cell.depth / 2
       ),
-      height: 260,
+      height: cell.top,
+      extrudedHeight: 0,
       material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
       outline: true,
       outlineColor: CesiumLib.Color.WHITE.withAlpha(0.28)

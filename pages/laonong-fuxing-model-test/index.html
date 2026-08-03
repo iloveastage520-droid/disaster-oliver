@@ -7,7 +7,7 @@
   <title>復興部落模型測試 | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
   <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
-  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-laonong-livecams">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-mobile-panel-dock">
 </head>
 <body class="laonong-command-page fuxing-model-page" data-page="fuxing-model-test">
   <main class="cesium-page">
@@ -22,6 +22,13 @@
         </div>
       </section>
 
+      <div class="fuxing-mobile-dock" aria-label="手機面板控制">
+        <button type="button" data-fuxing-panel="info">資訊</button>
+        <button type="button" data-fuxing-panel="controls">控制</button>
+        <button type="button" data-fuxing-panel="legend">圖例</button>
+        <button type="button" data-fuxing-panel="timeline">時間</button>
+      </div>
+
       <nav class="fuxing-showcase-tabs" aria-label="展示模式">
         <button type="button">流域總覽</button>
         <button type="button">災害監測</button>
@@ -29,7 +36,7 @@
         <button class="is-active" type="button">數位孿生島</button>
       </nav>
 
-      <section class="fuxing-island-card" aria-label="數位孿生島資訊">
+      <section class="fuxing-island-card" data-fuxing-panel-target="info" aria-label="數位孿生島資訊">
         <button type="button" aria-label="關閉">×</button>
         <p>荖濃溪上游八部落・數位孿生島</p>
         <h2>梅山至寶山天空島節點</h2>
@@ -55,7 +62,7 @@
         <button type="button">監測工具</button>
       </aside>
 
-      <aside class="cesium-control-panel fuxing-control-panel" aria-label="復興模型測試控制">
+      <aside class="cesium-control-panel fuxing-control-panel" data-fuxing-panel-target="controls" aria-label="復興模型測試控制">
         <div class="cesium-panel-content">
           <p class="eyebrow">CesiumJS</p>
           <h1>UAV 模型校正</h1>
@@ -158,7 +165,7 @@
         </div>
       </aside>
 
-      <div class="cesium-legend" aria-label="復興模型圖例">
+      <div class="cesium-legend" data-fuxing-panel-target="legend" aria-label="復興模型圖例">
         <strong>圖層</strong>
         <span><i class="cesium-real-building"></i>真實 UAV 模型</span>
         <span><i class="cesium-real-river"></i>河岸模擬建物</span>
@@ -167,7 +174,7 @@
         <span><i class="cesium-real-river"></i>Google 混合衛星</span>
       </div>
 
-      <section class="fuxing-bottom-timeline" aria-label="事件時間軸">
+      <section class="fuxing-bottom-timeline" data-fuxing-panel-target="timeline" aria-label="事件時間軸">
         <button type="button">▶</button>
         <div>
           <span class="is-active">08/02 12:00<br>雨帶進入</span>
@@ -184,6 +191,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-large-island-riverside-buildings"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-mobile-panel-dock"></script>
 </body>
 </html>

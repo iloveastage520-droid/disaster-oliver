@@ -164,6 +164,9 @@ const modelToggle = document.querySelector("#model-toggle");
 const terrainToggle = document.querySelector("#terrain-toggle");
 const skyIslandToggle = document.querySelector("#sky-island-toggle");
 const communityToggle = document.querySelector("#community-toggle");
+const mobileDockButtons = document.querySelectorAll("[data-fuxing-panel]");
+const mobilePanelTargets = document.querySelectorAll("[data-fuxing-panel-target]");
+const mobilePanelQuery = window.matchMedia("(max-width: 760px)");
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -234,6 +237,7 @@ communityToggle.addEventListener("change", () => {
 });
 
 viewer.camera.setView(cameraViews.island);
+setupFuxingMobilePanels();
 setupTerrain();
 setTimeout(checkCanvas, 2200);
 
@@ -851,4 +855,35 @@ function showError(message) {
 function checkCanvas() {
   const canvas = document.querySelector("#cesium-container canvas");
   if (!canvas) showError("Cesium canvas 沒有建立，請重新整理或確認瀏覽器支援 WebGL。");
+}
+
+function setupFuxingMobilePanels() {
+  const closePanels = () => {
+    mobilePanelTargets.forEach((panel) => panel.classList.remove("is-mobile-open"));
+    mobileDockButtons.forEach((button) => button.classList.remove("is-active"));
+  };
+
+  mobileDockButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetName = button.dataset.fuxingPanel;
+      const target = document.querySelector(`[data-fuxing-panel-target="${targetName}"]`);
+      const shouldOpen = target && !target.classList.contains("is-mobile-open");
+      closePanels();
+      if (shouldOpen) {
+        target.classList.add("is-mobile-open");
+        button.classList.add("is-active");
+      }
+    });
+  });
+
+  const syncPanels = () => {
+    closePanels();
+  };
+
+  if (mobilePanelQuery.addEventListener) {
+    mobilePanelQuery.addEventListener("change", syncPanels);
+  } else {
+    mobilePanelQuery.addListener(syncPanels);
+  }
+  syncPanels();
 }

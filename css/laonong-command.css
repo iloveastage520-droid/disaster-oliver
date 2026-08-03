@@ -638,3 +638,135 @@ body.laonong-command-page .cesium-page {
   color: #fff;
   font-weight: 900;
 }
+
+.fuxing-mobile-dock {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .fuxing-model-page .laonong-command-stage {
+    min-height: 100svh;
+  }
+
+  .fuxing-model-page .laonong-title-panel {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    padding: 10px 12px;
+  }
+
+  .fuxing-showcase-title h1 {
+    max-width: 68vw;
+    font-size: 18px;
+    line-height: 1.22;
+  }
+
+  .fuxing-showcase-title p {
+    font-size: 11px;
+  }
+
+  .fuxing-showcase-tabs,
+  .fuxing-flow-panel,
+  .fuxing-tool-rail {
+    display: none;
+  }
+
+  .fuxing-mobile-dock {
+    position: absolute;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    z-index: 24;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    border: 1px solid rgba(125, 211, 252, 0.28);
+    border-radius: 10px;
+    background: rgba(2, 11, 22, 0.82);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(18px);
+  }
+
+  .fuxing-mobile-dock button {
+    min-width: 0;
+    min-height: 40px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 8px;
+    color: #dbeafe;
+    background: rgba(15, 23, 42, 0.72);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .fuxing-mobile-dock button.is-active {
+    border-color: rgba(56, 189, 248, 0.72);
+    color: #ffffff;
+    background: rgba(14, 165, 233, 0.48);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.24);
+  }
+
+  .fuxing-model-page .fuxing-control-panel,
+  .fuxing-island-card,
+  .fuxing-model-page .cesium-legend,
+  .fuxing-bottom-timeline {
+    display: none;
+  }
+
+  .fuxing-model-page .fuxing-control-panel.is-mobile-open,
+  .fuxing-island-card.is-mobile-open,
+  .fuxing-model-page .cesium-legend.is-mobile-open,
+  .fuxing-bottom-timeline.is-mobile-open {
+    position: absolute;
+    z-index: 23;
+    display: block;
+  }
+
+  .fuxing-model-page .fuxing-control-panel.is-mobile-open,
+  .fuxing-model-page .cesium-legend.is-mobile-open,
+  .fuxing-bottom-timeline.is-mobile-open {
+    right: 10px;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    left: 10px;
+    width: auto;
+  }
+
+  .fuxing-model-page .fuxing-control-panel.is-mobile-open {
+    top: auto;
+    max-height: 58svh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .fuxing-island-card.is-mobile-open {
+    top: 86px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    padding: 14px;
+  }
+
+  .fuxing-island-card.is-mobile-open h2 {
+    font-size: 20px;
+  }
+
+  .fuxing-bottom-timeline.is-mobile-open {
+    padding: 10px;
+    overflow-x: auto;
+  }
+
+  .fuxing-bottom-timeline.is-mobile-open div {
+    min-width: 640px;
+  }
+
+  .fuxing-model-page .cesium-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fuxing-model-page .cesium-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

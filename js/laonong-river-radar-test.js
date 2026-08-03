@@ -42,56 +42,61 @@ viewer.scene.verticalExaggeration = 1.8;
 viewer.scene.verticalExaggerationRelativeHeight = 0;
 
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
-const BASIN_GEOJSON_URL = "../../data/laonong-basin-boundary.geojson";
 const REAL_RIVER_GEOJSON_URL = "../../data/laonong-river-real.geojson";
 const STORM_CLOUD_BOTTOM = 1880;
 const STORM_CLOUD_TOP = 2020;
 const riverPath = [
-  [120.740, 23.302],
-  [120.724, 23.279],
-  [120.709, 23.255],
-  [120.713, 23.234],
-  [120.699, 23.214],
-  [120.682, 23.196],
-  [120.689, 23.176],
-  [120.668, 23.157],
-  [120.651, 23.137],
-  [120.659, 23.119],
-  [120.638, 23.101],
-  [120.615, 23.086],
-  [120.622, 23.068],
-  [120.602, 23.050],
-  [120.579, 23.035],
-  [120.586, 23.015],
-  [120.563, 22.999],
-  [120.544, 22.982],
-  [120.551, 22.963],
-  [120.528, 22.948],
-  [120.510, 22.930],
-  [120.497, 22.912]
+  [120.496164, 22.792963],
+  [120.548365, 22.815057],
+  [120.571937, 22.836640],
+  [120.588151, 22.859689],
+  [120.629790, 22.883004],
+  [120.669060, 22.910647],
+  [120.718371, 22.935944],
+  [120.702934, 22.955316],
+  [120.664791, 22.979320],
+  [120.646661, 23.008396],
+  [120.649612, 23.021050],
+  [120.670247, 23.052125],
+  [120.686561, 23.076032],
+  [120.697794, 23.104071],
+  [120.721128, 23.125375],
+  [120.760705, 23.151321],
+  [120.774278, 23.171384],
+  [120.791482, 23.196396],
+  [120.803373, 23.219192],
+  [120.811851, 23.244394],
+  [120.821892, 23.268931],
+  [120.884274, 23.295872],
+  [120.950196, 23.313969],
+  [120.916827, 23.337705],
+  [120.917955, 23.364215],
+  [120.949396, 23.384823],
+  [120.981953, 23.408527],
+  [120.992766, 23.432268]
 ];
 const cameraViews = {
   overview: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.620, 23.070, 46000),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.735, 23.105, 62000),
     orientation: {
-      heading: CesiumLib.Math.toRadians(28),
-      pitch: CesiumLib.Math.toRadians(-46),
+      heading: CesiumLib.Math.toRadians(34),
+      pitch: CesiumLib.Math.toRadians(-48),
       roll: 0
     }
   },
   river: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.617, 23.078, 18000),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.704, 23.060, 22000),
     orientation: {
-      heading: CesiumLib.Math.toRadians(212),
-      pitch: CesiumLib.Math.toRadians(-32),
+      heading: CesiumLib.Math.toRadians(30),
+      pitch: CesiumLib.Math.toRadians(-34),
       roll: 0
     }
   },
   village: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.566, 23.004, 4200),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.656, 23.017, 8200),
     orientation: {
-      heading: CesiumLib.Math.toRadians(206),
-      pitch: CesiumLib.Math.toRadians(-28),
+      heading: CesiumLib.Math.toRadians(18),
+      pitch: CesiumLib.Math.toRadians(-30),
       roll: 0
     }
   }
@@ -106,9 +111,7 @@ const stormEntities = [];
 const riverEntities = [];
 const particleEntities = [];
 const buildingEntities = [];
-const basinEntities = [];
 const markerEntities = [];
-const tributaryEntities = [];
 const realRiverEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
@@ -136,9 +139,7 @@ addRiver();
 addRiverbankBuildings();
 addStormBands();
 addParticles();
-addTributaries();
 addRiskMarkers();
-loadBasinBoundary();
 loadRealRiverLayer();
 loadRadarLayer();
 animationTimer = window.setInterval(animateScenario, 430);
@@ -247,12 +248,12 @@ function addRiverbankBuildings() {
 
 function addStormBands() {
   const bands = [
-    { lon: 120.500, lat: 22.965, width: 0.095, depth: 0.070, dbz: 54, color: "#ef4444", alpha: 0.22, speed: 0.0032 },
-    { lon: 120.525, lat: 23.015, width: 0.120, depth: 0.080, dbz: 62, color: "#a855f7", alpha: 0.24, speed: 0.0035 },
-    { lon: 120.545, lat: 23.070, width: 0.130, depth: 0.070, dbz: 48, color: "#ef4444", alpha: 0.22, speed: 0.0030 },
-    { lon: 120.570, lat: 23.125, width: 0.150, depth: 0.060, dbz: 40, color: "#f97316", alpha: 0.20, speed: 0.0027 },
-    { lon: 120.590, lat: 23.180, width: 0.140, depth: 0.065, dbz: 36, color: "#facc15", alpha: 0.18, speed: 0.0025 },
-    { lon: 120.620, lat: 23.235, width: 0.160, depth: 0.055, dbz: 30, color: "#22c55e", alpha: 0.16, speed: 0.0022 }
+    { lon: 120.500, lat: 22.805, width: 0.110, depth: 0.075, dbz: 42, color: "#f97316", alpha: 0.20, speed: 0.0022 },
+    { lon: 120.615, lat: 22.930, width: 0.135, depth: 0.080, dbz: 54, color: "#ef4444", alpha: 0.23, speed: 0.0027 },
+    { lon: 120.660, lat: 23.020, width: 0.145, depth: 0.085, dbz: 62, color: "#a855f7", alpha: 0.25, speed: 0.0030 },
+    { lon: 120.710, lat: 23.105, width: 0.150, depth: 0.078, dbz: 48, color: "#ef4444", alpha: 0.22, speed: 0.0028 },
+    { lon: 120.790, lat: 23.205, width: 0.160, depth: 0.070, dbz: 40, color: "#facc15", alpha: 0.18, speed: 0.0025 },
+    { lon: 120.895, lat: 23.320, width: 0.170, depth: 0.065, dbz: 36, color: "#22c55e", alpha: 0.16, speed: 0.0022 }
   ];
   bands.forEach((band, index) => {
     const blobs = [
@@ -301,43 +302,15 @@ function addParticles() {
   }
 }
 
-function addTributaries() {
-  const tributaries = [
-    [[120.707, 23.246], [120.685, 23.228], [120.663, 23.210], [120.641, 23.190]],
-    [[120.592, 23.180], [120.608, 23.154], [120.632, 23.126], [120.641, 23.102]],
-    [[120.548, 23.041], [120.566, 23.022], [120.585, 23.014]],
-    [[120.522, 22.967], [120.542, 22.955], [120.560, 22.940]],
-    [[120.626, 23.075], [120.652, 23.064], [120.675, 23.047]]
-  ];
-  tributaries.forEach((path, index) => {
-    const entity = viewer.entities.add({
-      name: `發光支流 ${index + 1}`,
-      polyline: {
-        positions: CesiumLib.Cartesian3.fromDegreesArray(path.flat()),
-        width: 3,
-        material: new CesiumLib.PolylineGlowMaterialProperty({
-          glowPower: 0.28,
-          taperPower: 0.75,
-          color: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.72)
-        }),
-        clampToGround: false
-      }
-    });
-    tributaryEntities.push(entity);
-    riverEntities.push(entity);
-  });
-}
-
 function addRiskMarkers() {
   const markers = [
-    { name: "桃源區", lon: 120.778, lat: 23.161, type: "danger", detail: "累積雨量 412mm" },
-    { name: "那瑪夏區", lon: 120.704, lat: 23.222, type: "warning", detail: "累積雨量 287mm" },
-    { name: "寶來斷崖", lon: 120.566, lat: 23.010, type: "station", detail: "水位 4.2m" },
-    { name: "六龜區", lon: 120.635, lat: 23.082, type: "normal", detail: "水位站正常" },
-    { name: "新發雨量站", lon: 120.654, lat: 23.060, type: "station", detail: "累積雨量 256mm" },
-    { name: "多納里", lon: 120.683, lat: 23.046, type: "danger", detail: "聚落高風險" },
-    { name: "月眉橋", lon: 120.531, lat: 22.958, type: "warning", detail: "水位 2.1m" },
-    { name: "大津橋", lon: 120.508, lat: 22.920, type: "watch", detail: "水位 1.8m" }
+    { name: "荖濃溪下游", lon: 120.548, lat: 22.815, type: "watch", detail: "水位 1.8m" },
+    { name: "六龜河段", lon: 120.647, lat: 23.008, type: "station", detail: "水位 4.2m" },
+    { name: "寶來河段", lon: 120.686, lat: 23.076, type: "danger", detail: "聚落高風險" },
+    { name: "桃源河段", lon: 120.774, lat: 23.171, type: "danger", detail: "累積雨量 412mm" },
+    { name: "高中河段", lon: 120.812, lat: 23.244, type: "warning", detail: "累積雨量 287mm" },
+    { name: "梅山河段", lon: 120.918, lat: 23.364, type: "station", detail: "雨量站 256mm" },
+    { name: "上游山區", lon: 120.982, lat: 23.409, type: "danger", detail: "強降雨核心" }
   ];
   markers.forEach((marker) => {
     const color = markerColor(marker.type);
@@ -399,30 +372,6 @@ async function loadRadarLayer() {
   } catch (error) {
     setRadarStatus("讀取失敗");
     console.warn("Radar load failed", error);
-  }
-}
-
-async function loadBasinBoundary() {
-  try {
-    const dataSource = await CesiumLib.GeoJsonDataSource.load(BASIN_GEOJSON_URL, {
-      clampToGround: false,
-      stroke: CesiumLib.Color.fromCssColorString("#93c5fd").withAlpha(0.86),
-      fill: CesiumLib.Color.fromCssColorString("#0ea5e9").withAlpha(0.08),
-      strokeWidth: 3
-    });
-    viewer.dataSources.add(dataSource);
-    dataSource.entities.values.forEach((entity) => {
-      entity.name = "官方高屏溪流域範圍";
-      if (entity.polygon) {
-        entity.polygon.height = 35;
-        entity.polygon.material = CesiumLib.Color.fromCssColorString("#0ea5e9").withAlpha(0.08);
-        entity.polygon.outline = true;
-        entity.polygon.outlineColor = CesiumLib.Color.fromCssColorString("#93c5fd").withAlpha(0.86);
-      }
-      basinEntities.push(entity);
-    });
-  } catch (error) {
-    console.warn("Basin boundary load failed", error);
   }
 }
 
@@ -554,13 +503,7 @@ function updateLayerVisibility() {
   buildingEntities.forEach((entity) => {
     entity.show = buildingToggle.checked;
   });
-  basinEntities.forEach((entity) => {
-    entity.show = riverToggle.checked;
-  });
   markerEntities.forEach((entity) => {
-    entity.show = riverToggle.checked;
-  });
-  tributaryEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
   });
   realRiverEntities.forEach((entity) => {

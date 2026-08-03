@@ -558,8 +558,8 @@ function createSettlementIslands(modelHeight) {
       name: `${settlement.name}天空島平台`,
       position: CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base),
       ellipse: {
-        semiMajorAxis: isHighRisk ? 330 : 270,
-        semiMinorAxis: isHighRisk ? 220 : 180,
+        semiMajorAxis: isHighRisk ? 780 : 650,
+        semiMinorAxis: isHighRisk ? 520 : 430,
         height: base,
         material: CesiumLib.Color.fromCssColorString(isHighRisk ? "#f97316" : "#38bdf8").withAlpha(0.15),
         outline: true,
@@ -571,8 +571,8 @@ function createSettlementIslands(modelHeight) {
       name: `${settlement.name}淹水影響光暈`,
       position: CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base + 8),
       ellipse: {
-        semiMajorAxis: isHighRisk ? 430 : 340,
-        semiMinorAxis: isHighRisk ? 290 : 230,
+        semiMajorAxis: isHighRisk ? 980 : 780,
+        semiMinorAxis: isHighRisk ? 650 : 520,
         height: base + 8,
         material: CesiumLib.Color.fromCssColorString(isHighRisk ? "#fb923c" : "#60a5fa").withAlpha(isHighRisk ? 0.14 : 0.08),
         outline: true,
@@ -608,24 +608,13 @@ async function addCommunityBuildings() {
     return;
   }
 
-  const osmBuildings = FUXING_OSM_BUILDINGS.map((footprint, index) => ({
-    footprint,
-    height: 18 + (index % 3) * 7,
-    source: "osm"
-  }));
-  const demoBuildings = FUXING_COMMUNITY_BUILDINGS.map((building) => ({
-    footprint: rectangleFootprint(building),
-    height: building.height,
-    source: "demo",
-    flooded: false
-  }));
   const riverBuildings = createRiverCommunityBuildings().map((building) => ({
     footprint: rectangleFootprint(building),
     height: building.height,
     source: "river-demo",
     flooded: building.flooded
   }));
-  const buildings = [...osmBuildings, ...demoBuildings, ...riverBuildings];
+  const buildings = [...riverBuildings];
   const samples = buildings.map((building) => CesiumLib.Cartographic.fromDegrees(...centroidOf(building.footprint)));
   let groundSamples = [];
   try {
@@ -638,21 +627,16 @@ async function addCommunityBuildings() {
     const [lon, lat] = centroidOf(building.footprint);
     const sampledHeight = groundSamples[index]?.height;
     const baseHeight = Number.isFinite(sampledHeight) ? sampledHeight + 2 : currentPlacement.groundHeight + 2;
-    const isOsm = building.source === "osm";
     const color = building.flooded
       ? CesiumLib.Color.fromCssColorString("#f97316").withAlpha(0.52)
-      : isOsm
-        ? CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.62)
-        : CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.34);
+      : CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.34);
     const outlineColor = building.flooded
       ? CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.95)
-      : isOsm
-        ? CesiumLib.Color.fromCssColorString("#ffffff").withAlpha(0.9)
-        : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
+      : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
     const hierarchyPositions = building.footprint.flatMap(([pointLon, pointLat]) => [pointLon, pointLat]);
 
     const entity = viewer.entities.add({
-      name: building.flooded ? "河岸淹水影響建物" : isOsm ? "復興部落 OSM 建物" : "復興部落聚落示意建物",
+      name: building.flooded ? `${building.settlement || ""}河岸淹水影響建物` : `${building.settlement || ""}聚落模擬建物`,
       position: CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + building.height + 18),
       polygon: {
         hierarchy: CesiumLib.Cartesian3.fromDegreesArray(hierarchyPositions),
@@ -662,17 +646,6 @@ async function addCommunityBuildings() {
         outline: true,
         outlineColor
       },
-      label: isOsm && index < 2 ? {
-        text: "OSM 建物",
-        font: "700 12px 'Noto Sans TC', sans-serif",
-        fillColor: CesiumLib.Color.WHITE,
-        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.72),
-        outlineWidth: 3,
-        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
-        pixelOffset: new CesiumLib.Cartesian2(0, -12),
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        show: false
-      } : undefined,
       show: communityToggle.checked
     });
     buildingEntities.push(entity);
@@ -705,26 +678,30 @@ function updateCommunityBuildingHeights(platformHeight) {
 function createRiverCommunityBuildings() {
   const buildings = [];
   UPPER_SETTLEMENT_ISLANDS.forEach((settlement, settlementIndex) => {
+    const previous = UPPER_SETTLEMENT_ISLANDS[Math.max(0, settlementIndex - 1)];
     const next = UPPER_SETTLEMENT_ISLANDS[Math.min(UPPER_SETTLEMENT_ISLANDS.length - 1, settlementIndex + 1)];
-    const angle = bearingDegrees(settlement.lon, settlement.lat, next.lon, next.lat || settlement.lat + 0.01);
-    const count = settlement.risk === "high" ? 9 : settlement.risk === "medium" ? 7 : 6;
+    const riverAngle = bearingDegrees(previous.lon, previous.lat, next.lon, next.lat);
+    const count = settlement.risk === "high" ? 18 : settlement.risk === "medium" ? 15 : 12;
     for (let index = 0; index < count; index += 1) {
-      const ring = 52 + (index % 3) * 36;
-      const theta = CesiumLib.Math.toRadians(index * (360 / count) + settlementIndex * 17);
-      const offset = offsetPoint(
+      const along = (index - (count - 1) / 2) * 58;
+      const row = index % 3;
+      const side = row === 0 ? -1 : 1;
+      const cross = side * (72 + row * 48 + (index % 2) * 18);
+      const riverPoint = offsetPoint(
         settlement.lon,
         settlement.lat,
-        CesiumLib.Math.toDegrees(theta),
-        ring
+        riverAngle,
+        along
       );
+      const offset = offsetPoint(riverPoint.lon, riverPoint.lat, riverAngle + 90, cross);
       buildings.push({
         lon: offset.lon,
         lat: offset.lat,
-        angle: angle + index * 11,
-        width: 24 + (index % 4) * 6,
+        angle: riverAngle + (side > 0 ? 6 : -6),
+        width: 26 + (index % 4) * 6,
         depth: 18 + (index % 3) * 5,
-        height: 12 + (index % 5) * 4,
-        flooded: settlement.risk === "high" && index < 4,
+        height: 11 + (index % 5) * 4,
+        flooded: Math.abs(cross) <= 132 && settlement.risk !== "low",
         settlement: settlement.name
       });
     }
@@ -738,7 +715,7 @@ function addFloodWaterLayer() {
     name: "天空島河道水面",
     polyline: {
       positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(flattenRiverHeights(placementHeight(currentPlacement.groundHeight) + 14)),
-      width: 18,
+      width: 24,
       material: new CesiumLib.PolylineGlowMaterialProperty({
         glowPower: 0.24,
         taperPower: 0.65,
@@ -750,7 +727,7 @@ function addFloodWaterLayer() {
   floodEntities.push(viewer.entities.add({
     name: "天空島河道漫溢示意",
     polygon: {
-      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(130)),
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(260)),
       height: placementHeight(currentPlacement.groundHeight) + 12,
       material: CesiumLib.Color.fromCssColorString("#60a5fa").withAlpha(0.28),
       outline: true,

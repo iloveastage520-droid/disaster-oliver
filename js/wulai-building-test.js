@@ -8,6 +8,8 @@ if (!CesiumLib) {
 CesiumLib.Ion.defaultAccessToken = "";
 
 const BUILDINGS_URL = "../../data/wulai/wulai-old-street-buildings.geojson";
+const ISLAND_CENTER = { lon: 121.549, lat: 24.859 };
+const ISLAND_HEIGHT = 980;
 const WULAI_RIVER_AXIS = [
   [121.5366, 24.8468],
   [121.5406, 24.8502],
@@ -48,7 +50,7 @@ viewer.scene.postProcessStages.fxaa.enabled = true;
 
 const cameraViews = {
   overview: {
-    destination: CesiumLib.Cartesian3.fromDegrees(121.549, 24.859, 5200),
+    destination: CesiumLib.Cartesian3.fromDegrees(121.551, 24.858, 4400),
     orientation: {
       heading: CesiumLib.Math.toRadians(35),
       pitch: CesiumLib.Math.toRadians(-35),
@@ -56,7 +58,7 @@ const cameraViews = {
     }
   },
   street: {
-    destination: CesiumLib.Cartesian3.fromDegrees(121.548, 24.859, 1900),
+    destination: CesiumLib.Cartesian3.fromDegrees(121.548, 24.858, 2300),
     orientation: {
       heading: CesiumLib.Math.toRadians(28),
       pitch: CesiumLib.Math.toRadians(-24),
@@ -64,7 +66,7 @@ const cameraViews = {
     }
   },
   top: {
-    destination: CesiumLib.Cartesian3.fromDegrees(121.549, 24.859, 3800),
+    destination: CesiumLib.Cartesian3.fromDegrees(121.549, 24.859, 3300),
     orientation: {
       heading: 0,
       pitch: CesiumLib.Math.toRadians(-88),
@@ -75,6 +77,7 @@ const cameraViews = {
 
 const buildingEntities = [];
 const riverEntities = [];
+const islandEntities = [];
 const buildingToggle = document.querySelector("#building-toggle");
 const riverToggle = document.querySelector("#river-toggle");
 
@@ -100,6 +103,7 @@ riverToggle.addEventListener("change", () => {
 });
 
 viewer.camera.setView(cameraViews.overview);
+addSkyIsland();
 loadBuildings();
 addFloodRiver();
 setTimeout(checkCanvas, 2200);
@@ -117,8 +121,8 @@ async function loadBuildings() {
         name: isRisk ? "烏來河岸淹水影響建物" : "烏來 F_BUILD 建物",
         polygon: {
           hierarchy: CesiumLib.Cartesian3.fromDegreesArray(ring.flatMap(([lon, lat]) => [lon, lat])),
-          height: 0,
-          extrudedHeight: height,
+          height: ISLAND_HEIGHT + 10,
+          extrudedHeight: ISLAND_HEIGHT + 10 + height,
           material: isRisk
             ? CesiumLib.Color.fromCssColorString("#f97316").withAlpha(0.58)
             : CesiumLib.Color.fromCssColorString("#dbeafe").withAlpha(0.56),
@@ -142,7 +146,7 @@ function addFloodRiver() {
   riverEntities.push(viewer.entities.add({
     name: "南勢溪水線示意",
     polyline: {
-      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(WULAI_RIVER_AXIS.flatMap(([lon, lat]) => [lon, lat, 16])),
+      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(WULAI_RIVER_AXIS.flatMap(([lon, lat]) => [lon, lat, ISLAND_HEIGHT + 24])),
       width: 16,
       material: new CesiumLib.PolylineGlowMaterialProperty({
         glowPower: 0.28,
@@ -155,12 +159,67 @@ function addFloodRiver() {
     name: "南勢溪漫溢示意",
     polygon: {
       hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(170)),
-      height: 12,
+      height: ISLAND_HEIGHT + 18,
       material: CesiumLib.Color.fromCssColorString("#60a5fa").withAlpha(0.24),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.62)
     }
   }));
+}
+
+function addSkyIsland() {
+  islandEntities.push(viewer.entities.add({
+    name: "烏來天空島平台",
+    position: CesiumLib.Cartesian3.fromDegrees(ISLAND_CENTER.lon, ISLAND_CENTER.lat, ISLAND_HEIGHT),
+    ellipse: {
+      semiMajorAxis: 1850,
+      semiMinorAxis: 1180,
+      height: ISLAND_HEIGHT,
+      material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.26),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#bbf7d0").withAlpha(0.86),
+      rotation: CesiumLib.Math.toRadians(32)
+    }
+  }));
+  islandEntities.push(viewer.entities.add({
+    name: "烏來天空島岩層",
+    position: CesiumLib.Cartesian3.fromDegrees(ISLAND_CENTER.lon, ISLAND_CENTER.lat, ISLAND_HEIGHT - 360),
+    cylinder: {
+      length: 720,
+      topRadius: 970,
+      bottomRadius: 145,
+      material: CesiumLib.Color.fromCssColorString("#6b4f35").withAlpha(0.62),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.38)
+    }
+  }));
+  islandEntities.push(viewer.entities.add({
+    name: "烏來天空島地面投影",
+    position: CesiumLib.Cartesian3.fromDegrees(ISLAND_CENTER.lon, ISLAND_CENTER.lat, 26),
+    ellipse: {
+      semiMajorAxis: 1350,
+      semiMinorAxis: 840,
+      height: 26,
+      material: CesiumLib.Color.BLACK.withAlpha(0.18),
+      outline: false,
+      rotation: CesiumLib.Math.toRadians(32)
+    }
+  }));
+  [1320, 1780, 2240].forEach((radius, index) => {
+    islandEntities.push(viewer.entities.add({
+      name: "烏來天空島掃描環",
+      position: CesiumLib.Cartesian3.fromDegrees(ISLAND_CENTER.lon, ISLAND_CENTER.lat, ISLAND_HEIGHT + 18 + index * 24),
+      ellipse: {
+        semiMajorAxis: radius,
+        semiMinorAxis: radius * 0.62,
+        height: ISLAND_HEIGHT + 18 + index * 24,
+        material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.04 + index * 0.02),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.72 - index * 0.14),
+        rotation: CesiumLib.Math.toRadians(32)
+      }
+    }));
+  });
 }
 
 function floodRibbonFootprint(widthMeters) {

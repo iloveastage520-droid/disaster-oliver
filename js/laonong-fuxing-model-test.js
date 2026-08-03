@@ -14,6 +14,7 @@ const MODEL_HEIGHT_OFFSET = 0;
 const LABEL_HEIGHT_OFFSET = 520;
 const DEFAULT_HEADING_DEGREES = 0;
 const SKY_ISLAND_HEIGHT_OFFSET = 1250;
+const DEFAULT_MODEL_SCALE = 2;
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -92,6 +93,7 @@ let currentPlacement = {
   latOffset: 0,
   heightOffset: MODEL_HEIGHT_OFFSET,
   heading: DEFAULT_HEADING_DEGREES,
+  scale: DEFAULT_MODEL_SCALE,
   groundHeight: 760
 };
 let placementUpdateTimer = null;
@@ -130,6 +132,7 @@ document.querySelectorAll("[data-placement-control]").forEach((input) => {
     currentPlacement[key] = Number(input.value);
     syncPlacementFromOffsets();
     updatePlacementStatus();
+    updateModelScale();
     queuePlacementUpdate();
   });
 });
@@ -211,7 +214,8 @@ function syncSliderControls() {
     lonOffset: "#lon-offset-value",
     latOffset: "#lat-offset-value",
     heightOffset: "#height-offset-value",
-    heading: "#heading-value"
+    heading: "#heading-value",
+    scale: "#scale-value"
   };
   document.querySelectorAll("[data-placement-control]").forEach((input) => {
     const key = input.dataset.placementControl;
@@ -220,8 +224,15 @@ function syncSliderControls() {
     if (!valueElement) return;
     if (key === "heightOffset") valueElement.textContent = `${Math.round(currentPlacement[key])}m`;
     else if (key === "heading") valueElement.textContent = `${Math.round(currentPlacement[key])}deg`;
+    else if (key === "scale") valueElement.textContent = `${currentPlacement[key].toFixed(2).replace(/\.00$/, "")}x`;
     else valueElement.textContent = currentPlacement[key].toFixed(4);
   });
+}
+
+function updateModelScale() {
+  if (modelEntity?.model) {
+    modelEntity.model.scale = currentPlacement.scale;
+  }
 }
 
 function addModel(height) {
@@ -247,7 +258,7 @@ function addModel(height) {
     orientation,
     model: {
       uri: MODEL_URL,
-      scale: 1,
+      scale: currentPlacement.scale,
       minimumPixelSize: 90,
       maximumScale: 2500,
       shadows: CesiumLib.ShadowMode.DISABLED

@@ -15,6 +15,7 @@ const LABEL_HEIGHT_OFFSET = 520;
 const DEFAULT_HEADING_DEGREES = 0;
 const SKY_ISLAND_HEIGHT_OFFSET = 1250;
 const DEFAULT_MODEL_SCALE = 2;
+const SHOWCASE_SCAN_HEIGHT_OFFSET = 24;
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -74,10 +75,10 @@ const cameraViews = {
     }
   },
   island: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.8044, 23.2148, 3600),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.8052, 23.2144, 3100),
     orientation: {
       heading: CesiumLib.Math.toRadians(44),
-      pitch: CesiumLib.Math.toRadians(-24),
+      pitch: CesiumLib.Math.toRadians(-21),
       roll: 0
     }
   }
@@ -86,6 +87,7 @@ const cameraViews = {
 let modelEntity = null;
 let labelEntity = null;
 const skyIslandEntities = [];
+const showcaseEntities = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -157,7 +159,7 @@ skyIslandToggle.addEventListener("change", async () => {
   });
 });
 
-viewer.camera.setView(cameraViews.overview);
+viewer.camera.setView(cameraViews.island);
 setupTerrain();
 setTimeout(checkCanvas, 2200);
 
@@ -171,7 +173,7 @@ async function setupTerrain() {
     viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
     setTerrainStatus("ArcGIS DEM");
     await placeModelAtCurrentPosition();
-    window.setTimeout(() => viewer.camera.setView(cameraViews.overview), 900);
+    window.setTimeout(() => viewer.camera.setView(cameraViews.island), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
@@ -305,6 +307,7 @@ function updateSkyIsland(modelHeight) {
   skyIslandEntities[1].position = coneCenter;
   skyIslandEntities[2].position = shadowCenter;
   skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112);
+  updateShowcaseEffects(modelHeight);
   skyIslandEntities.forEach((entity) => {
     entity.show = enabled;
   });
@@ -315,10 +318,10 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島草地平台",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 78),
     ellipse: {
-      semiMajorAxis: 660,
-      semiMinorAxis: 430,
+      semiMajorAxis: 1120,
+      semiMinorAxis: 720,
       height: modelHeight - 78,
-      material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.38),
+      material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.30),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#bbf7d0").withAlpha(0.88),
       rotation: CesiumLib.Math.toRadians(18)
@@ -352,8 +355,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島光暈",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112),
     ellipse: {
-      semiMajorAxis: 930,
-      semiMinorAxis: 590,
+      semiMajorAxis: 1380,
+      semiMinorAxis: 850,
       height: modelHeight - 112,
       material: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.12),
       outline: true,
@@ -362,6 +365,124 @@ function createSkyIslandEntities(modelHeight) {
     }
   });
   skyIslandEntities.push(top, cone, shadow, glow);
+}
+
+function updateShowcaseEffects(modelHeight) {
+  const enabled = skyIslandToggle.checked && modelToggle.checked;
+  if (!showcaseEntities.length) createShowcaseEffects(modelHeight);
+  const scanHeight = modelHeight + SHOWCASE_SCAN_HEIGHT_OFFSET;
+  const beacons = [
+    { lon: currentPlacement.lon - 0.0048, lat: currentPlacement.lat + 0.0022 },
+    { lon: currentPlacement.lon + 0.0044, lat: currentPlacement.lat + 0.0028 },
+    { lon: currentPlacement.lon - 0.0038, lat: currentPlacement.lat - 0.0028 },
+    { lon: currentPlacement.lon + 0.0048, lat: currentPlacement.lat - 0.0024 }
+  ];
+  showcaseEntities[0].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, scanHeight);
+  showcaseEntities[1].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, scanHeight + 26);
+  showcaseEntities[2].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, scanHeight + 52);
+  beacons.forEach((point, index) => {
+    const entity = showcaseEntities[3 + index];
+    entity.polyline.positions = CesiumLib.Cartesian3.fromDegreesArrayHeights([
+      point.lon, point.lat, currentPlacement.groundHeight + 80,
+      point.lon, point.lat, scanHeight + 820
+    ]);
+  });
+  showcaseEntities[7].polyline.positions = CesiumLib.Cartesian3.fromDegreesArrayHeights([
+    currentPlacement.lon - 0.0048, currentPlacement.lat + 0.0022, scanHeight + 150,
+    currentPlacement.lon, currentPlacement.lat, scanHeight + 360,
+    currentPlacement.lon + 0.0044, currentPlacement.lat + 0.0028, scanHeight + 150
+  ]);
+  showcaseEntities.slice(8).forEach((entity, index) => {
+    const offset = index - 2;
+    entity.position = CesiumLib.Cartesian3.fromDegrees(
+      currentPlacement.lon + offset * 0.0025,
+      currentPlacement.lat - 0.0062 + Math.sin(index) * 0.001,
+      modelHeight - 360 - index * 14
+    );
+  });
+  showcaseEntities.forEach((entity) => {
+    entity.show = enabled;
+  });
+}
+
+function createShowcaseEffects(modelHeight) {
+  const scanColor = CesiumLib.Color.fromCssColorString("#38bdf8");
+  [920, 1220, 1540].forEach((radius, index) => {
+    showcaseEntities.push(viewer.entities.add({
+      name: "數位孿生島掃描環",
+      position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + SHOWCASE_SCAN_HEIGHT_OFFSET + index * 26),
+      ellipse: {
+        semiMajorAxis: radius,
+        semiMinorAxis: radius * 0.64,
+        height: modelHeight + SHOWCASE_SCAN_HEIGHT_OFFSET + index * 26,
+        material: scanColor.withAlpha(0.04 + index * 0.025),
+        outline: true,
+        outlineColor: scanColor.withAlpha(0.76 - index * 0.12),
+        rotation: CesiumLib.Math.toRadians(18)
+      }
+    }));
+  });
+  for (let index = 0; index < 4; index += 1) {
+    showcaseEntities.push(viewer.entities.add({
+      name: "UAV 模型光柱",
+      polyline: {
+        positions: CesiumLib.Cartesian3.fromDegreesArrayHeights([
+          currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight,
+          currentPlacement.lon, currentPlacement.lat, modelHeight + 900
+        ]),
+        width: 2,
+        material: new CesiumLib.PolylineGlowMaterialProperty({
+          glowPower: 0.28,
+          taperPower: 0.7,
+          color: scanColor.withAlpha(0.72)
+        })
+      }
+    }));
+  }
+  showcaseEntities.push(viewer.entities.add({
+    name: "數位孿生島資料連線",
+    polyline: {
+      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights([
+        currentPlacement.lon - 0.004, currentPlacement.lat, modelHeight,
+        currentPlacement.lon, currentPlacement.lat, modelHeight + 220,
+        currentPlacement.lon + 0.004, currentPlacement.lat, modelHeight
+      ]),
+      width: 3,
+      material: new CesiumLib.PolylineGlowMaterialProperty({
+        glowPower: 0.22,
+        taperPower: 0.75,
+        color: scanColor.withAlpha(0.82)
+      })
+    }
+  }));
+  for (let index = 0; index < 7; index += 1) {
+    showcaseEntities.push(viewer.entities.add({
+      name: "天空島雲霧",
+      position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 390),
+      billboard: {
+        image: cloudSvg(index),
+        width: 420 + index * 44,
+        height: 150 + index * 12,
+        color: CesiumLib.Color.WHITE.withAlpha(0.72),
+        horizontalOrigin: CesiumLib.HorizontalOrigin.CENTER,
+        verticalOrigin: CesiumLib.VerticalOrigin.CENTER,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    }));
+  }
+}
+
+function cloudSvg(index) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="150" viewBox="0 0 360 150">
+    <defs><filter id="b"><feGaussianBlur stdDeviation="10"/></filter></defs>
+    <g filter="url(#b)" opacity="${0.52 + (index % 3) * 0.08}">
+      <ellipse cx="88" cy="86" rx="76" ry="30" fill="#e0f2fe"/>
+      <ellipse cx="164" cy="76" rx="96" ry="38" fill="#f8fafc"/>
+      <ellipse cx="246" cy="88" rx="90" ry="32" fill="#cbd5e1"/>
+      <ellipse cx="190" cy="105" rx="136" ry="26" fill="#bae6fd"/>
+    </g>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function setTerrainStatus(text) {

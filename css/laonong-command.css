@@ -435,3 +435,206 @@ body.laonong-command-page .cesium-page {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+.fuxing-model-page .laonong-command-stage::after {
+  background:
+    radial-gradient(circle at 70% 32%, rgba(14, 165, 233, 0.22), transparent 30%),
+    linear-gradient(90deg, rgba(2, 7, 17, 0.78), transparent 26%, rgba(2, 7, 17, 0.16) 58%, rgba(2, 7, 17, 0.58));
+}
+
+.fuxing-showcase-title {
+  top: 20px;
+}
+
+.fuxing-showcase-tabs,
+.fuxing-island-card,
+.fuxing-flow-panel,
+.fuxing-tool-rail,
+.fuxing-bottom-timeline {
+  position: absolute;
+  z-index: 7;
+}
+
+.fuxing-showcase-tabs {
+  top: 26px;
+  left: 50%;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.fuxing-showcase-tabs button {
+  min-width: 128px;
+  min-height: 40px;
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  border-radius: 12px;
+  color: #dbeafe;
+  background: rgba(2, 11, 22, 0.72);
+  box-shadow: inset 0 0 18px rgba(56, 189, 248, 0.08);
+  font: inherit;
+  font-weight: 800;
+}
+
+.fuxing-showcase-tabs .is-active {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(14, 165, 233, 0.86), rgba(14, 116, 144, 0.76));
+  box-shadow: 0 0 26px rgba(56, 189, 248, 0.48);
+}
+
+.fuxing-island-card {
+  top: 104px;
+  right: 220px;
+  width: min(390px, 32vw);
+  padding: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  border-radius: 10px;
+  color: #e0f2fe;
+  background: rgba(2, 17, 31, 0.78);
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.34), inset 0 0 42px rgba(14, 165, 233, 0.10);
+  backdrop-filter: blur(16px);
+}
+
+.fuxing-island-card button {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 0;
+  color: #38bdf8;
+  background: transparent;
+  font-size: 24px;
+}
+
+.fuxing-island-card p {
+  margin: 0 0 4px;
+  color: #7dd3fc;
+  font-weight: 800;
+}
+
+.fuxing-island-card h2 {
+  margin: 0 0 14px;
+  font-size: 25px;
+}
+
+.fuxing-island-card div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fuxing-island-card span {
+  padding: 5px 9px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 6px;
+  background: rgba(14, 165, 233, 0.10);
+  font-size: 12px;
+}
+
+.fuxing-flow-panel {
+  top: 114px;
+  left: 22px;
+  display: grid;
+  gap: 14px;
+  width: 190px;
+  padding: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.26);
+  border-radius: 8px;
+  color: #e0f2fe;
+  background: rgba(2, 11, 22, 0.76);
+  backdrop-filter: blur(16px);
+}
+
+.fuxing-flow-panel span {
+  display: grid;
+  gap: 2px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.fuxing-flow-panel b {
+  color: #e0f2fe;
+  font-size: 18px;
+}
+
+.fuxing-tool-rail {
+  top: 104px;
+  right: 26px;
+  display: grid;
+  gap: 8px;
+  width: 92px;
+  padding: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  border-radius: 8px;
+  background: rgba(2, 11, 22, 0.78);
+}
+
+.fuxing-tool-rail button {
+  min-height: 50px;
+  border: 0;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.14);
+  color: #dbeafe;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+
+.fuxing-model-page .fuxing-control-panel {
+  top: auto;
+  left: auto;
+  right: 26px;
+  bottom: 118px;
+  width: 410px;
+  max-height: 42vh;
+}
+
+.fuxing-bottom-timeline {
+  left: 22px;
+  right: 470px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 10px;
+  color: #dbeafe;
+  background: rgba(2, 11, 22, 0.78);
+  backdrop-filter: blur(16px);
+}
+
+.fuxing-bottom-timeline button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(125, 211, 252, 0.42);
+  border-radius: 50%;
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.fuxing-bottom-timeline div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(112px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.fuxing-bottom-timeline span {
+  position: relative;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.fuxing-bottom-timeline span::before {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin-bottom: 7px;
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  content: "";
+  background: #082f49;
+}
+
+.fuxing-bottom-timeline .is-current {
+  color: #fff;
+  font-weight: 900;
+}

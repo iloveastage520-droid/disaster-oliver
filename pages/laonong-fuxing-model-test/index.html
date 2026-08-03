@@ -14,18 +14,51 @@
     <section class="cesium-stage laonong-command-stage" aria-label="復興部落模型測試 3D 場景">
       <div id="cesium-container" class="cesium-container"></div>
 
-      <section class="laonong-title-panel" aria-label="系統標題">
+      <section class="laonong-title-panel fuxing-showcase-title" aria-label="系統標題">
         <div class="laonong-logo-mark"></div>
         <div>
-          <p>GLB 模型定位測試</p>
-          <h1>復興部落模型測試</h1>
+          <p>UAV 空拍模型・天空島展示</p>
+          <h1>荖濃溪流域三維展示系統</h1>
         </div>
       </section>
 
-      <aside class="cesium-control-panel" aria-label="復興模型測試控制">
+      <nav class="fuxing-showcase-tabs" aria-label="展示模式">
+        <button type="button">流域總覽</button>
+        <button type="button">災害監測</button>
+        <button type="button">事件推演</button>
+        <button class="is-active" type="button">數位孿生島</button>
+      </nav>
+
+      <section class="fuxing-island-card" aria-label="數位孿生島資訊">
+        <button type="button" aria-label="關閉">×</button>
+        <p>桃源聚落・數位孿生島</p>
+        <h2>復興部落真實 UAV 模型</h2>
+        <div>
+          <span>UAV 傾斜攝影模型</span>
+          <span>更新時間・2025/08/02</span>
+        </div>
+      </section>
+
+      <aside class="fuxing-flow-panel" aria-label="流域資訊">
+        <strong>流域資訊</strong>
+        <span>累積雨量 <b>598 mm</b></span>
+        <span>河川水位 <b>5.28 m</b></span>
+        <span>土石流警戒 <b>12 處</b></span>
+        <span>淹水警戒 <b>8 處</b></span>
+      </aside>
+
+      <aside class="fuxing-tool-rail" aria-label="工具列">
+        <button type="button">返回流域</button>
+        <button type="button">圖層控制</button>
+        <button type="button">災害分析</button>
+        <button type="button">AI 巡檢</button>
+        <button type="button">監測工具</button>
+      </aside>
+
+      <aside class="cesium-control-panel fuxing-control-panel" aria-label="復興模型測試控制">
         <div class="cesium-panel-content">
           <p class="eyebrow">CesiumJS</p>
-          <h1>復興部落模型測試</h1>
+          <h1>UAV 模型校正</h1>
           <div class="cesium-status-grid">
             <div>
               <span>模型來源</span>
@@ -122,6 +155,17 @@
         <span><i class="cesium-radar"></i>天空島底座</span>
         <span><i class="cesium-real-river"></i>Google 混合衛星</span>
       </div>
+
+      <section class="fuxing-bottom-timeline" aria-label="事件時間軸">
+        <button type="button">▶</button>
+        <div>
+          <span class="is-active">08/02 12:00<br>雨帶進入</span>
+          <span class="is-active">08/02 14:00<br>水位上升</span>
+          <span class="is-active">08/02 15:30<br>警戒發布</span>
+          <span class="is-current">08/02 16:30<br>桃源聚落觀測中</span>
+          <span>08/02 17:00<br>持續監測</span>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -129,6 +173,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-uav-scale-slider"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-digital-twin-island"></script>
 </body>
 </html>

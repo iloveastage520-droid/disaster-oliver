@@ -124,6 +124,9 @@ const markerEntities = [];
 const realRiverEntities = [];
 const settlementAreaEntities = [];
 const floodSurgeEntities = [];
+const waterRippleEntities = [];
+const whitewaterEntities = [];
+const overflowPoolEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
 let waterLevel = 0.2;
@@ -209,6 +212,7 @@ async function loadFlowlinePath() {
   addRiverbankBuildings();
   addParticles();
   addFloodSurgeBands();
+  addWaterBodyEffects();
 }
 
 function addRiverbankBuildings() {
@@ -395,6 +399,71 @@ function addFloodSurgeBands() {
     });
     entity.surgeMeta = { index, progress };
     floodSurgeEntities.push(entity);
+  });
+}
+
+function addWaterBodyEffects() {
+  if (waterRippleEntities.length) return;
+  const ripplePoints = [0.18, 0.25, 0.32, 0.40, 0.48, 0.56, 0.64, 0.72, 0.80, 0.88];
+  ripplePoints.forEach((progress, index) => {
+    const point = pointAlongRiver(progress);
+    const entity = viewer.entities.add({
+      name: "荖濃溪流動水面波紋",
+      position: CesiumLib.Cartesian3.fromDegrees(point.lon, point.lat, 86),
+      ellipse: {
+        semiMajorAxis: 360,
+        semiMinorAxis: 56,
+        height: 84,
+        material: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.14),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.38),
+        rotation: riverSegmentRotation(progress)
+      }
+    });
+    entity.waterMeta = { progress, index, kind: "ripple" };
+    waterRippleEntities.push(entity);
+  });
+
+  const rapidPoints = [0.34, 0.39, 0.45, 0.58, 0.63, 0.71, 0.78, 0.84];
+  rapidPoints.forEach((progress, index) => {
+    const point = pointAlongRiver(progress);
+    const entity = viewer.entities.add({
+      name: "山溪急流白浪",
+      position: CesiumLib.Cartesian3.fromDegrees(point.lon, point.lat, 118),
+      point: {
+        pixelSize: 10,
+        color: CesiumLib.Color.WHITE.withAlpha(0.76),
+        outlineColor: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72),
+        outlineWidth: 2,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
+    entity.waterMeta = { progress, index, kind: "whitewater" };
+    whitewaterEntities.push(entity);
+  });
+
+  const overflowPools = [
+    { progress: 0.33, side: -1, scale: 0.80 },
+    { progress: 0.43, side: 1, scale: 1.08 },
+    { progress: 0.60, side: -1, scale: 1.00 },
+    { progress: 0.72, side: 1, scale: 0.92 },
+    { progress: 0.86, side: -1, scale: 0.74 }
+  ];
+  overflowPools.forEach((pool, index) => {
+    const anchor = pointAlongRiver(pool.progress);
+    const center = settlementCenter(anchor, pool.side, 0.0038 + index * 0.00025);
+    const entity = viewer.entities.add({
+      name: "河岸不規則溢淹水面",
+      polygon: {
+        hierarchy: overflowPoolPolygon(center, pool.scale, index, 0),
+        height: 36,
+        material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.10),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.28)
+      }
+    });
+    entity.waterMeta = { center, index, scale: pool.scale, kind: "overflow" };
+    overflowPoolEntities.push(entity);
   });
 }
 
@@ -599,6 +668,7 @@ function updateRiverFlood(activeBands, scenario) {
       .withAlpha(0.24 + reach * 0.36);
     entity.show = riverToggle.checked;
   });
+  updateWaterBodyEffects();
 }
 
 function updateParticles(activeBands) {
@@ -635,6 +705,47 @@ function updateBuildingGlow(activeBands) {
   });
 }
 
+function updateWaterBodyEffects() {
+  waterRippleEntities.forEach((entity) => {
+    const meta = entity.waterMeta;
+    const pulse = Math.sin((stormFrame + meta.index * 4) * 0.24) * 0.10;
+    const reach = Math.max(0, Math.min(1, waterLevel + pulse));
+    entity.ellipse.semiMajorAxis = 300 + reach * 520;
+    entity.ellipse.semiMinorAxis = 38 + reach * 78;
+    entity.ellipse.height = 76 + waterLevel * 42;
+    entity.ellipse.material = CesiumLib.Color
+      .fromCssColorString(waterLevel > 0.78 ? "#60a5fa" : "#38bdf8")
+      .withAlpha(0.08 + reach * 0.18);
+    entity.ellipse.outlineColor = CesiumLib.Color
+      .fromCssColorString("#e0f2fe")
+      .withAlpha(0.20 + reach * 0.36);
+  });
+
+  whitewaterEntities.forEach((entity) => {
+    const meta = entity.waterMeta;
+    const pulse = Math.sin((stormFrame + meta.index * 7) * 0.34) * 0.20;
+    const foam = Math.max(0.20, Math.min(1, waterLevel + pulse));
+    const point = pointAlongRiver((meta.progress + stormFrame * 0.0025) % 1);
+    entity.position = CesiumLib.Cartesian3.fromDegrees(point.lon, point.lat, 112 + foam * 34);
+    entity.point.pixelSize = 6 + foam * 12;
+    entity.point.color = CesiumLib.Color.WHITE.withAlpha(0.42 + foam * 0.46);
+    entity.point.outlineColor = CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.36 + foam * 0.44);
+  });
+
+  overflowPoolEntities.forEach((entity) => {
+    const meta = entity.waterMeta;
+    const pulse = Math.sin((stormFrame + meta.index * 5) * 0.18) * 0.05;
+    const spread = Math.max(0.25, Math.min(1.15, waterLevel + pulse));
+    entity.polygon.hierarchy = overflowPoolPolygon(meta.center, meta.scale * spread, meta.index, stormFrame);
+    entity.polygon.material = CesiumLib.Color
+      .fromCssColorString(waterLevel > 0.82 ? "#2563eb" : "#38bdf8")
+      .withAlpha(0.05 + spread * 0.15);
+    entity.polygon.outlineColor = CesiumLib.Color
+      .fromCssColorString("#bae6fd")
+      .withAlpha(0.12 + spread * 0.30);
+  });
+}
+
 function updateLayerVisibility() {
   riverEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
@@ -661,6 +772,15 @@ function updateLayerVisibility() {
     entity.show = riverToggle.checked;
   });
   floodSurgeEntities.forEach((entity) => {
+    entity.show = riverToggle.checked;
+  });
+  waterRippleEntities.forEach((entity) => {
+    entity.show = riverToggle.checked;
+  });
+  whitewaterEntities.forEach((entity) => {
+    entity.show = riverToggle.checked;
+  });
+  overflowPoolEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
   });
 }
@@ -813,6 +933,27 @@ function riverSegmentRotation(progress) {
   const before = pointAlongRiver(Math.max(0, progress - 0.01));
   const after = pointAlongRiver(Math.min(1, progress + 0.01));
   return Math.atan2(after.lat - before.lat, after.lon - before.lon);
+}
+
+function overflowPoolPolygon(center, scale, seedIndex, phase) {
+  const coordinates = [];
+  const baseRadius = 0.0036 * Math.max(0.35, scale);
+  for (let index = 0; index < 16; index += 1) {
+    const angle = (Math.PI * 2 * index) / 16;
+    const noise = fixedNoise(seedIndex, index);
+    const slowPulse = Math.sin((phase + index * 3 + seedIndex * 7) * 0.025) * 0.025;
+    const radius = baseRadius * (0.74 + noise * 0.34 + slowPulse);
+    coordinates.push(
+      center.lon + Math.cos(angle) * radius * 1.18,
+      center.lat + Math.sin(angle) * radius * 0.72
+    );
+  }
+  return CesiumLib.Cartesian3.fromDegreesArray(coordinates);
+}
+
+function fixedNoise(seedIndex, pointIndex) {
+  const seed = Math.sin((seedIndex + 1) * 31.71 + (pointIndex + 1) * 17.29) * 43758.5453;
+  return seed - Math.floor(seed);
 }
 
 function updateScenarioStatus(scenario) {

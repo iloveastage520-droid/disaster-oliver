@@ -51,11 +51,16 @@
               <span>偏移/旋轉</span>
               <strong id="offset-status">--</strong>
             </div>
+            <div>
+              <span>展示模式</span>
+              <strong id="display-mode-status">天空島</strong>
+            </div>
           </div>
           <div class="cesium-actions" role="group" aria-label="鏡頭控制">
             <button class="button button-primary" type="button" data-camera="overview">總覽</button>
             <button class="button button-secondary" type="button" data-camera="close">近看</button>
             <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+            <button class="button button-secondary" type="button" data-camera="island">天空島</button>
           </div>
           <div class="cesium-actions fuxing-nudge-actions" role="group" aria-label="模型水平校正">
             <button class="button button-secondary" type="button" data-nudge-lat="0.0005">北</button>
@@ -99,12 +104,17 @@
             <input id="terrain-toggle" type="checkbox" checked>
             <span>地形高度感</span>
           </label>
+          <label class="check-field cesium-toggle">
+            <input id="sky-island-toggle" type="checkbox" checked>
+            <span>天空島展示</span>
+          </label>
         </div>
       </aside>
 
       <div class="cesium-legend" aria-label="復興模型圖例">
         <strong>圖層</strong>
         <span><i class="cesium-real-building"></i>復興部落 GLB</span>
+        <span><i class="cesium-radar"></i>天空島底座</span>
         <span><i class="cesium-real-river"></i>Google 混合衛星</span>
       </div>
     </section>
@@ -114,6 +124,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-slider-controls"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-sky-island"></script>
 </body>
 </html>

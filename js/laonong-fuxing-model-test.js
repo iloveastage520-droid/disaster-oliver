@@ -13,6 +13,7 @@ const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
 const MODEL_HEIGHT_OFFSET = 0;
 const LABEL_HEIGHT_OFFSET = 520;
 const DEFAULT_HEADING_DEGREES = 0;
+const SKY_ISLAND_HEIGHT_OFFSET = 1250;
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -70,11 +71,20 @@ const cameraViews = {
       pitch: CesiumLib.Math.toRadians(-88),
       roll: 0
     }
+  },
+  island: {
+    destination: CesiumLib.Cartesian3.fromDegrees(120.8044, 23.2148, 3600),
+    orientation: {
+      heading: CesiumLib.Math.toRadians(44),
+      pitch: CesiumLib.Math.toRadians(-24),
+      roll: 0
+    }
   }
 };
 
 let modelEntity = null;
 let labelEntity = null;
+const skyIslandEntities = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -87,6 +97,7 @@ let currentPlacement = {
 let placementUpdateTimer = null;
 const modelToggle = document.querySelector("#model-toggle");
 const terrainToggle = document.querySelector("#terrain-toggle");
+const skyIslandToggle = document.querySelector("#sky-island-toggle");
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -126,10 +137,21 @@ document.querySelectorAll("[data-placement-control]").forEach((input) => {
 modelToggle.addEventListener("change", () => {
   if (modelEntity) modelEntity.show = modelToggle.checked;
   if (labelEntity) labelEntity.show = modelToggle.checked;
+  skyIslandEntities.forEach((entity) => {
+    entity.show = modelToggle.checked && skyIslandToggle.checked;
+  });
 });
 
 terrainToggle.addEventListener("change", () => {
   viewer.scene.verticalExaggeration = terrainToggle.checked ? 1.45 : 1;
+});
+
+skyIslandToggle.addEventListener("change", async () => {
+  await placeModelAtCurrentPosition();
+  viewer.camera.flyTo({
+    ...cameraViews[skyIslandToggle.checked ? "island" : "close"],
+    duration: 0.9
+  });
 });
 
 viewer.camera.setView(cameraViews.overview);
@@ -150,7 +172,7 @@ async function setupTerrain() {
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
-    addModel(760 + currentPlacement.heightOffset);
+    addModel(placementHeight(760));
   }
 }
 
@@ -161,12 +183,12 @@ async function placeModelAtCurrentPosition() {
     const [sample] = await CesiumLib.sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic]);
     const groundHeight = Number.isFinite(sample.height) ? sample.height : 760;
     currentPlacement.groundHeight = groundHeight;
-    addModel(groundHeight + currentPlacement.heightOffset);
+    addModel(placementHeight(groundHeight));
     setModelStatus(`貼地 / ${Math.round(groundHeight)}m`);
   } catch (error) {
     console.warn("Terrain sample failed", error);
     currentPlacement.groundHeight = 760;
-    addModel(760 + currentPlacement.heightOffset);
+    addModel(placementHeight(760));
     setModelStatus("貼地備援 / 760m");
   }
   updatePlacementStatus();
@@ -251,7 +273,84 @@ function addModel(height) {
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     }
   });
+  updateSkyIsland(height);
   window.setTimeout(() => setModelStatus("載入中 / 約 74MB"), 1200);
+}
+
+function placementHeight(groundHeight) {
+  return groundHeight
+    + currentPlacement.heightOffset
+    + (skyIslandToggle.checked ? SKY_ISLAND_HEIGHT_OFFSET : 0);
+}
+
+function updateSkyIsland(modelHeight) {
+  const enabled = skyIslandToggle.checked && modelToggle.checked;
+  setDisplayModeStatus(skyIslandToggle.checked ? "天空島" : "貼地");
+  if (!skyIslandEntities.length) createSkyIslandEntities(modelHeight);
+  const center = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 78);
+  const coneCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 360);
+  const shadowCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16);
+  skyIslandEntities[0].position = center;
+  skyIslandEntities[1].position = coneCenter;
+  skyIslandEntities[2].position = shadowCenter;
+  skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112);
+  skyIslandEntities.forEach((entity) => {
+    entity.show = enabled;
+  });
+}
+
+function createSkyIslandEntities(modelHeight) {
+  const top = viewer.entities.add({
+    name: "天空島草地平台",
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 78),
+    ellipse: {
+      semiMajorAxis: 660,
+      semiMinorAxis: 430,
+      height: modelHeight - 78,
+      material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.38),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#bbf7d0").withAlpha(0.88),
+      rotation: CesiumLib.Math.toRadians(18)
+    }
+  });
+  const cone = viewer.entities.add({
+    name: "天空島岩層",
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 360),
+    cylinder: {
+      length: 560,
+      topRadius: 620,
+      bottomRadius: 105,
+      material: CesiumLib.Color.fromCssColorString("#6b4f35").withAlpha(0.62),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.42)
+    }
+  });
+  const shadow = viewer.entities.add({
+    name: "天空島地面投影",
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16),
+    ellipse: {
+      semiMajorAxis: 820,
+      semiMinorAxis: 520,
+      height: currentPlacement.groundHeight + 16,
+      material: CesiumLib.Color.BLACK.withAlpha(0.18),
+      outline: false,
+      rotation: CesiumLib.Math.toRadians(18)
+    }
+  });
+  const glow = viewer.entities.add({
+    name: "天空島光暈",
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112),
+    ellipse: {
+      semiMajorAxis: 930,
+      semiMinorAxis: 590,
+      height: modelHeight - 112,
+      material: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.12),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.38),
+      rotation: CesiumLib.Math.toRadians(18)
+    }
+  });
+  skyIslandEntities.push(top, cone, shadow, glow);
 }
 
 function setTerrainStatus(text) {
@@ -264,6 +363,11 @@ function setModelStatus(text) {
   if (element) element.textContent = text;
 }
 
+function setDisplayModeStatus(text) {
+  const element = document.querySelector("#display-mode-status");
+  if (element) element.textContent = text;
+}
+
 function updatePlacementStatus() {
   const positionElement = document.querySelector("#position-status");
   const offsetElement = document.querySelector("#offset-status");
@@ -271,7 +375,8 @@ function updatePlacementStatus() {
     positionElement.textContent = `${currentPlacement.lon.toFixed(6)}, ${currentPlacement.lat.toFixed(6)}`;
   }
   if (offsetElement) {
-    offsetElement.textContent = `${Math.round(currentPlacement.heightOffset)}m / ${Math.round(currentPlacement.heading)}deg`;
+    const skyHeight = skyIslandToggle.checked ? ` +${SKY_ISLAND_HEIGHT_OFFSET}m` : "";
+    offsetElement.textContent = `${Math.round(currentPlacement.heightOffset)}m${skyHeight} / ${Math.round(currentPlacement.heading)}deg`;
   }
   syncSliderControls();
 }

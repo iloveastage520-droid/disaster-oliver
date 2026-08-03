@@ -91,6 +91,8 @@ const BUILDING_RAIN_TINT_LIMIT = 2600;
 const SIMULATED_CLOUD_BOTTOM = 1550;
 const SIMULATED_CLOUD_TOP = 1680;
 const WIND_VECTOR = { lon: 0.0027, lat: 0.00055 };
+const WIND_PARTICLE_COUNT = 34;
+const RAIN_STREAK_COUNT = 42;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 
 let radarFrames = [];
@@ -589,6 +591,7 @@ function updateSimulatedRadarFrame() {
     entity.show = simulatedRadarToggle.checked;
   });
   updateBuildingRadarGlow(activeCells);
+  updateWindField();
   viewer.scene.requestRender();
 }
 
@@ -732,7 +735,7 @@ function addWindIndicators() {
     [121.578, 25.046],
     [121.590, 25.031]
   ];
-  windEntities = anchors.flatMap(([lon, lat], index) => {
+  const arrowEntities = anchors.flatMap(([lon, lat], index) => {
     const start = CesiumLib.Cartesian3.fromDegrees(lon, lat, SIMULATED_CLOUD_TOP + 170);
     const end = CesiumLib.Cartesian3.fromDegrees(lon + 0.010, lat + 0.0024, SIMULATED_CLOUD_TOP + 170);
     const line = viewer.entities.add({
@@ -761,6 +764,74 @@ function addWindIndicators() {
     });
     return [line, label];
   });
+  const particleEntities = Array.from({ length: WIND_PARTICLE_COUNT }, (_, index) => {
+    const progress = index / WIND_PARTICLE_COUNT;
+    const lane = index % 7;
+    const entity = viewer.entities.add({
+      name: "高空風粒子",
+      polyline: {
+        positions: windParticlePositions(progress, lane),
+        width: 2,
+        material: new CesiumLib.PolylineGlowMaterialProperty({
+          glowPower: 0.24,
+          taperPower: 0.7,
+          color: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.72)
+        })
+      },
+      show: windToggle.checked
+    });
+    entity.windMeta = { progress, lane, kind: "particle" };
+    return entity;
+  });
+  const rainEntities = Array.from({ length: RAIN_STREAK_COUNT }, (_, index) => {
+    const progress = index / RAIN_STREAK_COUNT;
+    const lane = index % 9;
+    const entity = viewer.entities.add({
+      name: "斜雨線",
+      polyline: {
+        positions: rainStreakPositions(progress, lane),
+        width: 1,
+        material: CesiumLib.Color.fromCssColorString("#dbeafe").withAlpha(0.48)
+      },
+      show: windToggle.checked
+    });
+    entity.windMeta = { progress, lane, kind: "rain" };
+    return entity;
+  });
+  windEntities = [...arrowEntities, ...particleEntities, ...rainEntities];
+}
+
+function updateWindField() {
+  if (!windToggle.checked) return;
+  windEntities.forEach((entity) => {
+    if (!entity.windMeta) return;
+    const speed = entity.windMeta.kind === "rain" ? 0.030 : 0.018;
+    entity.windMeta.progress = (entity.windMeta.progress + speed) % 1;
+    entity.polyline.positions = entity.windMeta.kind === "rain"
+      ? rainStreakPositions(entity.windMeta.progress, entity.windMeta.lane)
+      : windParticlePositions(entity.windMeta.progress, entity.windMeta.lane);
+  });
+}
+
+function windParticlePositions(progress, lane) {
+  const startLon = 121.510 + progress * 0.100;
+  const startLat = 25.021 + lane * 0.0042 + Math.sin((progress * 8 + lane) * 0.9) * 0.0011;
+  const startHeight = SIMULATED_CLOUD_TOP + 130 + lane * 10;
+  const length = 0.010 + lane * 0.0008;
+  return [
+    CesiumLib.Cartesian3.fromDegrees(startLon, startLat, startHeight),
+    CesiumLib.Cartesian3.fromDegrees(startLon + length, startLat + 0.0022, startHeight + 12)
+  ];
+}
+
+function rainStreakPositions(progress, lane) {
+  const startLon = 121.515 + progress * 0.100;
+  const startLat = 25.021 + lane * 0.0032;
+  const startHeight = 620 + (lane % 4) * 52;
+  return [
+    CesiumLib.Cartesian3.fromDegrees(startLon, startLat, startHeight),
+    CesiumLib.Cartesian3.fromDegrees(startLon + 0.0048, startLat - 0.0016, startHeight - 260)
+  ];
 }
 
 function updateBuildingRadarGlow(activeCells) {

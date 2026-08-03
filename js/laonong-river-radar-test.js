@@ -44,8 +44,6 @@ viewer.scene.verticalExaggerationRelativeHeight = 0;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 const REAL_RIVER_GEOJSON_URL = "../../data/laonong-river-real.geojson";
 const REAL_FLOWLINE_GEOJSON_URL = "../../data/laonong-river-flowline.geojson";
-const FUXING_TRIBE_MODEL_URL = "https://raw.githubusercontent.com/iloveastage520-droid/disaster-oliver/274b822531a7bf01097e8783d159fc92340a00a2/assets/models/laonong-fuxing/fuxing-tribe-laonong.glb";
-const FUXING_TRIBE_MODEL_POSITION = { lon: 120.80255, lat: 23.21625, height: 760 };
 const STORM_CLOUD_BOTTOM = 1880;
 const STORM_CLOUD_TOP = 2020;
 const SCENARIO_STEPS = [
@@ -109,14 +107,6 @@ const cameraViews = {
       pitch: CesiumLib.Math.toRadians(-30),
       roll: 0
     }
-  },
-  fuxing: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.804, 23.215, 3600),
-    orientation: {
-      heading: CesiumLib.Math.toRadians(42),
-      pitch: CesiumLib.Math.toRadians(-31),
-      roll: 0
-    }
   }
 };
 
@@ -137,7 +127,6 @@ const floodSurgeEntities = [];
 const waterRippleEntities = [];
 const whitewaterEntities = [];
 const overflowPoolEntities = [];
-const fuxingModelEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
 let waterLevel = 0.2;
@@ -166,7 +155,6 @@ loadFlowlinePath();
 addRiver();
 addStormBands();
 addRiskMarkers();
-addFuxingTribeModel();
 loadRealRiverLayer();
 loadRadarLayer();
 animationTimer = window.setInterval(animateScenario, 430);
@@ -527,57 +515,6 @@ function addRiskMarkers() {
   });
 }
 
-function addFuxingTribeModel() {
-  const position = CesiumLib.Cartesian3.fromDegrees(
-    FUXING_TRIBE_MODEL_POSITION.lon,
-    FUXING_TRIBE_MODEL_POSITION.lat,
-    FUXING_TRIBE_MODEL_POSITION.height
-  );
-  const orientation = CesiumLib.Transforms.headingPitchRollQuaternion(
-    position,
-    new CesiumLib.HeadingPitchRoll(
-      CesiumLib.Math.toRadians(0),
-      0,
-      0
-    )
-  );
-  const model = viewer.entities.add({
-    name: "復興部落 3D 模型",
-    position,
-    orientation,
-    model: {
-      uri: FUXING_TRIBE_MODEL_URL,
-      scale: 1,
-      minimumPixelSize: 90,
-      maximumScale: 2500,
-      shadows: CesiumLib.ShadowMode.DISABLED
-    },
-    show: buildingToggle.checked
-  });
-  const label = viewer.entities.add({
-    name: "復興部落模型標籤",
-    position: CesiumLib.Cartesian3.fromDegrees(
-      FUXING_TRIBE_MODEL_POSITION.lon,
-      FUXING_TRIBE_MODEL_POSITION.lat,
-      FUXING_TRIBE_MODEL_POSITION.height + 520
-    ),
-    label: {
-      text: "復興部落 3D 模型",
-      font: "700 15px 'Noto Sans TC', sans-serif",
-      fillColor: CesiumLib.Color.WHITE,
-      outlineColor: CesiumLib.Color.BLACK.withAlpha(0.68),
-      outlineWidth: 4,
-      style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
-      showBackground: true,
-      backgroundColor: CesiumLib.Color.fromCssColorString("#0f766e").withAlpha(0.52),
-      backgroundPadding: new CesiumLib.Cartesian2(10, 7),
-      disableDepthTestDistance: Number.POSITIVE_INFINITY
-    },
-    show: buildingToggle.checked
-  });
-  fuxingModelEntities.push(model, label);
-}
-
 async function loadRadarLayer() {
   setRadarStatus("載入中");
   try {
@@ -845,9 +782,6 @@ function updateLayerVisibility() {
   });
   overflowPoolEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
-  });
-  fuxingModelEntities.forEach((entity) => {
-    entity.show = buildingToggle.checked;
   });
 }
 

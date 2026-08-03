@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver Fuxing tribe 3D thin model Cesium test.">
+  <title>復興部落薄型模型測試 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-laonong-livecams">
+</head>
+<body class="laonong-command-page fuxing-model-page" data-page="fuxing-model-test">
+  <main class="cesium-page">
+    <section class="cesium-stage laonong-command-stage" aria-label="復興部落薄型模型 3D 測試場景">
+      <div id="cesium-container" class="cesium-container"></div>
+
+      <section class="laonong-title-panel" aria-label="系統標題">
+        <div class="laonong-logo-mark"></div>
+        <div>
+          <p>GLB 模型定位測試</p>
+          <h1>復興部落薄型模型</h1>
+        </div>
+      </section>
+
+      <aside class="cesium-control-panel" aria-label="復興模型測試控制">
+        <div class="cesium-panel-content">
+          <p class="eyebrow">CesiumJS</p>
+          <h1>薄型模型測試</h1>
+          <div class="cesium-status-grid">
+            <div>
+              <span>模型來源</span>
+              <strong>GitHub raw</strong>
+            </div>
+            <div>
+              <span>檔案大小</span>
+              <strong>約 74MB</strong>
+            </div>
+            <div>
+              <span>地形</span>
+              <strong id="terrain-status">載入中</strong>
+            </div>
+            <div>
+              <span>模型</span>
+              <strong id="model-status">載入中</strong>
+            </div>
+          </div>
+          <div class="cesium-actions" role="group" aria-label="鏡頭控制">
+            <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+            <button class="button button-secondary" type="button" data-camera="close">近看</button>
+            <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+          </div>
+          <label class="check-field cesium-toggle">
+            <input id="model-toggle" type="checkbox" checked>
+            <span>顯示薄型模型</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="terrain-toggle" type="checkbox" checked>
+            <span>地形高度感</span>
+          </label>
+        </div>
+      </aside>
+
+      <div class="cesium-legend" aria-label="復興模型圖例">
+        <strong>圖層</strong>
+        <span><i class="cesium-real-building"></i>復興部落 GLB</span>
+        <span><i class="cesium-real-river"></i>Google 混合衛星</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-separated"></script>
+</body>
+</html>

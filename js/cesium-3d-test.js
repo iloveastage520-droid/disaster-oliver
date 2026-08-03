@@ -482,10 +482,8 @@ function addSimulatedRadar() {
       const radarMeta = { ...cell, index, blob, blobIndex };
       const entity = viewer.entities.add({
       name: `假雷達強回波 ${cell.level}`,
-      position: simulatedRadarPosition(radarMeta, blob, 0),
-      ellipse: {
-        semiMajorAxis: degreesToMeters(cell.width * blob.scale) / 2,
-        semiMinorAxis: degreesToMeters(cell.depth * blob.scale) / 2,
+      rectangle: {
+        coordinates: simulatedRadarRectangle(radarMeta, blob, 0),
         height: SIMULATED_CLOUD_TOP,
         extrudedHeight: SIMULATED_CLOUD_BOTTOM,
         material: CesiumLib.Color.fromCssColorString(cell.color).withAlpha(cell.alpha),
@@ -514,10 +512,8 @@ function addSimulatedRadar() {
 
       const flood = viewer.entities.add({
         name: `地面淹水藍色疊圖 ${cell.level}`,
-        position: simulatedRadarFloodPosition(radarMeta, blob, 0),
-        ellipse: {
-          semiMajorAxis: degreesToMeters(cell.width * blob.scale) * 0.40,
-          semiMinorAxis: degreesToMeters(cell.depth * blob.scale) * 0.34,
+        rectangle: {
+          coordinates: simulatedRadarFloodRectangle(radarMeta, blob, 0),
           height: 3,
           material: floodOverlayColor(cell.dbz, cell.alpha),
           outline: true,
@@ -562,8 +558,8 @@ function updateSimulatedRadarFrame() {
       cloudBottom: SIMULATED_CLOUD_BOTTOM,
       cloudTop: SIMULATED_CLOUD_TOP
     });
-    entity.position = simulatedRadarPosition(cell, cell.blob, phase);
-    entity.ellipse.material = CesiumLib.Color
+    entity.rectangle.coordinates = simulatedRadarRectangle(cell, cell.blob, phase);
+    entity.rectangle.material = CesiumLib.Color
       .fromCssColorString(cell.color)
       .withAlpha(Math.min(alphaPulse * (cell.blobIndex ? 0.78 : 1), 0.48));
   });
@@ -585,11 +581,9 @@ function updateSimulatedRadarFrame() {
     const phase = simulatedRadarFrame + cell.index * 2;
     const floodPulse = Math.sin((phase + cell.blobIndex * 5) * 0.18) * 0.04;
     const intensity = Math.max(0.35, Math.min(1, cell.dbz / 58));
-    entity.position = simulatedRadarFloodPosition(cell, cell.blob, phase);
-    entity.ellipse.semiMajorAxis = degreesToMeters(cell.width * cell.blob.scale) * (0.34 + intensity * 0.16);
-    entity.ellipse.semiMinorAxis = degreesToMeters(cell.depth * cell.blob.scale) * (0.30 + intensity * 0.12);
-    entity.ellipse.material = floodOverlayColor(cell.dbz, Math.max(0.10, cell.alpha + floodPulse));
-    entity.ellipse.outlineColor = CesiumLib.Color
+    entity.rectangle.coordinates = simulatedRadarFloodRectangle(cell, cell.blob, phase, intensity);
+    entity.rectangle.material = floodOverlayColor(cell.dbz, Math.max(0.10, cell.alpha + floodPulse));
+    entity.rectangle.outlineColor = CesiumLib.Color
       .fromCssColorString(cell.dbz >= 45 ? "#e0f2fe" : "#bae6fd")
       .withAlpha(0.16 + intensity * 0.20);
     entity.show = simulatedRadarToggle.checked;
@@ -624,31 +618,43 @@ function simulatedRadarCenter(cell, phase) {
   };
 }
 
-function simulatedRadarPosition(cell, blob, phase) {
+function simulatedRadarCellCenter(cell, blob, phase) {
   const center = simulatedRadarCenter(cell, phase);
-  return CesiumLib.Cartesian3.fromDegrees(
-    center.lon + blob.lonOffset,
-    center.lat + blob.latOffset,
-    SIMULATED_CLOUD_TOP
+  return {
+    lon: center.lon + blob.lonOffset,
+    lat: center.lat + blob.latOffset
+  };
+}
+
+function simulatedRadarRectangle(cell, blob, phase) {
+  const center = simulatedRadarCellCenter(cell, blob, phase);
+  const halfSize = Math.max(cell.width, cell.depth) * blob.scale / 2;
+  return CesiumLib.Rectangle.fromDegrees(
+    center.lon - halfSize,
+    center.lat - halfSize,
+    center.lon + halfSize,
+    center.lat + halfSize
   );
 }
 
 function simulatedRadarCloudPosition(cell, blob, phase) {
-  const center = simulatedRadarCenter(cell, phase);
+  const center = simulatedRadarCellCenter(cell, blob, phase);
   const blobIndex = Number.isFinite(cell.blobIndex) ? cell.blobIndex : 0;
   return CesiumLib.Cartesian3.fromDegrees(
-    center.lon + blob.lonOffset,
-    center.lat + blob.latOffset,
+    center.lon,
+    center.lat,
     SIMULATED_CLOUD_TOP + 170 + blobIndex * 12
   );
 }
 
-function simulatedRadarFloodPosition(cell, blob, phase) {
-  const center = simulatedRadarCenter(cell, phase);
-  return CesiumLib.Cartesian3.fromDegrees(
-    center.lon + blob.lonOffset * 0.92,
-    center.lat + blob.latOffset * 0.92,
-    3
+function simulatedRadarFloodRectangle(cell, blob, phase, intensity = 0.7) {
+  const center = simulatedRadarCellCenter(cell, blob, phase);
+  const halfSize = Math.max(cell.width, cell.depth) * blob.scale * (0.34 + intensity * 0.12);
+  return CesiumLib.Rectangle.fromDegrees(
+    center.lon - halfSize,
+    center.lat - halfSize,
+    center.lon + halfSize,
+    center.lat + halfSize
   );
 }
 

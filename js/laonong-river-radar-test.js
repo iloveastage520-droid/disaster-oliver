@@ -46,6 +46,13 @@ const REAL_RIVER_GEOJSON_URL = "../../data/laonong-river-real.geojson";
 const REAL_FLOWLINE_GEOJSON_URL = "../../data/laonong-river-flowline.geojson";
 const STORM_CLOUD_BOTTOM = 1880;
 const STORM_CLOUD_TOP = 2020;
+const SCENARIO_STEPS = [
+  { time: "14:00", stage: "降雨", detail: "上游山區開始出現強回波", rainBoost: -8, floodTarget: 0.30 },
+  { time: "15:00", stage: "匯流", detail: "支流匯入，河道流速提高", rainBoost: 0, floodTarget: 0.48 },
+  { time: "16:00", stage: "河道", detail: "水位快速上升，低灘地接近滿水", rainBoost: 7, floodTarget: 0.72 },
+  { time: "17:00", stage: "聚落", detail: "沿岸聚落進入警戒範圍", rainBoost: 12, floodTarget: 0.90 },
+  { time: "18:00", stage: "預警", detail: "高風險聚落發布撤離準備", rainBoost: 16, floodTarget: 1.00 }
+];
 const riverPath = [
   [120.496164, 22.792963],
   [120.548365, 22.815057],
@@ -115,10 +122,12 @@ const buildingEntities = [];
 const markerEntities = [];
 const realRiverEntities = [];
 const settlementAreaEntities = [];
+const floodSurgeEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
 let waterLevel = 0.2;
 let flowlineReady = false;
+let scenarioStepIndex = 0;
 
 const radarToggle = document.querySelector("#laonong-radar-toggle");
 const stormToggle = document.querySelector("#laonong-storm-toggle");
@@ -198,6 +207,7 @@ async function loadFlowlinePath() {
   }
   addRiverbankBuildings();
   addParticles();
+  addFloodSurgeBands();
 }
 
 function addRiverbankBuildings() {
@@ -349,6 +359,28 @@ function addParticles() {
   }
 }
 
+function addFloodSurgeBands() {
+  const surgePoints = [0.22, 0.30, 0.38, 0.47, 0.56, 0.65, 0.74, 0.83];
+  surgePoints.forEach((progress, index) => {
+    const point = pointAlongRiver(progress);
+    const entity = viewer.entities.add({
+      name: "河道滿水外擴帶",
+      position: CesiumLib.Cartesian3.fromDegrees(point.lon, point.lat, 70),
+      ellipse: {
+        semiMajorAxis: 240,
+        semiMinorAxis: 70,
+        height: 62,
+        material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.06),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.30),
+        rotation: riverSegmentRotation(progress)
+      }
+    });
+    entity.surgeMeta = { index, progress };
+    floodSurgeEntities.push(entity);
+  });
+}
+
 function addRiskMarkers() {
   const markers = [
     { name: "荖濃溪下游", lon: 120.548, lat: 22.815, type: "watch", detail: "水位 1.8m" },
@@ -461,34 +493,39 @@ async function loadRealRiverLayer() {
 
 function animateScenario() {
   stormFrame += 1;
+  scenarioStepIndex = Math.floor((stormFrame / 18) % SCENARIO_STEPS.length);
+  const scenario = SCENARIO_STEPS[scenarioStepIndex];
   const activeBands = [];
   stormEntities.forEach((entity) => {
     const band = entity.stormBand;
     const bounds = stormBounds(band, stormFrame + band.index * 8);
     const pulse = band.alpha + (stormFrame % 5) * 0.025;
+    const scenarioDbz = Math.max(10, Math.min(68, band.dbz + scenario.rainBoost));
     activeBands.push({
       ...bounds,
-      dbz: band.dbz,
-      color: CesiumLib.Color.fromCssColorString(band.color),
+      dbz: scenarioDbz,
+      color: radarColor(scenarioDbz),
       cloudBottom: STORM_CLOUD_BOTTOM,
       cloudTop: STORM_CLOUD_TOP
     });
     entity.rectangle.coordinates = stormRectangle(band, band.cell, stormFrame + band.index * 8);
     entity.rectangle.material = CesiumLib.Color
-      .fromCssColorString(band.color)
-      .withAlpha(Math.min(pulse * (band.cellIndex ? 0.82 : 1), 0.48));
+      .fromCssColorString(radarCssColor(scenarioDbz))
+      .withAlpha(Math.min((pulse + scenarioStepIndex * 0.018) * (band.cellIndex ? 0.82 : 1), 0.54));
     entity.show = stormToggle.checked;
   });
-  updateRiverFlood(activeBands);
+  updateScenarioStatus(scenario);
+  updateRiverFlood(activeBands, scenario);
   updateParticles(activeBands);
   updateBuildingGlow(activeBands);
   updateLayerVisibility();
   viewer.scene.requestRender();
 }
 
-function updateRiverFlood(activeBands) {
+function updateRiverFlood(activeBands, scenario) {
   const peakDbz = activeBands.reduce((max, band) => Math.max(max, band.dbz), 0);
-  const targetLevel = peakDbz >= 55 ? 1 : peakDbz >= 45 ? 0.78 : peakDbz >= 35 ? 0.54 : 0.28;
+  const radarTarget = peakDbz >= 55 ? 1 : peakDbz >= 45 ? 0.78 : peakDbz >= 35 ? 0.54 : 0.28;
+  const targetLevel = Math.max(radarTarget, scenario.floodTarget);
   waterLevel += (targetLevel - waterLevel) * 0.08;
   const fillAlpha = 0.16 + waterLevel * 0.30;
   const outlineAlpha = 0.54 + waterLevel * 0.42;
@@ -508,9 +545,24 @@ function updateRiverFlood(activeBands) {
   settlementAreaEntities.forEach((entity) => {
     if (entity.ellipse) {
       const riskColor = entity.settlementRiskColor || CesiumLib.Color.fromCssColorString("#38bdf8");
-      entity.ellipse.material = riskColor.withAlpha(0.12 + waterLevel * 0.16);
-      entity.ellipse.outlineColor = riskColor.withAlpha(0.48 + waterLevel * 0.34);
+      const pulse = Math.sin((stormFrame + scenarioStepIndex * 9) * 0.18) * 0.05;
+      entity.ellipse.material = riskColor.withAlpha(0.10 + waterLevel * 0.20 + pulse);
+      entity.ellipse.outlineColor = riskColor.withAlpha(0.42 + waterLevel * 0.44);
     }
+  });
+  floodSurgeEntities.forEach((entity) => {
+    const meta = entity.surgeMeta;
+    const localPulse = Math.sin((stormFrame + meta.index * 5) * 0.22) * 0.08;
+    const reach = Math.max(0, Math.min(1, waterLevel + localPulse - meta.index * 0.018));
+    entity.ellipse.semiMajorAxis = 260 + reach * 980;
+    entity.ellipse.semiMinorAxis = 62 + reach * 230;
+    entity.ellipse.material = CesiumLib.Color
+      .fromCssColorString(waterLevel > 0.78 ? "#60a5fa" : "#38bdf8")
+      .withAlpha(0.04 + reach * 0.16);
+    entity.ellipse.outlineColor = CesiumLib.Color
+      .fromCssColorString(waterLevel > 0.82 ? "#fef08a" : "#7dd3fc")
+      .withAlpha(0.24 + reach * 0.36);
+    entity.show = riverToggle.checked;
   });
 }
 
@@ -568,6 +620,9 @@ function updateLayerVisibility() {
     entity.show = riverToggle.checked;
   });
   realRiverEntities.forEach((entity) => {
+    entity.show = riverToggle.checked;
+  });
+  floodSurgeEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
   });
 }
@@ -671,6 +726,27 @@ function settlementRiskLabel(type) {
   if (type === "warning") return "中風險聚落";
   if (type === "watch") return "水位觀察";
   return "監測聚落";
+}
+
+function riverSegmentRotation(progress) {
+  const before = pointAlongRiver(Math.max(0, progress - 0.01));
+  const after = pointAlongRiver(Math.min(1, progress + 0.01));
+  return Math.atan2(after.lat - before.lat, after.lon - before.lon);
+}
+
+function updateScenarioStatus(scenario) {
+  document.querySelectorAll(".laonong-scenario-time").forEach((element) => {
+    element.textContent = scenario.time;
+  });
+  document.querySelectorAll(".laonong-scenario-stage").forEach((element) => {
+    element.textContent = scenario.stage;
+  });
+  document.querySelectorAll(".laonong-scenario-detail").forEach((element) => {
+    element.textContent = scenario.detail;
+  });
+  document.querySelectorAll("[data-scenario-stage]").forEach((element) => {
+    element.classList.toggle("is-active", element.dataset.scenarioStage === scenario.stage);
+  });
 }
 
 function markerPinSvg(type) {

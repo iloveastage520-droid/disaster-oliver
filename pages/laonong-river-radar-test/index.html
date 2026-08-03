@@ -7,7 +7,7 @@
   <title>荖濃溪雷達河道測試 | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
   <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
-  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260731-command-center-style">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-scenario-timeline">
 </head>
 <body class="laonong-command-page" data-page="cesium-3d-test">
   <header class="site-header">
@@ -54,6 +54,14 @@
         <p class="eyebrow">CesiumJS</p>
         <h1>荖濃溪雷達河道測試</h1>
         <div class="cesium-status-grid">
+          <div>
+            <span>情境時間</span>
+            <strong class="laonong-scenario-time">14:00</strong>
+          </div>
+          <div>
+            <span>目前階段</span>
+            <strong class="laonong-scenario-stage">降雨</strong>
+          </div>
           <div>
             <span>場景</span>
             <strong>荖濃溪</strong>
@@ -111,17 +119,17 @@
       </div>
 
       <section class="laonong-lifecycle" aria-label="災害生命週期">
-        <div><strong>降雨</strong><span>雨量雷達監測</span></div>
-        <div><strong>匯流</strong><span>逕流匯集與傳遞</span></div>
-        <div><strong>河道</strong><span>水位上升與流動</span></div>
-        <div><strong>聚落</strong><span>風險影響評估</span></div>
-        <div><strong>預警</strong><span>即時警戒發布</span></div>
+        <div class="is-active" data-scenario-stage="降雨"><strong>降雨</strong><span>雨量雷達監測</span></div>
+        <div data-scenario-stage="匯流"><strong>匯流</strong><span>逕流匯集與傳遞</span></div>
+        <div data-scenario-stage="河道"><strong>河道</strong><span>水位上升與流動</span></div>
+        <div data-scenario-stage="聚落"><strong>聚落</strong><span>風險影響評估</span></div>
+        <div data-scenario-stage="預警"><strong>預警</strong><span>即時警戒發布</span></div>
       </section>
 
       <section class="laonong-focus-card" aria-label="重點聚落資訊">
-        <span>多納里</span>
-        <strong>即時影像</strong>
-        <p>高風險 / 水位快速上升</p>
+        <span class="laonong-scenario-time">14:00</span>
+        <strong class="laonong-scenario-stage">降雨</strong>
+        <p class="laonong-scenario-detail">上游山區開始出現強回波</p>
       </section>
     </section>
   </main>
@@ -130,7 +138,7 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-river-radar-test.js?v=20260803-settlement-hotspots"></script>
+  <script src="../../js/laonong-river-radar-test.js?v=20260803-scenario-timeline"></script>
   <script src="../../js/cesium-panel-toggle.js?v=20260731-vertical-panel-toggle"></script>
 </body>
 </html>

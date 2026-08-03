@@ -242,7 +242,7 @@ function addModel(height) {
     )
   );
   modelEntity = viewer.entities.add({
-    name: "復興部落模型測試 GLB",
+    name: "復興部落真實 UAV 模型",
     position,
     orientation,
     model: {
@@ -254,14 +254,14 @@ function addModel(height) {
     }
   });
   labelEntity = viewer.entities.add({
-    name: "復興部落模型測試標籤",
+    name: "復興部落真實 UAV 模型標籤",
     position: CesiumLib.Cartesian3.fromDegrees(
       currentPlacement.lon,
       currentPlacement.lat,
       height + LABEL_HEIGHT_OFFSET
     ),
     label: {
-      text: "復興部落模型測試",
+      text: "真實 UAV 模型",
       font: "700 15px 'Noto Sans TC', sans-serif",
       fillColor: CesiumLib.Color.WHITE,
       outlineColor: CesiumLib.Color.BLACK.withAlpha(0.68),

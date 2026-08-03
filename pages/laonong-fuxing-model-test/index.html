@@ -43,11 +43,31 @@
               <span>模型</span>
               <strong id="model-status">載入中</strong>
             </div>
+            <div>
+              <span>座標</span>
+              <strong id="position-status">--</strong>
+            </div>
+            <div>
+              <span>偏移/旋轉</span>
+              <strong id="offset-status">--</strong>
+            </div>
           </div>
           <div class="cesium-actions" role="group" aria-label="鏡頭控制">
             <button class="button button-primary" type="button" data-camera="overview">總覽</button>
             <button class="button button-secondary" type="button" data-camera="close">近看</button>
             <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+          </div>
+          <div class="cesium-actions fuxing-nudge-actions" role="group" aria-label="模型水平校正">
+            <button class="button button-secondary" type="button" data-nudge-lat="0.0005">北</button>
+            <button class="button button-secondary" type="button" data-nudge-lon="-0.0005">西</button>
+            <button class="button button-secondary" type="button" data-nudge-lon="0.0005">東</button>
+            <button class="button button-secondary" type="button" data-nudge-lat="-0.0005">南</button>
+          </div>
+          <div class="cesium-actions fuxing-nudge-actions" role="group" aria-label="模型高度與旋轉校正">
+            <button class="button button-secondary" type="button" data-nudge-height="-10">降</button>
+            <button class="button button-secondary" type="button" data-nudge-height="10">升</button>
+            <button class="button button-secondary" type="button" data-nudge-heading="-5">左轉</button>
+            <button class="button button-secondary" type="button" data-nudge-heading="5">右轉</button>
           </div>
           <label class="check-field cesium-toggle">
             <input id="model-toggle" type="checkbox" checked>

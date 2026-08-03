@@ -12,6 +12,7 @@ const MODEL_URL = "https://raw.githubusercontent.com/iloveastage520-droid/disast
 const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
 const MODEL_HEIGHT_OFFSET = 0;
 const LABEL_HEIGHT_OFFSET = 520;
+const DEFAULT_HEADING_DEGREES = 0;
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -74,6 +75,13 @@ const cameraViews = {
 
 let modelEntity = null;
 let labelEntity = null;
+let currentPlacement = {
+  lon: MODEL_POSITION.lon,
+  lat: MODEL_POSITION.lat,
+  heightOffset: MODEL_HEIGHT_OFFSET,
+  heading: DEFAULT_HEADING_DEGREES,
+  groundHeight: 760
+};
 const modelToggle = document.querySelector("#model-toggle");
 const terrainToggle = document.querySelector("#terrain-toggle");
 
@@ -82,6 +90,20 @@ document.querySelectorAll("[data-camera]").forEach((button) => {
     viewer.camera.flyTo({
       ...cameraViews[button.dataset.camera],
       duration: 1.2
+    });
+  });
+});
+
+document.querySelectorAll("[data-nudge-lon], [data-nudge-lat], [data-nudge-height], [data-nudge-heading]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    currentPlacement.lon += Number(button.dataset.nudgeLon || 0);
+    currentPlacement.lat += Number(button.dataset.nudgeLat || 0);
+    currentPlacement.heightOffset += Number(button.dataset.nudgeHeight || 0);
+    currentPlacement.heading += Number(button.dataset.nudgeHeading || 0);
+    await placeModelAtCurrentPosition();
+    viewer.camera.flyTo({
+      ...cameraViews.close,
+      duration: 0.55
     });
   });
 });
@@ -108,40 +130,49 @@ async function setupTerrain() {
   try {
     viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
     setTerrainStatus("ArcGIS DEM");
-    await addModelAtGround();
+    await placeModelAtCurrentPosition();
     window.setTimeout(() => viewer.camera.setView(cameraViews.overview), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
-    addModel(760);
+    addModel(760 + currentPlacement.heightOffset);
   }
 }
 
-async function addModelAtGround() {
+async function placeModelAtCurrentPosition() {
   setModelStatus("計算地面高度");
   try {
-    const cartographic = CesiumLib.Cartographic.fromDegrees(MODEL_POSITION.lon, MODEL_POSITION.lat);
+    const cartographic = CesiumLib.Cartographic.fromDegrees(currentPlacement.lon, currentPlacement.lat);
     const [sample] = await CesiumLib.sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic]);
     const groundHeight = Number.isFinite(sample.height) ? sample.height : 760;
-    addModel(groundHeight + MODEL_HEIGHT_OFFSET);
+    currentPlacement.groundHeight = groundHeight;
+    addModel(groundHeight + currentPlacement.heightOffset);
     setModelStatus(`貼地 / ${Math.round(groundHeight)}m`);
   } catch (error) {
     console.warn("Terrain sample failed", error);
-    addModel(760);
+    currentPlacement.groundHeight = 760;
+    addModel(760 + currentPlacement.heightOffset);
     setModelStatus("貼地備援 / 760m");
   }
+  updatePlacementStatus();
 }
 
 function addModel(height) {
   setModelStatus("載入中");
+  if (modelEntity) viewer.entities.remove(modelEntity);
+  if (labelEntity) viewer.entities.remove(labelEntity);
   const position = CesiumLib.Cartesian3.fromDegrees(
-    MODEL_POSITION.lon,
-    MODEL_POSITION.lat,
+    currentPlacement.lon,
+    currentPlacement.lat,
     height
   );
   const orientation = CesiumLib.Transforms.headingPitchRollQuaternion(
     position,
-    new CesiumLib.HeadingPitchRoll(0, 0, 0)
+    new CesiumLib.HeadingPitchRoll(
+      CesiumLib.Math.toRadians(currentPlacement.heading),
+      0,
+      0
+    )
   );
   modelEntity = viewer.entities.add({
     name: "復興部落薄型 GLB",
@@ -158,8 +189,8 @@ function addModel(height) {
   labelEntity = viewer.entities.add({
     name: "復興部落薄型模型標籤",
     position: CesiumLib.Cartesian3.fromDegrees(
-      MODEL_POSITION.lon,
-      MODEL_POSITION.lat,
+      currentPlacement.lon,
+      currentPlacement.lat,
       height + LABEL_HEIGHT_OFFSET
     ),
     label: {
@@ -186,6 +217,17 @@ function setTerrainStatus(text) {
 function setModelStatus(text) {
   const element = document.querySelector("#model-status");
   if (element) element.textContent = text;
+}
+
+function updatePlacementStatus() {
+  const positionElement = document.querySelector("#position-status");
+  const offsetElement = document.querySelector("#offset-status");
+  if (positionElement) {
+    positionElement.textContent = `${currentPlacement.lon.toFixed(6)}, ${currentPlacement.lat.toFixed(6)}`;
+  }
+  if (offsetElement) {
+    offsetElement.textContent = `${Math.round(currentPlacement.heightOffset)}m / ${Math.round(currentPlacement.heading)}deg`;
+  }
 }
 
 function showError(message) {

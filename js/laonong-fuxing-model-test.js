@@ -52,14 +52,25 @@ const FUXING_COMMUNITY_BUILDINGS = [
   { lon: 120.80425, lat: 23.21620, angle: -16, width: 38, depth: 22, height: 17 }
 ];
 const FUXING_RIVER_AXIS = [
+  [120.742800, 23.133800],
+  [120.759200, 23.152300],
+  [120.773100, 23.171800],
   [120.782656, 23.187095],
-  [120.788800, 23.196700],
   [120.795070, 23.207380],
-  [120.800140, 23.214520],
   [120.803373, 23.219192],
   [120.806434, 23.228510],
   [120.811851, 23.244394],
   [120.818430, 23.249572]
+];
+const UPPER_SETTLEMENT_ISLANDS = [
+  { name: "梅山", lon: 120.81843, lat: 23.24957, risk: "high" },
+  { name: "拉芙蘭", lon: 120.81185, lat: 23.24439, risk: "medium" },
+  { name: "復興", lon: 120.80337, lat: 23.21919, risk: "high" },
+  { name: "勤和", lon: 120.79507, lat: 23.20738, risk: "high" },
+  { name: "桃源", lon: 120.78266, lat: 23.18710, risk: "medium" },
+  { name: "高中", lon: 120.77310, lat: 23.17180, risk: "medium" },
+  { name: "建山", lon: 120.75920, lat: 23.15230, risk: "low" },
+  { name: "寶山", lon: 120.74280, lat: 23.13380, risk: "low" }
 ];
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
@@ -96,7 +107,7 @@ viewer.scene.verticalExaggerationRelativeHeight = 0;
 
 const cameraViews = {
   overview: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.805, 23.221, 6200),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.785, 23.195, 15000),
     orientation: {
       heading: CesiumLib.Math.toRadians(42),
       pitch: CesiumLib.Math.toRadians(-31),
@@ -120,7 +131,7 @@ const cameraViews = {
     }
   },
   island: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.812, 23.210, 5200),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.808, 23.205, 9200),
     orientation: {
       heading: CesiumLib.Math.toRadians(44),
       pitch: CesiumLib.Math.toRadians(-21),
@@ -136,6 +147,7 @@ const showcaseEntities = [];
 const buildingEntities = [];
 const buildingMetadata = [];
 const floodEntities = [];
+const settlementIslandEntities = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -212,6 +224,9 @@ skyIslandToggle.addEventListener("change", async () => {
 communityToggle.addEventListener("change", () => {
   buildingEntities.forEach((entity) => {
     entity.show = communityToggle.checked;
+  });
+  settlementIslandEntities.forEach((entity) => {
+    entity.show = communityToggle.checked && skyIslandToggle.checked;
   });
   floodEntities.forEach((entity) => {
     entity.show = communityToggle.checked && skyIslandToggle.checked;
@@ -373,6 +388,7 @@ function updateSkyIsland(modelHeight) {
   skyIslandEntities[2].position = shadowCenter;
   skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18);
   updateShowcaseEffects(modelHeight);
+  updateSettlementIslands(modelHeight);
   updateCommunityBuildingHeights(modelHeight);
   skyIslandEntities.forEach((entity) => {
     entity.show = enabled;
@@ -384,8 +400,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島草地平台",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight),
     ellipse: {
-      semiMajorAxis: 4200,
-      semiMinorAxis: 1450,
+      semiMajorAxis: 1120,
+      semiMinorAxis: 720,
       height: modelHeight,
       material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.30),
       outline: true,
@@ -397,9 +413,9 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島岩層",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 380),
     cylinder: {
-      length: 760,
-      topRadius: 1650,
-      bottomRadius: 180,
+      length: 560,
+      topRadius: 620,
+      bottomRadius: 105,
       material: CesiumLib.Color.fromCssColorString("#6b4f35").withAlpha(0.62),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.42)
@@ -409,8 +425,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島地面投影",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16),
     ellipse: {
-      semiMajorAxis: 2650,
-      semiMinorAxis: 920,
+      semiMajorAxis: 820,
+      semiMinorAxis: 520,
       height: currentPlacement.groundHeight + 16,
       material: CesiumLib.Color.BLACK.withAlpha(0.18),
       outline: false,
@@ -421,8 +437,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島光暈",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18),
     ellipse: {
-      semiMajorAxis: 4850,
-      semiMinorAxis: 1750,
+      semiMajorAxis: 1380,
+      semiMinorAxis: 850,
       height: modelHeight + 18,
       material: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.12),
       outline: true,
@@ -513,6 +529,74 @@ function createShowcaseEffects(modelHeight) {
       })
     }
   }));
+}
+
+function updateSettlementIslands(modelHeight) {
+  const enabled = skyIslandToggle.checked && communityToggle.checked;
+  if (!settlementIslandEntities.length) createSettlementIslands(modelHeight);
+  UPPER_SETTLEMENT_ISLANDS.forEach((settlement, index) => {
+    const base = modelHeight + 8 + index * 3;
+    const platform = settlementIslandEntities[index * 3];
+    const glow = settlementIslandEntities[index * 3 + 1];
+    const label = settlementIslandEntities[index * 3 + 2];
+    platform.position = CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base);
+    platform.ellipse.height = base;
+    glow.position = CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base + 8);
+    glow.ellipse.height = base + 8;
+    label.position = CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base + 92);
+  });
+  settlementIslandEntities.forEach((entity) => {
+    entity.show = enabled;
+  });
+}
+
+function createSettlementIslands(modelHeight) {
+  UPPER_SETTLEMENT_ISLANDS.forEach((settlement, index) => {
+    const base = modelHeight + 8 + index * 3;
+    const isHighRisk = settlement.risk === "high";
+    settlementIslandEntities.push(viewer.entities.add({
+      name: `${settlement.name}天空島平台`,
+      position: CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base),
+      ellipse: {
+        semiMajorAxis: isHighRisk ? 330 : 270,
+        semiMinorAxis: isHighRisk ? 220 : 180,
+        height: base,
+        material: CesiumLib.Color.fromCssColorString(isHighRisk ? "#f97316" : "#38bdf8").withAlpha(0.15),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString(isHighRisk ? "#fde68a" : "#bae6fd").withAlpha(0.82),
+        rotation: CesiumLib.Math.toRadians(18 + index * 11)
+      }
+    }));
+    settlementIslandEntities.push(viewer.entities.add({
+      name: `${settlement.name}淹水影響光暈`,
+      position: CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base + 8),
+      ellipse: {
+        semiMajorAxis: isHighRisk ? 430 : 340,
+        semiMinorAxis: isHighRisk ? 290 : 230,
+        height: base + 8,
+        material: CesiumLib.Color.fromCssColorString(isHighRisk ? "#fb923c" : "#60a5fa").withAlpha(isHighRisk ? 0.14 : 0.08),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString(isHighRisk ? "#fb7185" : "#38bdf8").withAlpha(0.42),
+        rotation: CesiumLib.Math.toRadians(18 + index * 11)
+      }
+    }));
+    settlementIslandEntities.push(viewer.entities.add({
+      name: `${settlement.name}標籤`,
+      position: CesiumLib.Cartesian3.fromDegrees(settlement.lon, settlement.lat, base + 92),
+      label: {
+        text: settlement.name,
+        font: "700 14px 'Noto Sans TC', sans-serif",
+        fillColor: CesiumLib.Color.WHITE,
+        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.72),
+        outlineWidth: 4,
+        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+        showBackground: true,
+        backgroundColor: CesiumLib.Color.fromCssColorString(isHighRisk ? "#7f1d1d" : "#075985").withAlpha(0.62),
+        backgroundPadding: new CesiumLib.Cartesian2(9, 6),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    }));
+  });
 }
 
 async function addCommunityBuildings() {
@@ -620,38 +704,28 @@ function updateCommunityBuildingHeights(platformHeight) {
 
 function createRiverCommunityBuildings() {
   const buildings = [];
-  FUXING_RIVER_AXIS.slice(0, -1).forEach(([startLon, startLat], index) => {
-    const [endLon, endLat] = FUXING_RIVER_AXIS[index + 1];
-    const segmentAngle = bearingDegrees(startLon, startLat, endLon, endLat);
-    for (let step = 0; step < 5; step += 1) {
-      const t = (step + 0.32) / 5.45;
-      const lon = startLon + (endLon - startLon) * t;
-      const lat = startLat + (endLat - startLat) * t;
-      [-1, 1].forEach((side) => {
-        const distance = side * (42 + ((index + step) % 4) * 24);
-        const shifted = offsetPoint(lon, lat, segmentAngle + 90, distance);
-        buildings.push({
-          lon: shifted.lon,
-          lat: shifted.lat,
-          angle: segmentAngle + (side > 0 ? 8 : -8),
-          width: 26 + ((index + step) % 4) * 5,
-          depth: 18 + ((index + step) % 3) * 4,
-          height: 12 + ((index + step) % 5) * 3,
-          flooded: Math.abs(distance) <= 76
-        });
-        if ((index + step) % 2 === 0) {
-          const backDistance = side * (112 + ((index + step) % 3) * 28);
-          const back = offsetPoint(lon, lat, segmentAngle + 90, backDistance);
-          buildings.push({
-            lon: back.lon,
-            lat: back.lat,
-            angle: segmentAngle + (side > 0 ? -4 : 4),
-            width: 24 + ((index + step) % 5) * 6,
-            depth: 18 + ((index + step) % 4) * 3,
-            height: 10 + ((index + step) % 4) * 4,
-            flooded: false
-          });
-        }
+  UPPER_SETTLEMENT_ISLANDS.forEach((settlement, settlementIndex) => {
+    const next = UPPER_SETTLEMENT_ISLANDS[Math.min(UPPER_SETTLEMENT_ISLANDS.length - 1, settlementIndex + 1)];
+    const angle = bearingDegrees(settlement.lon, settlement.lat, next.lon, next.lat || settlement.lat + 0.01);
+    const count = settlement.risk === "high" ? 9 : settlement.risk === "medium" ? 7 : 6;
+    for (let index = 0; index < count; index += 1) {
+      const ring = 52 + (index % 3) * 36;
+      const theta = CesiumLib.Math.toRadians(index * (360 / count) + settlementIndex * 17);
+      const offset = offsetPoint(
+        settlement.lon,
+        settlement.lat,
+        CesiumLib.Math.toDegrees(theta),
+        ring
+      );
+      buildings.push({
+        lon: offset.lon,
+        lat: offset.lat,
+        angle: angle + index * 11,
+        width: 24 + (index % 4) * 6,
+        depth: 18 + (index % 3) * 5,
+        height: 12 + (index % 5) * 4,
+        flooded: settlement.risk === "high" && index < 4,
+        settlement: settlement.name
       });
     }
   });
@@ -664,7 +738,7 @@ function addFloodWaterLayer() {
     name: "天空島河道水面",
     polyline: {
       positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(flattenRiverHeights(placementHeight(currentPlacement.groundHeight) + 14)),
-      width: 26,
+      width: 18,
       material: new CesiumLib.PolylineGlowMaterialProperty({
         glowPower: 0.24,
         taperPower: 0.65,
@@ -676,7 +750,7 @@ function addFloodWaterLayer() {
   floodEntities.push(viewer.entities.add({
     name: "天空島河道漫溢示意",
     polygon: {
-      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(210)),
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(130)),
       height: placementHeight(currentPlacement.groundHeight) + 12,
       material: CesiumLib.Color.fromCssColorString("#60a5fa").withAlpha(0.28),
       outline: true,

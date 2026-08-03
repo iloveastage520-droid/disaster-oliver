@@ -16,20 +16,6 @@ const DEFAULT_HEADING_DEGREES = 0;
 const SKY_ISLAND_HEIGHT_OFFSET = 1250;
 const DEFAULT_MODEL_SCALE = 2;
 const SHOWCASE_SCAN_HEIGHT_OFFSET = 24;
-const CLOUD_RING_POINTS = [
-  { lon: -0.0062, lat: 0.0007, height: -350, width: 760, alpha: 0.72, drift: 0 },
-  { lon: -0.0044, lat: -0.0032, height: -420, width: 640, alpha: 0.64, drift: 1.4 },
-  { lon: -0.0018, lat: 0.0039, height: -300, width: 700, alpha: 0.58, drift: 2.1 },
-  { lon: 0.0022, lat: -0.0040, height: -390, width: 720, alpha: 0.68, drift: 3.2 },
-  { lon: 0.0048, lat: 0.0028, height: -330, width: 680, alpha: 0.62, drift: 4.5 },
-  { lon: 0.0063, lat: -0.0008, height: -470, width: 820, alpha: 0.70, drift: 5.7 },
-  { lon: -0.0008, lat: -0.0061, height: -520, width: 900, alpha: 0.55, drift: 6.6 },
-  { lon: 0.0009, lat: 0.0054, height: -280, width: 840, alpha: 0.48, drift: 7.8 },
-  { lon: -0.0068, lat: -0.0019, height: -610, width: 700, alpha: 0.52, drift: 8.8 },
-  { lon: 0.0068, lat: 0.0018, height: -585, width: 740, alpha: 0.54, drift: 9.7 },
-  { lon: -0.0028, lat: -0.0054, height: -230, width: 520, alpha: 0.42, drift: 10.9 },
-  { lon: 0.0030, lat: 0.0049, height: -210, width: 560, alpha: 0.40, drift: 12.3 }
-];
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -406,20 +392,6 @@ function updateShowcaseEffects(modelHeight) {
     currentPlacement.lon, currentPlacement.lat, scanHeight + 360,
     currentPlacement.lon + 0.0044, currentPlacement.lat + 0.0028, scanHeight + 150
   ]);
-  showcaseEntities.slice(8).forEach((entity, index) => {
-    const cloud = CLOUD_RING_POINTS[index] || CLOUD_RING_POINTS[index % CLOUD_RING_POINTS.length];
-    const time = Date.now() / 5200 + cloud.drift;
-    const driftLon = Math.sin(time) * 0.00022;
-    const driftLat = Math.cos(time * 0.78) * 0.00018;
-    entity.position = CesiumLib.Cartesian3.fromDegrees(
-      currentPlacement.lon + cloud.lon + driftLon,
-      currentPlacement.lat + cloud.lat + driftLat,
-      modelHeight + cloud.height
-    );
-    entity.billboard.width = cloud.width;
-    entity.billboard.height = Math.round(cloud.width * 0.34);
-    entity.billboard.color = CesiumLib.Color.WHITE.withAlpha(cloud.alpha);
-  });
   showcaseEntities.forEach((entity) => {
     entity.show = enabled;
   });
@@ -475,48 +447,6 @@ function createShowcaseEffects(modelHeight) {
       })
     }
   }));
-  CLOUD_RING_POINTS.forEach((cloud, index) => {
-    showcaseEntities.push(viewer.entities.add({
-      name: "天空島雲海",
-      position: CesiumLib.Cartesian3.fromDegrees(
-        currentPlacement.lon + cloud.lon,
-        currentPlacement.lat + cloud.lat,
-        modelHeight + cloud.height
-      ),
-      billboard: {
-        image: cloudSvg(index),
-        width: cloud.width,
-        height: Math.round(cloud.width * 0.34),
-        color: CesiumLib.Color.WHITE.withAlpha(cloud.alpha),
-        horizontalOrigin: CesiumLib.HorizontalOrigin.CENTER,
-        verticalOrigin: CesiumLib.VerticalOrigin.CENTER,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY
-      }
-    }));
-  });
-}
-
-function cloudSvg(index) {
-  const coolTint = index % 2 === 0 ? "#dff7ff" : "#f8fbff";
-  const shadowTint = index % 3 === 0 ? "#8fb8d4" : "#b7d3e8";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="520" height="210" viewBox="0 0 520 210">
-    <defs>
-      <filter id="soft"><feGaussianBlur stdDeviation="15"/></filter>
-      <radialGradient id="fade" cx="50%" cy="50%" r="54%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
-        <stop offset="56%" stop-color="${coolTint}" stop-opacity="0.78"/>
-        <stop offset="100%" stop-color="${shadowTint}" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <g filter="url(#soft)" opacity="${0.62 + (index % 4) * 0.05}">
-      <ellipse cx="100" cy="118" rx="96" ry="38" fill="url(#fade)"/>
-      <ellipse cx="194" cy="96" rx="124" ry="54" fill="url(#fade)"/>
-      <ellipse cx="304" cy="112" rx="142" ry="48" fill="url(#fade)"/>
-      <ellipse cx="414" cy="120" rx="94" ry="36" fill="url(#fade)"/>
-      <ellipse cx="266" cy="142" rx="188" ry="34" fill="${coolTint}" opacity="0.44"/>
-    </g>
-  </svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function setTerrainStatus(text) {

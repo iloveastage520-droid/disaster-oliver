@@ -51,6 +51,15 @@ const FUXING_COMMUNITY_BUILDINGS = [
   { lon: 120.80388, lat: 23.21638, angle: 26, width: 32, depth: 18, height: 15 },
   { lon: 120.80425, lat: 23.21620, angle: -16, width: 38, depth: 22, height: 17 }
 ];
+const FUXING_RIVER_AXIS = [
+  [120.80255, 23.21610],
+  [120.80305, 23.21655],
+  [120.80354, 23.21698],
+  [120.80402, 23.21740],
+  [120.80448, 23.21784],
+  [120.80492, 23.21827],
+  [120.80536, 23.21870]
+];
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -125,6 +134,7 @@ const skyIslandEntities = [];
 const showcaseEntities = [];
 const buildingEntities = [];
 const buildingMetadata = [];
+const floodEntities = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -201,6 +211,9 @@ skyIslandToggle.addEventListener("change", async () => {
 communityToggle.addEventListener("change", () => {
   buildingEntities.forEach((entity) => {
     entity.show = communityToggle.checked;
+  });
+  floodEntities.forEach((entity) => {
+    entity.show = communityToggle.checked && skyIslandToggle.checked;
   });
 });
 
@@ -518,9 +531,16 @@ async function addCommunityBuildings() {
   const demoBuildings = FUXING_COMMUNITY_BUILDINGS.map((building) => ({
     footprint: rectangleFootprint(building),
     height: building.height,
-    source: "demo"
+    source: "demo",
+    flooded: false
   }));
-  const buildings = [...osmBuildings, ...demoBuildings];
+  const riverBuildings = createRiverCommunityBuildings().map((building) => ({
+    footprint: rectangleFootprint(building),
+    height: building.height,
+    source: "river-demo",
+    flooded: building.flooded
+  }));
+  const buildings = [...osmBuildings, ...demoBuildings, ...riverBuildings];
   const samples = buildings.map((building) => CesiumLib.Cartographic.fromDegrees(...centroidOf(building.footprint)));
   let groundSamples = [];
   try {
@@ -534,16 +554,20 @@ async function addCommunityBuildings() {
     const sampledHeight = groundSamples[index]?.height;
     const baseHeight = Number.isFinite(sampledHeight) ? sampledHeight + 2 : currentPlacement.groundHeight + 2;
     const isOsm = building.source === "osm";
-    const color = isOsm
-      ? CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.62)
-      : CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.34);
-    const outlineColor = isOsm
-      ? CesiumLib.Color.fromCssColorString("#ffffff").withAlpha(0.9)
-      : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
+    const color = building.flooded
+      ? CesiumLib.Color.fromCssColorString("#f97316").withAlpha(0.52)
+      : isOsm
+        ? CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.62)
+        : CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.34);
+    const outlineColor = building.flooded
+      ? CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.95)
+      : isOsm
+        ? CesiumLib.Color.fromCssColorString("#ffffff").withAlpha(0.9)
+        : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
     const hierarchyPositions = building.footprint.flatMap(([pointLon, pointLat]) => [pointLon, pointLat]);
 
     const entity = viewer.entities.add({
-      name: isOsm ? "復興部落 OSM 建物" : "復興部落聚落示意建物",
+      name: building.flooded ? "河岸淹水影響建物" : isOsm ? "復興部落 OSM 建物" : "復興部落聚落示意建物",
       position: CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + building.height + 18),
       polygon: {
         hierarchy: CesiumLib.Cartesian3.fromDegreesArray(hierarchyPositions),
@@ -575,6 +599,7 @@ async function addCommunityBuildings() {
       buildingHeight: building.height
     });
   });
+  addFloodWaterLayer();
   updateCommunityBuildingHeights(placementHeight(currentPlacement.groundHeight));
 }
 
@@ -589,6 +614,91 @@ function updateCommunityBuildingHeights(platformHeight) {
       entity.label.show = communityToggle.checked && skyIslandToggle.checked;
     }
   });
+  updateFloodWaterHeights(platformHeight);
+}
+
+function createRiverCommunityBuildings() {
+  const buildings = [];
+  FUXING_RIVER_AXIS.slice(0, -1).forEach(([startLon, startLat], index) => {
+    const [endLon, endLat] = FUXING_RIVER_AXIS[index + 1];
+    const segmentAngle = bearingDegrees(startLon, startLat, endLon, endLat);
+    for (let step = 0; step < 3; step += 1) {
+      const t = (step + 0.28) / 3.55;
+      const lon = startLon + (endLon - startLon) * t;
+      const lat = startLat + (endLat - startLat) * t;
+      [-1, 1].forEach((side) => {
+        const distance = side * (36 + ((index + step) % 3) * 18);
+        const shifted = offsetPoint(lon, lat, segmentAngle + 90, distance);
+        buildings.push({
+          lon: shifted.lon,
+          lat: shifted.lat,
+          angle: segmentAngle + (side > 0 ? 8 : -8),
+          width: 26 + ((index + step) % 4) * 5,
+          depth: 18 + ((index + step) % 3) * 4,
+          height: 12 + ((index + step) % 5) * 3,
+          flooded: Math.abs(distance) <= 54
+        });
+      });
+    }
+  });
+  return buildings;
+}
+
+function addFloodWaterLayer() {
+  if (floodEntities.length) return;
+  floodEntities.push(viewer.entities.add({
+    name: "天空島河道水面",
+    polyline: {
+      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(flattenRiverHeights(placementHeight(currentPlacement.groundHeight) + 14)),
+      width: 18,
+      material: new CesiumLib.PolylineGlowMaterialProperty({
+        glowPower: 0.24,
+        taperPower: 0.65,
+        color: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.84)
+      })
+    },
+    show: communityToggle.checked
+  }));
+  floodEntities.push(viewer.entities.add({
+    name: "天空島河道漫溢示意",
+    polygon: {
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(130)),
+      height: placementHeight(currentPlacement.groundHeight) + 12,
+      material: CesiumLib.Color.fromCssColorString("#60a5fa").withAlpha(0.28),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.62)
+    },
+    show: communityToggle.checked
+  }));
+}
+
+function updateFloodWaterHeights(platformHeight) {
+  if (!floodEntities.length) return;
+  floodEntities[0].polyline.positions = CesiumLib.Cartesian3.fromDegreesArrayHeights(flattenRiverHeights(platformHeight + 14));
+  floodEntities[1].polygon.height = platformHeight + 12;
+  floodEntities.forEach((entity) => {
+    entity.show = communityToggle.checked && skyIslandToggle.checked;
+  });
+}
+
+function flattenRiverHeights(height) {
+  return FUXING_RIVER_AXIS.flatMap(([lon, lat]) => [lon, lat, height]);
+}
+
+function floodRibbonFootprint(widthMeters) {
+  const left = [];
+  const right = [];
+  FUXING_RIVER_AXIS.forEach(([lon, lat], index) => {
+    const previous = FUXING_RIVER_AXIS[Math.max(0, index - 1)];
+    const next = FUXING_RIVER_AXIS[Math.min(FUXING_RIVER_AXIS.length - 1, index + 1)];
+    const angle = bearingDegrees(previous[0], previous[1], next[0], next[1]);
+    const halfWidth = widthMeters / 2 + (index % 2) * 18;
+    const leftPoint = offsetPoint(lon, lat, angle + 90, halfWidth);
+    const rightPoint = offsetPoint(lon, lat, angle - 90, halfWidth);
+    left.push([leftPoint.lon, leftPoint.lat]);
+    right.unshift([rightPoint.lon, rightPoint.lat]);
+  });
+  return [...left, ...right].flatMap(([lon, lat]) => [lon, lat]);
 }
 
 function rectangleFootprint({ lon, lat, angle, width, depth }) {
@@ -609,6 +719,22 @@ function rectangleFootprint({ lon, lat, angle, width, depth }) {
       lat + rotatedY / metersPerLat
     ];
   });
+}
+
+function bearingDegrees(startLon, startLat, endLon, endLat) {
+  const dy = (endLat - startLat) * 111320;
+  const dx = (endLon - startLon) * 111320 * Math.cos(CesiumLib.Math.toRadians(startLat));
+  return CesiumLib.Math.toDegrees(Math.atan2(dx, dy));
+}
+
+function offsetPoint(lon, lat, angleDegrees, distanceMeters) {
+  const radians = CesiumLib.Math.toRadians(angleDegrees);
+  const metersPerLat = 111320;
+  const metersPerLon = 111320 * Math.cos(CesiumLib.Math.toRadians(lat));
+  return {
+    lon: lon + Math.sin(radians) * distanceMeters / metersPerLon,
+    lat: lat + Math.cos(radians) * distanceMeters / metersPerLat
+  };
 }
 
 function centroidOf(footprint) {

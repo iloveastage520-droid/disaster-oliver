@@ -263,6 +263,8 @@ function addModel(height) {
       scale: currentPlacement.scale,
       minimumPixelSize: 90,
       maximumScale: 2500,
+      silhouetteColor: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.95),
+      silhouetteSize: 2.4,
       shadows: CesiumLib.ShadowMode.DISABLED
     }
   });

@@ -256,28 +256,33 @@ function addStormBands() {
     { lon: 120.895, lat: 23.320, width: 0.170, depth: 0.065, dbz: 36, color: "#22c55e", alpha: 0.16, speed: 0.0022 }
   ];
   bands.forEach((band, index) => {
-    const blobs = [
-      { lonOffset: 0, latOffset: 0, scale: 1 },
-      { lonOffset: -0.018, latOffset: 0.010, scale: 0.72 },
-      { lonOffset: 0.020, latOffset: -0.008, scale: 0.64 },
-      { lonOffset: 0.006, latOffset: 0.018, scale: 0.52 },
-      { lonOffset: -0.030, latOffset: -0.006, scale: 0.44 },
-      { lonOffset: 0.032, latOffset: 0.012, scale: 0.40 }
+    const cells = [
+      { lonOffset: 0, latOffset: 0, scale: 0.34, dbzShift: 0 },
+      { lonOffset: -0.020, latOffset: 0.012, scale: 0.28, dbzShift: -4 },
+      { lonOffset: 0.020, latOffset: -0.010, scale: 0.28, dbzShift: -3 },
+      { lonOffset: -0.038, latOffset: -0.005, scale: 0.24, dbzShift: -8 },
+      { lonOffset: 0.040, latOffset: 0.011, scale: 0.24, dbzShift: -7 },
+      { lonOffset: -0.010, latOffset: 0.028, scale: 0.22, dbzShift: -6 },
+      { lonOffset: 0.014, latOffset: -0.028, scale: 0.22, dbzShift: -5 },
+      { lonOffset: -0.056, latOffset: 0.014, scale: 0.20, dbzShift: -10 },
+      { lonOffset: 0.058, latOffset: -0.018, scale: 0.20, dbzShift: -11 },
+      { lonOffset: -0.032, latOffset: 0.034, scale: 0.18, dbzShift: -9 },
+      { lonOffset: 0.034, latOffset: 0.034, scale: 0.18, dbzShift: -10 },
+      { lonOffset: 0.002, latOffset: -0.050, scale: 0.18, dbzShift: -8 }
     ];
-    blobs.forEach((blob, blobIndex) => {
+    cells.forEach((cell, cellIndex) => {
+      const cellDbz = Math.max(18, band.dbz + cell.dbzShift);
       const entity = viewer.entities.add({
-        name: `假雷達回波 ${band.dbz} dBZ`,
-        position: stormPosition(band, blob, 0),
-        ellipse: {
-          semiMajorAxis: cloudAxisMeters(band, blob).major,
-          semiMinorAxis: cloudAxisMeters(band, blob).minor,
+        name: `格點雷達回波 ${cellDbz} dBZ`,
+        rectangle: {
+          coordinates: stormRectangle(band, cell, 0),
           height: STORM_CLOUD_TOP,
           extrudedHeight: STORM_CLOUD_BOTTOM,
-          material: CesiumLib.Color.fromCssColorString(band.color).withAlpha(band.alpha),
+          material: radarColor(cellDbz).withAlpha(band.alpha),
           outline: false
         }
       });
-      entity.stormBand = { ...band, index, blob, blobIndex };
+      entity.stormBand = { ...band, dbz: cellDbz, color: radarCssColor(cellDbz), index, cell, cellIndex };
       stormEntities.push(entity);
     });
   });
@@ -426,10 +431,10 @@ function animateScenario() {
       cloudBottom: STORM_CLOUD_BOTTOM,
       cloudTop: STORM_CLOUD_TOP
     });
-    entity.position = stormPosition(band, band.blob, stormFrame + band.index * 8);
-    entity.ellipse.material = CesiumLib.Color
+    entity.rectangle.coordinates = stormRectangle(band, band.cell, stormFrame + band.index * 8);
+    entity.rectangle.material = CesiumLib.Color
       .fromCssColorString(band.color)
-      .withAlpha(Math.min(pulse * (band.blobIndex ? 0.78 : 1), 0.46));
+      .withAlpha(Math.min(pulse * (band.cellIndex ? 0.82 : 1), 0.48));
     entity.show = stormToggle.checked;
   });
   updateRiverFlood(activeBands);
@@ -517,9 +522,9 @@ function updateLayerVisibility() {
 
 function stormBounds(band, phase) {
   const center = stormCenter(band, phase);
-  const scale = band.blob?.scale || 1;
-  const lonOffset = band.blob?.lonOffset || 0;
-  const latOffset = band.blob?.latOffset || 0;
+  const scale = band.cell?.scale || 1;
+  const lonOffset = band.cell?.lonOffset || 0;
+  const latOffset = band.cell?.latOffset || 0;
   const lon = center.lon + lonOffset;
   const lat = center.lat + latOffset;
   const width = band.width * scale;
@@ -542,12 +547,16 @@ function stormCenter(band, phase) {
   };
 }
 
-function stormPosition(band, blob, phase) {
+function stormRectangle(band, cell, phase) {
   const center = stormCenter(band, phase);
-  return CesiumLib.Cartesian3.fromDegrees(
-    center.lon + blob.lonOffset,
-    center.lat + blob.latOffset,
-    STORM_CLOUD_TOP
+  const lon = center.lon + cell.lonOffset;
+  const lat = center.lat + cell.latOffset;
+  const halfSize = Math.max(band.width, band.depth) * cell.scale / 2;
+  return CesiumLib.Rectangle.fromDegrees(
+    lon - halfSize,
+    lat - halfSize,
+    lon + halfSize,
+    lat + halfSize
   );
 }
 
@@ -580,6 +589,14 @@ function radarColor(dbz) {
   if (dbz >= 35) return CesiumLib.Color.fromCssColorString("#fde047");
   if (dbz > 0) return CesiumLib.Color.fromCssColorString("#4ade80");
   return CesiumLib.Color.fromCssColorString("#67e8f9");
+}
+
+function radarCssColor(dbz) {
+  if (dbz >= 55) return "#c084fc";
+  if (dbz >= 45) return "#fb7185";
+  if (dbz >= 35) return "#fde047";
+  if (dbz > 0) return "#4ade80";
+  return "#67e8f9";
 }
 
 function markerColor(type) {

@@ -11,6 +11,7 @@ const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldEl
 const MODEL_URL = "https://raw.githubusercontent.com/iloveastage520-droid/disaster-oliver/274b822531a7bf01097e8783d159fc92340a00a2/assets/models/laonong-fuxing/fuxing-tribe-laonong.glb";
 const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
 const MODEL_HEIGHT_OFFSET = 0;
+const DEFAULT_MODEL_PLATFORM_OFFSET = -680;
 const LABEL_HEIGHT_OFFSET = 520;
 const DEFAULT_HEADING_DEGREES = 0;
 const SKY_ISLAND_HEIGHT_OFFSET = 1250;
@@ -94,6 +95,7 @@ let currentPlacement = {
   lonOffset: 0,
   latOffset: 0,
   heightOffset: MODEL_HEIGHT_OFFSET,
+  modelVerticalOffset: DEFAULT_MODEL_PLATFORM_OFFSET,
   heading: DEFAULT_HEADING_DEGREES,
   scale: DEFAULT_MODEL_SCALE,
   groundHeight: 760
@@ -216,6 +218,7 @@ function syncSliderControls() {
     lonOffset: "#lon-offset-value",
     latOffset: "#lat-offset-value",
     heightOffset: "#height-offset-value",
+    modelVerticalOffset: "#model-vertical-offset-value",
     heading: "#heading-value",
     scale: "#scale-value"
   };
@@ -224,7 +227,7 @@ function syncSliderControls() {
     input.value = currentPlacement[key];
     const valueElement = document.querySelector(controlMap[key]);
     if (!valueElement) return;
-    if (key === "heightOffset") valueElement.textContent = `${Math.round(currentPlacement[key])}m`;
+    if (key === "heightOffset" || key === "modelVerticalOffset") valueElement.textContent = `${Math.round(currentPlacement[key])}m`;
     else if (key === "heading") valueElement.textContent = `${Math.round(currentPlacement[key])}deg`;
     else if (key === "scale") valueElement.textContent = `${currentPlacement[key].toFixed(2).replace(/\.00$/, "")}x`;
     else valueElement.textContent = currentPlacement[key].toFixed(4);
@@ -241,10 +244,11 @@ function addModel(height) {
   setModelStatus("載入中");
   if (modelEntity) viewer.entities.remove(modelEntity);
   if (labelEntity) viewer.entities.remove(labelEntity);
+  const modelHeight = height + currentPlacement.modelVerticalOffset;
   const position = CesiumLib.Cartesian3.fromDegrees(
     currentPlacement.lon,
     currentPlacement.lat,
-    height
+    modelHeight
   );
   const orientation = CesiumLib.Transforms.headingPitchRollQuaternion(
     position,
@@ -273,7 +277,7 @@ function addModel(height) {
     position: CesiumLib.Cartesian3.fromDegrees(
       currentPlacement.lon,
       currentPlacement.lat,
-      height + LABEL_HEIGHT_OFFSET
+      modelHeight + LABEL_HEIGHT_OFFSET
     ),
     label: {
       text: "真實 UAV 模型",

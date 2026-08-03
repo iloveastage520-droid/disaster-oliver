@@ -78,6 +78,7 @@ const cameraViews = {
 
 const TAIPEI_BUILDING_LAYER =
   "https://arcgis.tpgos.gov.taipei/arcgis/rest/services/DO/NEW_RENEWAL_DO_V3/MapServer/56/query";
+const LOCAL_XINYI_BUILDINGS_URL = "../../data/xinyi/xinyi-core-buildings.geojson";
 const REAL_BUILDING_BOUNDS = {
   xmin: 121.5000,
   ymin: 24.9600,
@@ -239,6 +240,15 @@ async function loadRealBuildings() {
 }
 
 async function fetchRealBuildingGeojson() {
+  try {
+    const response = await fetch(`${LOCAL_XINYI_BUILDINGS_URL}?v=20260803`, { cache: "force-cache" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (Array.isArray(data.features) && data.features.length) return data;
+  } catch (error) {
+    console.warn("Local Xinyi buildings unavailable, fallback to ArcGIS", error);
+  }
+
   const seen = new Set();
   const features = [];
   const cells = buildBuildingCells();
@@ -357,6 +367,9 @@ function addRealBuilding(feature) {
 function parseBuildingHeight(properties) {
   const directHeight = Number.parseFloat(properties.Height);
   if (Number.isFinite(directHeight) && directHeight > 0) return directHeight;
+
+  const cachedHeight = Number.parseFloat(properties.height);
+  if (Number.isFinite(cachedHeight) && cachedHeight > 0) return cachedHeight;
 
   const roof = Number.parseFloat(properties["屋頂高程"]);
   const entrance = Number.parseFloat(properties["出入口高程"]);

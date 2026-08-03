@@ -43,6 +43,7 @@ viewer.scene.verticalExaggerationRelativeHeight = 0;
 
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 const REAL_RIVER_GEOJSON_URL = "../../data/laonong-river-real.geojson";
+const REAL_FLOWLINE_GEOJSON_URL = "../../data/laonong-river-flowline.geojson";
 const STORM_CLOUD_BOTTOM = 1880;
 const STORM_CLOUD_TOP = 2020;
 const riverPath = [
@@ -116,6 +117,7 @@ const realRiverEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
 let waterLevel = 0.2;
+let flowlineReady = false;
 
 const radarToggle = document.querySelector("#laonong-radar-toggle");
 const stormToggle = document.querySelector("#laonong-storm-toggle");
@@ -135,10 +137,9 @@ buildingToggle.addEventListener("change", updateLayerVisibility);
 
 setCameraView("overview");
 setupTerrain();
+loadFlowlinePath();
 addRiver();
-addRiverbankBuildings();
 addStormBands();
-addParticles();
 addRiskMarkers();
 loadRealRiverLayer();
 loadRadarLayer();
@@ -178,6 +179,24 @@ function addRiver() {
   // water effects from drawing a separate centerline that can drift off-river.
   riverMainEntity = null;
   riverRiskEntity = null;
+}
+
+async function loadFlowlinePath() {
+  try {
+    const response = await fetch(`${REAL_FLOWLINE_GEOJSON_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const coordinates = data.features?.[0]?.geometry?.coordinates || [];
+    if (coordinates.length >= 2) {
+      riverPath.splice(0, riverPath.length, ...coordinates);
+      flowlineReady = true;
+    }
+  } catch (error) {
+    flowlineReady = false;
+    console.warn("Laonong flowline load failed, using fallback path", error);
+  }
+  addRiverbankBuildings();
+  addParticles();
 }
 
 function addRiverbankBuildings() {
@@ -617,7 +636,7 @@ function setTerrainStatus(text) {
 
 function setRealRiverStatus(text) {
   const element = document.querySelector("#laonong-real-river-status");
-  if (element) element.textContent = text;
+  if (element) element.textContent = flowlineReady ? `${text} / 流線` : text;
 }
 
 function formatRadarTime(epochSeconds) {

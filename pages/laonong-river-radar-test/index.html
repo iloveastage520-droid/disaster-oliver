@@ -7,7 +7,7 @@
   <title>荖濃溪雷達河道測試 | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
   <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
-  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-scenario-timeline">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-laonong-livecams">
 </head>
 <body class="laonong-command-page" data-page="cesium-3d-test">
   <header class="site-header">
@@ -131,6 +131,39 @@
         <strong class="laonong-scenario-stage">降雨</strong>
         <p class="laonong-scenario-detail">上游山區開始出現強回波</p>
       </section>
+
+      <section class="laonong-livecam-stack" aria-label="荖濃溪即時影像">
+        <aside class="laonong-livecam-card" aria-label="寶來一號橋即時影像">
+          <div class="laonong-livecam-heading">
+            <span>水利署即時影像</span>
+            <strong>寶來一號橋</strong>
+          </div>
+          <a class="laonong-livecam-frame" href="https://www.twipcam.com/cam/wra-002724" target="_blank" rel="noopener">
+            <img
+              src="https://c02.twipcam.com/cam/proxy.php?id=wra-002724"
+              alt="水利署寶來一號橋即時影像"
+              referrerpolicy="no-referrer"
+              onerror="this.src='https://c01.twipcam.com/cam/snapshot/wra-002724.jpg';">
+          </a>
+          <p>高雄市六龜區 / 經濟部水利署</p>
+        </aside>
+
+        <aside class="laonong-livecam-card" aria-label="諦願寺六龜眺景即時影像">
+          <div class="laonong-livecam-heading">
+            <span>流域眺景</span>
+            <strong>諦願寺六龜眺景</strong>
+          </div>
+          <div class="laonong-livecam-frame">
+            <iframe
+              src="https://www.youtube.com/embed/1IMPS7Ew_c0?autoplay=1&mute=1&playsinline=1&rel=0"
+              title="諦願寺六龜眺景即時影像"
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <p>綜觀荖濃溪谷 / 茂林國家風景區管理處</p>
+        </aside>
+      </section>
     </section>
   </main>
 
@@ -138,7 +171,7 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-river-radar-test.js?v=20260803-water-body-effects"></script>
+  <script src="../../js/laonong-river-radar-test.js?v=20260803-laonong-livecams"></script>
   <script src="../../js/cesium-panel-toggle.js?v=20260731-vertical-panel-toggle"></script>
 </body>
 </html>

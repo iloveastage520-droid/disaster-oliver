@@ -240,6 +240,71 @@ body.laonong-command-page .cesium-page {
   font-size: 13px;
 }
 
+.laonong-livecam-stack {
+  position: absolute;
+  top: 94px;
+  right: 28px;
+  z-index: 5;
+  display: grid;
+  gap: 10px;
+  width: min(330px, calc(100vw - 56px));
+}
+
+.laonong-livecam-card {
+  padding: 11px;
+  border: 1px solid rgba(125, 211, 252, 0.30);
+  border-radius: 8px;
+  color: #dff6ff;
+  background: rgba(2, 11, 22, 0.76);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(16px);
+}
+
+.laonong-livecam-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.laonong-livecam-heading span {
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.laonong-livecam-heading strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.laonong-livecam-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.20);
+  border-radius: 6px;
+  background: #020711;
+}
+
+.laonong-livecam-frame img,
+.laonong-livecam-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+
+.laonong-livecam-card p {
+  margin: 7px 0 0;
+  color: #bae6fd;
+  font-size: 11px;
+}
+
 @media (max-width: 900px) {
   .laonong-title-panel {
     top: 16px;
@@ -280,6 +345,20 @@ body.laonong-command-page .cesium-page {
   .laonong-focus-card {
     display: none;
   }
+
+  .laonong-livecam-stack {
+    top: 74px;
+    right: 16px;
+    width: min(260px, calc(100vw - 132px));
+  }
+
+  .laonong-livecam-card {
+    padding: 8px;
+  }
+
+  .laonong-livecam-heading strong {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -319,5 +398,9 @@ body.laonong-command-page .cesium-page {
 
   .laonong-lifecycle span {
     font-size: 12px;
+  }
+
+  .laonong-livecam-stack {
+    display: none;
   }
 }

@@ -114,6 +114,7 @@ const particleEntities = [];
 const buildingEntities = [];
 const markerEntities = [];
 const realRiverEntities = [];
+const settlementAreaEntities = [];
 let riverMainEntity = null;
 let riverRiskEntity = null;
 let waterLevel = 0.2;
@@ -200,31 +201,71 @@ async function loadFlowlinePath() {
 }
 
 function addRiverbankBuildings() {
-  const villageOffsets = [0.16, 0.27, 0.39, 0.51, 0.63, 0.76, 0.88];
-  villageOffsets.forEach((progress, villageIndex) => {
-    const anchor = pointAlongRiver(progress);
-    const count = 8 + (villageIndex % 4) * 2;
-    for (let index = 0; index < count; index += 1) {
+  const settlements = [
+    { name: "六龜聚落", progress: 0.33, side: -1, risk: "watch", homes: 7 },
+    { name: "寶來聚落", progress: 0.43, side: 1, risk: "danger", homes: 10 },
+    { name: "桃源聚落", progress: 0.60, side: -1, risk: "danger", homes: 9 },
+    { name: "高中聚落", progress: 0.72, side: 1, risk: "warning", homes: 8 },
+    { name: "梅山聚落", progress: 0.86, side: -1, risk: "station", homes: 6 }
+  ];
+  settlements.forEach((settlement, villageIndex) => {
+    const anchor = pointAlongRiver(settlement.progress);
+    const center = settlementCenter(anchor, settlement.side, 0.0062 + (villageIndex % 2) * 0.0014);
+    const areaColor = markerColor(settlement.risk);
+    const area = viewer.entities.add({
+      name: `${settlement.name}影響範圍`,
+      position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, 26),
+      ellipse: {
+        semiMajorAxis: 520 + settlement.homes * 28,
+        semiMinorAxis: 320 + settlement.homes * 16,
+        height: 24,
+        material: areaColor.withAlpha(0.18),
+        outline: true,
+        outlineColor: areaColor.withAlpha(0.72),
+        rotation: CesiumLib.Math.toRadians(20 + villageIndex * 14)
+      }
+    });
+    area.settlementRiskColor = areaColor;
+    settlementAreaEntities.push(area);
+
+    const label = viewer.entities.add({
+      name: `${settlement.name}標籤`,
+      position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, 620),
+      label: {
+        text: `${settlement.name}\n${settlementRiskLabel(settlement.risk)}`,
+        font: "700 14px 'Noto Sans TC', sans-serif",
+        fillColor: CesiumLib.Color.WHITE,
+        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.68),
+        outlineWidth: 4,
+        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+        showBackground: true,
+        backgroundColor: areaColor.withAlpha(0.44),
+        backgroundPadding: new CesiumLib.Cartesian2(10, 7),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
+    settlementAreaEntities.push(label);
+
+    for (let index = 0; index < settlement.homes; index += 1) {
       const side = index % 2 === 0 ? -1 : 1;
       const row = Math.floor(index / 2);
-      const riverDistance = 0.0038 + row * 0.0015 + (villageIndex % 2) * 0.0008;
-      const along = (index % 4 - 1.5) * 0.0018;
-      const center = {
-        lon: anchor.lon + side * riverDistance + along,
-        lat: anchor.lat + side * 0.0011 + row * 0.0007
+      const riverDistance = 0.0048 + row * 0.0010;
+      const buildingCenter = {
+        lon: center.lon + side * (0.00055 + (index % 3) * 0.00035),
+        lat: center.lat + (row - 1.5) * 0.00072 + (index % 2) * 0.0002
       };
-      const width = 0.00075 + (index % 3) * 0.00022;
-      const depth = 0.00065 + (index % 2) * 0.0002;
+      const width = 0.00042 + (index % 3) * 0.00012;
+      const depth = 0.00034 + (index % 2) * 0.00010;
       const floors = 1 + ((index + villageIndex) % 5);
       const height = floors * 4.2;
       const entity = viewer.entities.add({
-        name: `荖濃溪沿岸聚落 ${villageIndex + 1}-${index + 1}`,
+        name: `${settlement.name} 建物 ${index + 1}`,
         polygon: {
           hierarchy: CesiumLib.Cartesian3.fromDegreesArray([
-            center.lon - width, center.lat - depth,
-            center.lon + width, center.lat - depth,
-            center.lon + width, center.lat + depth,
-            center.lon - width, center.lat + depth
+            buildingCenter.lon - width, buildingCenter.lat - depth,
+            buildingCenter.lon + width, buildingCenter.lat - depth,
+            buildingCenter.lon + width, buildingCenter.lat + depth,
+            buildingCenter.lon - width, buildingCenter.lat + depth
           ]),
           height: 0,
           extrudedHeight: height,
@@ -232,18 +273,19 @@ function addRiverbankBuildings() {
           outline: true,
           outlineColor: CesiumLib.Color.WHITE.withAlpha(0.36)
         },
-        position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, height + 4)
+        position: CesiumLib.Cartesian3.fromDegrees(buildingCenter.lon, buildingCenter.lat, height + 4)
       });
       entity.riverbankMeta = {
-        center,
+        center: buildingCenter,
         floors,
         riverDistance,
+        settlement: settlement.name,
         baseOutline: CesiumLib.Color.WHITE.withAlpha(0.36)
       };
       buildingEntities.push(entity);
     }
   });
-  setBuildingStatus(`${buildingEntities.length} 棟聚落`);
+  setBuildingStatus(`${settlements.length} 聚落 / ${buildingEntities.length} 棟`);
 }
 
 function addStormBands() {
@@ -463,6 +505,13 @@ function updateRiverFlood(activeBands) {
       entity.polyline.width = 3 + waterLevel * 4;
     }
   });
+  settlementAreaEntities.forEach((entity) => {
+    if (entity.ellipse) {
+      const riskColor = entity.settlementRiskColor || CesiumLib.Color.fromCssColorString("#38bdf8");
+      entity.ellipse.material = riskColor.withAlpha(0.12 + waterLevel * 0.16);
+      entity.ellipse.outlineColor = riskColor.withAlpha(0.48 + waterLevel * 0.34);
+    }
+  });
 }
 
 function updateParticles(activeBands) {
@@ -510,6 +559,9 @@ function updateLayerVisibility() {
     entity.show = stormToggle.checked;
   });
   buildingEntities.forEach((entity) => {
+    entity.show = buildingToggle.checked;
+  });
+  settlementAreaEntities.forEach((entity) => {
     entity.show = buildingToggle.checked;
   });
   markerEntities.forEach((entity) => {
@@ -605,6 +657,20 @@ function markerColor(type) {
   if (type === "watch") return CesiumLib.Color.fromCssColorString("#facc15");
   if (type === "station") return CesiumLib.Color.fromCssColorString("#38bdf8");
   return CesiumLib.Color.fromCssColorString("#22c55e");
+}
+
+function settlementCenter(anchor, side, distance) {
+  return {
+    lon: anchor.lon + side * distance,
+    lat: anchor.lat + side * 0.0012
+  };
+}
+
+function settlementRiskLabel(type) {
+  if (type === "danger") return "高風險聚落";
+  if (type === "warning") return "中風險聚落";
+  if (type === "watch") return "水位觀察";
+  return "監測聚落";
 }
 
 function markerPinSvg(type) {

@@ -174,29 +174,10 @@ async function setupTerrain() {
 }
 
 function addRiver() {
-  const positions = CesiumLib.Cartesian3.fromDegreesArray(riverPath.flat());
-  riverMainEntity = viewer.entities.add({
-    name: "荖濃溪主河道",
-    polyline: {
-      positions,
-      width: 11,
-      material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.8),
-      clampToGround: false
-    }
-  });
-  riverEntities.push(riverMainEntity);
-  riverRiskEntity = viewer.entities.add({
-    name: "荖濃溪風險帶",
-    corridor: {
-      positions,
-      width: 1250,
-      height: 18,
-      material: CesiumLib.Color.fromCssColorString("#0ea5e9").withAlpha(0.16),
-      outline: true,
-      outlineColor: CesiumLib.Color.WHITE.withAlpha(0.18)
-    }
-  });
-  riverEntities.push(riverRiskEntity);
+  // The visible river is loaded from real GeoJSON. This keeps simulated
+  // water effects from drawing a separate centerline that can drift off-river.
+  riverMainEntity = null;
+  riverRiskEntity = null;
 }
 
 function addRiverbankBuildings() {
@@ -392,6 +373,7 @@ async function loadRealRiverLayer() {
         entity.polygon.material = CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.24);
         entity.polygon.outline = true;
         entity.polygon.outlineColor = CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.94);
+        entity.realRiverStyle = "polygon";
       }
       if (entity.polyline) {
         entity.polyline.width = 4;
@@ -400,6 +382,7 @@ async function loadRealRiverLayer() {
           taperPower: 0.8,
           color: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.92)
         });
+        entity.realRiverStyle = "polyline";
       }
       realRiverEntities.push(entity);
     });
@@ -441,19 +424,21 @@ function updateRiverFlood(activeBands) {
   const peakDbz = activeBands.reduce((max, band) => Math.max(max, band.dbz), 0);
   const targetLevel = peakDbz >= 55 ? 1 : peakDbz >= 45 ? 0.78 : peakDbz >= 35 ? 0.54 : 0.28;
   waterLevel += (targetLevel - waterLevel) * 0.08;
-  if (riverMainEntity) {
-    riverMainEntity.polyline.width = 9 + waterLevel * 16;
-    riverMainEntity.polyline.material = CesiumLib.Color
-      .fromCssColorString(waterLevel > 0.75 ? "#7dd3fc" : "#38bdf8")
-      .withAlpha(0.78 + waterLevel * 0.16);
-  }
-  if (riverRiskEntity) {
-    riverRiskEntity.corridor.width = 820 + waterLevel * 2800;
-    riverRiskEntity.corridor.material = CesiumLib.Color
-      .fromCssColorString(waterLevel > 0.75 ? "#60a5fa" : "#0ea5e9")
-      .withAlpha(0.10 + waterLevel * 0.22);
-    riverRiskEntity.corridor.outlineColor = CesiumLib.Color.WHITE.withAlpha(0.16 + waterLevel * 0.30);
-  }
+  const fillAlpha = 0.16 + waterLevel * 0.30;
+  const outlineAlpha = 0.54 + waterLevel * 0.42;
+  realRiverEntities.forEach((entity) => {
+    if (entity.polygon) {
+      entity.polygon.material = CesiumLib.Color
+        .fromCssColorString(waterLevel > 0.75 ? "#60a5fa" : "#38bdf8")
+        .withAlpha(fillAlpha);
+      entity.polygon.outlineColor = CesiumLib.Color
+        .fromCssColorString(waterLevel > 0.75 ? "#e0f2fe" : "#bae6fd")
+        .withAlpha(outlineAlpha);
+    }
+    if (entity.polyline) {
+      entity.polyline.width = 3 + waterLevel * 4;
+    }
+  });
 }
 
 function updateParticles(activeBands) {

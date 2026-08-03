@@ -99,6 +99,8 @@ let radarFrameIndex = 0;
 let radarLayer = null;
 let radarTimer = null;
 let simulatedRadarEntities = [];
+let radarCloudEntities = [];
+let floodOverlayEntities = [];
 let simulatedRadarTimer = null;
 let simulatedRadarFrame = 0;
 let windEntities = [];
@@ -153,6 +155,12 @@ radarPlay.addEventListener("click", async () => {
 simulatedRadarToggle.addEventListener("change", () => {
   if (!simulatedRadarEntities.length) addSimulatedRadar();
   simulatedRadarEntities.forEach((entity) => {
+    entity.show = simulatedRadarToggle.checked;
+  });
+  radarCloudEntities.forEach((entity) => {
+    entity.show = simulatedRadarToggle.checked;
+  });
+  floodOverlayEntities.forEach((entity) => {
     entity.show = simulatedRadarToggle.checked;
   });
   if (simulatedRadarToggle.checked) {
@@ -471,9 +479,10 @@ function addSimulatedRadar() {
       { lonOffset: 0.007, latOffset: -0.002, scale: 0.64 }
     ];
     return blobs.map((blob, blobIndex) => {
+      const radarMeta = { ...cell, index, blob, blobIndex };
       const entity = viewer.entities.add({
       name: `假雷達強回波 ${cell.level}`,
-      position: simulatedRadarPosition(cell, blob, 0),
+      position: simulatedRadarPosition(radarMeta, blob, 0),
       ellipse: {
         semiMajorAxis: degreesToMeters(cell.width * blob.scale) / 2,
         semiMinorAxis: degreesToMeters(cell.depth * blob.scale) / 2,
@@ -485,7 +494,39 @@ function addSimulatedRadar() {
       },
       show: simulatedRadarToggle.checked
     });
-      entity.simulatedRadarCell = { ...cell, index, blob, blobIndex };
+      entity.simulatedRadarCell = radarMeta;
+      const cloud = viewer.entities.add({
+        name: `假回波雲霧 ${cell.level}`,
+        position: simulatedRadarCloudPosition(radarMeta, blob, 0),
+        billboard: {
+          image: radarCloudSvg(cell.dbz),
+          width: cloudPixelSize(cell, blob) * 1.22,
+          height: cloudPixelSize(cell, blob) * 0.70,
+          color: CesiumLib.Color.WHITE.withAlpha(cloudAlpha(cell.dbz, cell.alpha)),
+          horizontalOrigin: CesiumLib.HorizontalOrigin.CENTER,
+          verticalOrigin: CesiumLib.VerticalOrigin.CENTER,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        show: simulatedRadarToggle.checked
+      });
+      cloud.simulatedRadarCell = entity.simulatedRadarCell;
+      radarCloudEntities.push(cloud);
+
+      const flood = viewer.entities.add({
+        name: `地面淹水藍色疊圖 ${cell.level}`,
+        position: simulatedRadarFloodPosition(radarMeta, blob, 0),
+        ellipse: {
+          semiMajorAxis: degreesToMeters(cell.width * blob.scale) * 0.40,
+          semiMinorAxis: degreesToMeters(cell.depth * blob.scale) * 0.34,
+          height: 3,
+          material: floodOverlayColor(cell.dbz, cell.alpha),
+          outline: true,
+          outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.24)
+        },
+        show: simulatedRadarToggle.checked
+      });
+      flood.simulatedRadarCell = entity.simulatedRadarCell;
+      floodOverlayEntities.push(flood);
       return entity;
     });
   });
@@ -526,6 +567,33 @@ function updateSimulatedRadarFrame() {
       .fromCssColorString(cell.color)
       .withAlpha(Math.min(alphaPulse * (cell.blobIndex ? 0.78 : 1), 0.48));
   });
+  radarCloudEntities.forEach((entity) => {
+    const cell = entity.simulatedRadarCell;
+    const phase = simulatedRadarFrame + cell.index * 2;
+    const alphaPulse = Math.sin((phase + cell.blobIndex * 4) * 0.25) * 0.05;
+    entity.position = simulatedRadarCloudPosition(cell, cell.blob, phase);
+    entity.billboard.image = radarCloudSvg(cell.dbz);
+    entity.billboard.width = cloudPixelSize(cell, cell.blob) * (1.10 + cell.dbz / 180);
+    entity.billboard.height = cloudPixelSize(cell, cell.blob) * (0.62 + cell.dbz / 260);
+    entity.billboard.color = CesiumLib.Color.WHITE.withAlpha(
+      Math.min(0.68, cloudAlpha(cell.dbz, cell.alpha) + alphaPulse)
+    );
+    entity.show = simulatedRadarToggle.checked;
+  });
+  floodOverlayEntities.forEach((entity) => {
+    const cell = entity.simulatedRadarCell;
+    const phase = simulatedRadarFrame + cell.index * 2;
+    const floodPulse = Math.sin((phase + cell.blobIndex * 5) * 0.18) * 0.04;
+    const intensity = Math.max(0.35, Math.min(1, cell.dbz / 58));
+    entity.position = simulatedRadarFloodPosition(cell, cell.blob, phase);
+    entity.ellipse.semiMajorAxis = degreesToMeters(cell.width * cell.blob.scale) * (0.34 + intensity * 0.16);
+    entity.ellipse.semiMinorAxis = degreesToMeters(cell.depth * cell.blob.scale) * (0.30 + intensity * 0.12);
+    entity.ellipse.material = floodOverlayColor(cell.dbz, Math.max(0.10, cell.alpha + floodPulse));
+    entity.ellipse.outlineColor = CesiumLib.Color
+      .fromCssColorString(cell.dbz >= 45 ? "#e0f2fe" : "#bae6fd")
+      .withAlpha(0.16 + intensity * 0.20);
+    entity.show = simulatedRadarToggle.checked;
+  });
   updateBuildingRadarGlow(activeCells);
   viewer.scene.requestRender();
 }
@@ -565,8 +633,75 @@ function simulatedRadarPosition(cell, blob, phase) {
   );
 }
 
+function simulatedRadarCloudPosition(cell, blob, phase) {
+  const center = simulatedRadarCenter(cell, phase);
+  const blobIndex = Number.isFinite(cell.blobIndex) ? cell.blobIndex : 0;
+  return CesiumLib.Cartesian3.fromDegrees(
+    center.lon + blob.lonOffset,
+    center.lat + blob.latOffset,
+    SIMULATED_CLOUD_TOP + 170 + blobIndex * 12
+  );
+}
+
+function simulatedRadarFloodPosition(cell, blob, phase) {
+  const center = simulatedRadarCenter(cell, phase);
+  return CesiumLib.Cartesian3.fromDegrees(
+    center.lon + blob.lonOffset * 0.92,
+    center.lat + blob.latOffset * 0.92,
+    3
+  );
+}
+
 function degreesToMeters(degrees) {
   return degrees * 111000;
+}
+
+function cloudPixelSize(cell, blob) {
+  return Math.max(74, Math.min(210, degreesToMeters(Math.max(cell.width, cell.depth) * blob.scale) * 0.072));
+}
+
+function cloudAlpha(dbz, baseAlpha) {
+  const intensity = Math.max(0, Math.min(1, (dbz - 24) / 34));
+  return baseAlpha + 0.12 + intensity * 0.24;
+}
+
+function floodOverlayColor(dbz, alpha) {
+  const intensity = Math.max(0, Math.min(1, (dbz - 24) / 34));
+  const color = dbz >= 45 ? "#60a5fa" : "#38bdf8";
+  return CesiumLib.Color.fromCssColorString(color).withAlpha(0.10 + intensity * 0.16 + alpha * 0.18);
+}
+
+function radarCloudSvg(dbz) {
+  const tint = radarGlowCssColor(dbz);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="150" viewBox="0 0 260 150">
+    <defs>
+      <filter id="soft"><feGaussianBlur stdDeviation="7"/></filter>
+      <radialGradient id="cloud" cx="48%" cy="46%" r="66%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+        <stop offset="54%" stop-color="#dbeafe" stop-opacity="0.60"/>
+        <stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="rain" cx="52%" cy="58%" r="52%">
+        <stop offset="0%" stop-color="${tint}" stop-opacity="0.76"/>
+        <stop offset="100%" stop-color="${tint}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g filter="url(#soft)">
+      <ellipse cx="78" cy="84" rx="58" ry="28" fill="url(#cloud)"/>
+      <ellipse cx="126" cy="68" rx="73" ry="39" fill="url(#cloud)"/>
+      <ellipse cx="178" cy="84" rx="62" ry="30" fill="url(#cloud)"/>
+      <ellipse cx="138" cy="94" rx="96" ry="35" fill="url(#rain)"/>
+      <ellipse cx="138" cy="104" rx="112" ry="20" fill="#bae6fd" fill-opacity="0.12"/>
+    </g>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function radarGlowCssColor(dbz) {
+  if (dbz >= 55) return "#c084fc";
+  if (dbz >= 45) return "#fb7185";
+  if (dbz >= 35) return "#fde047";
+  return "#4ade80";
 }
 
 function addWindIndicators() {

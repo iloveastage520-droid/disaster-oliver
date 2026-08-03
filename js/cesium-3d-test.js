@@ -512,8 +512,8 @@ function addSimulatedRadar() {
 
       const flood = viewer.entities.add({
         name: `地面淹水藍色疊圖 ${cell.level}`,
-        rectangle: {
-          coordinates: simulatedRadarFloodRectangle(radarMeta, blob, 0),
+        polygon: {
+          hierarchy: simulatedRadarFloodPolygon(radarMeta, blob, 0),
           height: 3,
           material: floodOverlayColor(cell.dbz, cell.alpha),
           outline: true,
@@ -581,9 +581,9 @@ function updateSimulatedRadarFrame() {
     const phase = simulatedRadarFrame + cell.index * 2;
     const floodPulse = Math.sin((phase + cell.blobIndex * 5) * 0.18) * 0.04;
     const intensity = Math.max(0.35, Math.min(1, cell.dbz / 58));
-    entity.rectangle.coordinates = simulatedRadarFloodRectangle(cell, cell.blob, phase, intensity);
-    entity.rectangle.material = floodOverlayColor(cell.dbz, Math.max(0.10, cell.alpha + floodPulse));
-    entity.rectangle.outlineColor = CesiumLib.Color
+    entity.polygon.hierarchy = simulatedRadarFloodPolygon(cell, cell.blob, phase, intensity);
+    entity.polygon.material = floodOverlayColor(cell.dbz, Math.max(0.10, cell.alpha + floodPulse));
+    entity.polygon.outlineColor = CesiumLib.Color
       .fromCssColorString(cell.dbz >= 45 ? "#e0f2fe" : "#bae6fd")
       .withAlpha(0.16 + intensity * 0.20);
     entity.show = simulatedRadarToggle.checked;
@@ -647,15 +647,23 @@ function simulatedRadarCloudPosition(cell, blob, phase) {
   );
 }
 
-function simulatedRadarFloodRectangle(cell, blob, phase, intensity = 0.7) {
+function simulatedRadarFloodPolygon(cell, blob, phase, intensity = 0.7) {
   const center = simulatedRadarCellCenter(cell, blob, phase);
-  const halfSize = Math.max(cell.width, cell.depth) * blob.scale * (0.34 + intensity * 0.12);
-  return CesiumLib.Rectangle.fromDegrees(
-    center.lon - halfSize,
-    center.lat - halfSize,
-    center.lon + halfSize,
-    center.lat + halfSize
-  );
+  const baseRadius = Math.max(cell.width, cell.depth) * blob.scale * (0.34 + intensity * 0.12);
+  const points = [];
+  for (let index = 0; index < 14; index += 1) {
+    const angle = (Math.PI * 2 * index) / 14;
+    const noise = irregularFloodNoise(cell.index, cell.blobIndex, index);
+    const pulse = Math.sin((phase + index * 2 + cell.index * 3) * 0.13) * 0.018;
+    const radius = baseRadius * (0.78 + noise * 0.30 + pulse);
+    const stretchX = 1.12 + intensity * 0.18;
+    const stretchY = 0.70 + intensity * 0.12;
+    points.push(
+      center.lon + Math.cos(angle) * radius * stretchX,
+      center.lat + Math.sin(angle) * radius * stretchY
+    );
+  }
+  return CesiumLib.Cartesian3.fromDegreesArray(points);
 }
 
 function degreesToMeters(degrees) {
@@ -673,8 +681,13 @@ function cloudAlpha(dbz, baseAlpha) {
 
 function floodOverlayColor(dbz, alpha) {
   const intensity = Math.max(0, Math.min(1, (dbz - 24) / 34));
-  const color = dbz >= 45 ? "#60a5fa" : "#38bdf8";
-  return CesiumLib.Color.fromCssColorString(color).withAlpha(0.10 + intensity * 0.16 + alpha * 0.18);
+  const color = dbz >= 55 ? "#1d4ed8" : dbz >= 45 ? "#2563eb" : dbz >= 35 ? "#38bdf8" : "#7dd3fc";
+  return CesiumLib.Color.fromCssColorString(color).withAlpha(0.09 + intensity * 0.15 + alpha * 0.15);
+}
+
+function irregularFloodNoise(cellIndex, blobIndex, pointIndex) {
+  const seed = Math.sin((cellIndex + 1) * 19.13 + (blobIndex + 1) * 37.79 + (pointIndex + 1) * 11.47) * 43758.5453;
+  return seed - Math.floor(seed);
 }
 
 function radarCloudSvg(dbz) {

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver Wulai building extrusion Cesium test.">
+  <title>烏來建物測試 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-laonong-livecams">
+</head>
+<body class="laonong-command-page" data-page="wulai-building-test">
+  <main class="cesium-page">
+    <section class="cesium-stage laonong-command-stage" aria-label="烏來建物 3D 測試場景">
+      <div id="cesium-container" class="cesium-container"></div>
+
+      <section class="laonong-title-panel" aria-label="系統標題">
+        <div class="laonong-logo-mark"></div>
+        <div>
+          <p>F_BUILD 新北市建物資料</p>
+          <h1>烏來老街建物 3D 測試</h1>
+        </div>
+      </section>
+
+      <aside class="cesium-control-panel" aria-label="烏來建物測試控制">
+        <div class="cesium-panel-content">
+          <p class="eyebrow">CesiumJS</p>
+          <h1>建物擠出測試</h1>
+          <div class="cesium-status-grid">
+            <div>
+              <span>區域</span>
+              <strong>烏來老街/瀑布</strong>
+            </div>
+            <div>
+              <span>資料</span>
+              <strong>F_BUILD</strong>
+            </div>
+            <div>
+              <span>建物</span>
+              <strong id="building-status">載入中</strong>
+            </div>
+            <div>
+              <span>底圖</span>
+              <strong>Google 混合衛星</strong>
+            </div>
+          </div>
+          <div class="cesium-actions" role="group" aria-label="鏡頭控制">
+            <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+            <button class="button button-secondary" type="button" data-camera="street">近看</button>
+            <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+          </div>
+          <label class="check-field cesium-toggle">
+            <input id="building-toggle" type="checkbox" checked>
+            <span>顯示 3D 建物</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="river-toggle" type="checkbox" checked>
+            <span>淹水河道示意</span>
+          </label>
+        </div>
+      </aside>
+
+      <div class="cesium-legend" aria-label="烏來建物圖例">
+        <strong>圖層</strong>
+        <span><i class="cesium-real-building"></i>F_BUILD 建物</span>
+        <span><i class="cesium-radar"></i>南勢溪淹水示意</span>
+        <span><i class="cesium-real-river"></i>Google 混合衛星</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../../js/wulai-building-test.js?v=20260803-wulai-f-build"></script>
+</body>
+</html>

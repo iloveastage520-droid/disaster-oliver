@@ -9,7 +9,9 @@ CesiumLib.Ion.defaultAccessToken = "";
 
 const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
 const MODEL_URL = "https://raw.githubusercontent.com/iloveastage520-droid/disaster-oliver/274b822531a7bf01097e8783d159fc92340a00a2/assets/models/laonong-fuxing/fuxing-tribe-laonong.glb";
-const MODEL_POSITION = { lon: 120.80255, lat: 23.21625, height: 760 };
+const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
+const MODEL_HEIGHT_OFFSET = 0;
+const LABEL_HEIGHT_OFFSET = 520;
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -95,7 +97,6 @@ terrainToggle.addEventListener("change", () => {
 
 viewer.camera.setView(cameraViews.overview);
 setupTerrain();
-addModel();
 setTimeout(checkCanvas, 2200);
 
 async function setupTerrain() {
@@ -107,19 +108,36 @@ async function setupTerrain() {
   try {
     viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
     setTerrainStatus("ArcGIS DEM");
+    await addModelAtGround();
     window.setTimeout(() => viewer.camera.setView(cameraViews.overview), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
+    addModel(760);
   }
 }
 
-function addModel() {
+async function addModelAtGround() {
+  setModelStatus("計算地面高度");
+  try {
+    const cartographic = CesiumLib.Cartographic.fromDegrees(MODEL_POSITION.lon, MODEL_POSITION.lat);
+    const [sample] = await CesiumLib.sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic]);
+    const groundHeight = Number.isFinite(sample.height) ? sample.height : 760;
+    addModel(groundHeight + MODEL_HEIGHT_OFFSET);
+    setModelStatus(`貼地 / ${Math.round(groundHeight)}m`);
+  } catch (error) {
+    console.warn("Terrain sample failed", error);
+    addModel(760);
+    setModelStatus("貼地備援 / 760m");
+  }
+}
+
+function addModel(height) {
   setModelStatus("載入中");
   const position = CesiumLib.Cartesian3.fromDegrees(
     MODEL_POSITION.lon,
     MODEL_POSITION.lat,
-    MODEL_POSITION.height
+    height
   );
   const orientation = CesiumLib.Transforms.headingPitchRollQuaternion(
     position,
@@ -142,7 +160,7 @@ function addModel() {
     position: CesiumLib.Cartesian3.fromDegrees(
       MODEL_POSITION.lon,
       MODEL_POSITION.lat,
-      MODEL_POSITION.height + 520
+      height + LABEL_HEIGHT_OFFSET
     ),
     label: {
       text: "復興部落薄型 GLB",

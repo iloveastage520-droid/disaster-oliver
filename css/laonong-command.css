@@ -147,6 +147,10 @@ body.laonong-command-page .cesium-page {
 }
 
 .cesium-station { background: #0ea5e9; }
+.cesium-real-river {
+  background: linear-gradient(90deg, #bae6fd, #38bdf8);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.62);
+}
 
 .laonong-lifecycle {
   left: clamp(18px, 3vw, 42px);

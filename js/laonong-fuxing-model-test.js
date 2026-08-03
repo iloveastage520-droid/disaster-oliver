@@ -17,6 +17,40 @@ const DEFAULT_HEADING_DEGREES = 0;
 const SKY_ISLAND_HEIGHT_OFFSET = 1250;
 const DEFAULT_MODEL_SCALE = 2;
 const SHOWCASE_SCAN_HEIGHT_OFFSET = 24;
+const FUXING_OSM_BUILDINGS = [
+  [[120.8037255, 23.2230097], [120.8037814, 23.2230081], [120.8037792, 23.2229453], [120.8037233, 23.2229469]],
+  [[120.8030676, 23.2228621], [120.8030975, 23.2228512], [120.8031079, 23.2228752], [120.8031473, 23.2228609], [120.8031327, 23.2228270], [120.8031770, 23.2228109], [120.8031382, 23.2227212], [120.8030246, 23.2227626]],
+  [[120.8054999, 23.2239633], [120.8056092, 23.2239823], [120.8056286, 23.2238885], [120.8055192, 23.2238695]],
+  [[120.8058342, 23.2241038], [120.8058914, 23.2241038], [120.8058914, 23.2239821], [120.8058342, 23.2239821]],
+  [[120.8039915, 23.2182013], [120.8039711, 23.2180923], [120.8040935, 23.2180729], [120.8041139, 23.2181820]],
+  [[120.8041695, 23.2181411], [120.8041485, 23.2180392], [120.8044817, 23.2179811], [120.8045031, 23.2180848], [120.8041670, 23.2181435]]
+];
+const FUXING_COMMUNITY_BUILDINGS = [
+  { lon: 120.80355, lat: 23.21845, angle: 14, width: 34, depth: 22, height: 18 },
+  { lon: 120.80385, lat: 23.21838, angle: -8, width: 28, depth: 20, height: 14 },
+  { lon: 120.80418, lat: 23.21834, angle: -12, width: 42, depth: 18, height: 20 },
+  { lon: 120.80452, lat: 23.21826, angle: -18, width: 36, depth: 22, height: 16 },
+  { lon: 120.80482, lat: 23.21816, angle: 10, width: 30, depth: 20, height: 13 },
+  { lon: 120.80508, lat: 23.21798, angle: 20, width: 38, depth: 24, height: 21 },
+  { lon: 120.80332, lat: 23.21798, angle: 4, width: 32, depth: 18, height: 12 },
+  { lon: 120.80368, lat: 23.21785, angle: -10, width: 40, depth: 22, height: 18 },
+  { lon: 120.80402, lat: 23.21778, angle: -18, width: 34, depth: 20, height: 15 },
+  { lon: 120.80442, lat: 23.21765, angle: 12, width: 44, depth: 24, height: 23 },
+  { lon: 120.80482, lat: 23.21754, angle: 18, width: 34, depth: 20, height: 17 },
+  { lon: 120.80518, lat: 23.21742, angle: 24, width: 30, depth: 18, height: 15 },
+  { lon: 120.80292, lat: 23.21755, angle: -14, width: 36, depth: 22, height: 18 },
+  { lon: 120.80328, lat: 23.21735, angle: 8, width: 42, depth: 24, height: 20 },
+  { lon: 120.80368, lat: 23.21720, angle: 16, width: 30, depth: 18, height: 14 },
+  { lon: 120.80412, lat: 23.21712, angle: -20, width: 38, depth: 22, height: 16 },
+  { lon: 120.80454, lat: 23.21696, angle: 12, width: 34, depth: 18, height: 13 },
+  { lon: 120.80492, lat: 23.21678, angle: 4, width: 42, depth: 24, height: 22 },
+  { lon: 120.80535, lat: 23.21658, angle: 22, width: 32, depth: 20, height: 15 },
+  { lon: 120.80275, lat: 23.21688, angle: 10, width: 30, depth: 18, height: 14 },
+  { lon: 120.80310, lat: 23.21672, angle: -6, width: 36, depth: 20, height: 16 },
+  { lon: 120.80350, lat: 23.21655, angle: 18, width: 42, depth: 24, height: 21 },
+  { lon: 120.80388, lat: 23.21638, angle: 26, width: 32, depth: 18, height: 15 },
+  { lon: 120.80425, lat: 23.21620, angle: -16, width: 38, depth: 22, height: 17 }
+];
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
   animation: false,
@@ -89,6 +123,7 @@ let modelEntity = null;
 let labelEntity = null;
 const skyIslandEntities = [];
 const showcaseEntities = [];
+const buildingEntities = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -104,6 +139,7 @@ let placementUpdateTimer = null;
 const modelToggle = document.querySelector("#model-toggle");
 const terrainToggle = document.querySelector("#terrain-toggle");
 const skyIslandToggle = document.querySelector("#sky-island-toggle");
+const communityToggle = document.querySelector("#community-toggle");
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -161,6 +197,12 @@ skyIslandToggle.addEventListener("change", async () => {
   });
 });
 
+communityToggle.addEventListener("change", () => {
+  buildingEntities.forEach((entity) => {
+    entity.show = communityToggle.checked;
+  });
+});
+
 viewer.camera.setView(cameraViews.island);
 setupTerrain();
 setTimeout(checkCanvas, 2200);
@@ -175,11 +217,13 @@ async function setupTerrain() {
     viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
     setTerrainStatus("ArcGIS DEM");
     await placeModelAtCurrentPosition();
+    await addCommunityBuildings();
     window.setTimeout(() => viewer.camera.setView(cameraViews.island), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
     addModel(placementHeight(760));
+    addCommunityBuildings();
   }
 }
 
@@ -453,6 +497,102 @@ function createShowcaseEffects(modelHeight) {
       })
     }
   }));
+}
+
+async function addCommunityBuildings() {
+  if (buildingEntities.length) {
+    buildingEntities.forEach((entity) => {
+      entity.show = communityToggle.checked;
+    });
+    return;
+  }
+
+  const osmBuildings = FUXING_OSM_BUILDINGS.map((footprint, index) => ({
+    footprint,
+    height: 18 + (index % 3) * 7,
+    source: "osm"
+  }));
+  const demoBuildings = FUXING_COMMUNITY_BUILDINGS.map((building) => ({
+    footprint: rectangleFootprint(building),
+    height: building.height,
+    source: "demo"
+  }));
+  const buildings = [...osmBuildings, ...demoBuildings];
+  const samples = buildings.map((building) => CesiumLib.Cartographic.fromDegrees(...centroidOf(building.footprint)));
+  let groundSamples = [];
+  try {
+    groundSamples = await CesiumLib.sampleTerrainMostDetailed(viewer.terrainProvider, samples);
+  } catch (error) {
+    console.warn("Building terrain sample failed", error);
+  }
+
+  buildings.forEach((building, index) => {
+    const [lon, lat] = centroidOf(building.footprint);
+    const sampledHeight = groundSamples[index]?.height;
+    const baseHeight = Number.isFinite(sampledHeight) ? sampledHeight + 2 : currentPlacement.groundHeight + 2;
+    const isOsm = building.source === "osm";
+    const color = isOsm
+      ? CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.62)
+      : CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.34);
+    const outlineColor = isOsm
+      ? CesiumLib.Color.fromCssColorString("#ffffff").withAlpha(0.9)
+      : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
+    const hierarchyPositions = building.footprint.flatMap(([pointLon, pointLat]) => [pointLon, pointLat]);
+
+    buildingEntities.push(viewer.entities.add({
+      name: isOsm ? "復興部落 OSM 建物" : "復興部落聚落示意建物",
+      position: CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + building.height + 18),
+      polygon: {
+        hierarchy: CesiumLib.Cartesian3.fromDegreesArray(hierarchyPositions),
+        height: baseHeight,
+        extrudedHeight: baseHeight + building.height,
+        material: color,
+        outline: true,
+        outlineColor
+      },
+      label: isOsm && index < 2 ? {
+        text: "OSM 建物",
+        font: "700 12px 'Noto Sans TC', sans-serif",
+        fillColor: CesiumLib.Color.WHITE,
+        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.72),
+        outlineWidth: 3,
+        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new CesiumLib.Cartesian2(0, -12),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        show: false
+      } : undefined,
+      show: communityToggle.checked
+    }));
+  });
+}
+
+function rectangleFootprint({ lon, lat, angle, width, depth }) {
+  const radians = CesiumLib.Math.toRadians(angle);
+  const metersPerLat = 111320;
+  const metersPerLon = 111320 * Math.cos(CesiumLib.Math.toRadians(lat));
+  const corners = [
+    [-width / 2, -depth / 2],
+    [width / 2, -depth / 2],
+    [width / 2, depth / 2],
+    [-width / 2, depth / 2]
+  ];
+  return corners.map(([x, y]) => {
+    const rotatedX = x * Math.cos(radians) - y * Math.sin(radians);
+    const rotatedY = x * Math.sin(radians) + y * Math.cos(radians);
+    return [
+      lon + rotatedX / metersPerLon,
+      lat + rotatedY / metersPerLat
+    ];
+  });
+}
+
+function centroidOf(footprint) {
+  const total = footprint.reduce((sum, [lon, lat]) => {
+    sum.lon += lon;
+    sum.lat += lat;
+    return sum;
+  }, { lon: 0, lat: 0 });
+  return [total.lon / footprint.length, total.lat / footprint.length];
 }
 
 function setTerrainStatus(text) {

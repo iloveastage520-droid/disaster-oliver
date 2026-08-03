@@ -151,12 +151,17 @@
             <input id="sky-island-toggle" type="checkbox" checked>
             <span>天空島展示</span>
           </label>
+          <label class="check-field cesium-toggle">
+            <input id="community-toggle" type="checkbox" checked>
+            <span>周邊聚落建物</span>
+          </label>
         </div>
       </aside>
 
       <div class="cesium-legend" aria-label="復興模型圖例">
         <strong>圖層</strong>
         <span><i class="cesium-real-building"></i>真實 UAV 模型</span>
+        <span><i class="cesium-real-river"></i>OSM / 示意建物</span>
         <span><i class="cesium-radar"></i>天空島底座</span>
         <span><i class="cesium-real-river"></i>Google 混合衛星</span>
       </div>
@@ -178,6 +183,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-uav-platform-fit"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-community-buildings"></script>
 </body>
 </html>

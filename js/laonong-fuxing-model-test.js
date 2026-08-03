@@ -78,10 +78,13 @@ let labelEntity = null;
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
+  lonOffset: 0,
+  latOffset: 0,
   heightOffset: MODEL_HEIGHT_OFFSET,
   heading: DEFAULT_HEADING_DEGREES,
   groundHeight: 760
 };
+let placementUpdateTimer = null;
 const modelToggle = document.querySelector("#model-toggle");
 const terrainToggle = document.querySelector("#terrain-toggle");
 
@@ -96,15 +99,27 @@ document.querySelectorAll("[data-camera]").forEach((button) => {
 
 document.querySelectorAll("[data-nudge-lon], [data-nudge-lat], [data-nudge-height], [data-nudge-heading]").forEach((button) => {
   button.addEventListener("click", async () => {
-    currentPlacement.lon += Number(button.dataset.nudgeLon || 0);
-    currentPlacement.lat += Number(button.dataset.nudgeLat || 0);
+    currentPlacement.lonOffset += Number(button.dataset.nudgeLon || 0);
+    currentPlacement.latOffset += Number(button.dataset.nudgeLat || 0);
     currentPlacement.heightOffset += Number(button.dataset.nudgeHeight || 0);
     currentPlacement.heading += Number(button.dataset.nudgeHeading || 0);
+    syncPlacementFromOffsets();
+    syncSliderControls();
     await placeModelAtCurrentPosition();
     viewer.camera.flyTo({
       ...cameraViews.close,
       duration: 0.55
     });
+  });
+});
+
+document.querySelectorAll("[data-placement-control]").forEach((input) => {
+  input.addEventListener("input", () => {
+    const key = input.dataset.placementControl;
+    currentPlacement[key] = Number(input.value);
+    syncPlacementFromOffsets();
+    updatePlacementStatus();
+    queuePlacementUpdate();
   });
 });
 
@@ -155,6 +170,36 @@ async function placeModelAtCurrentPosition() {
     setModelStatus("貼地備援 / 760m");
   }
   updatePlacementStatus();
+}
+
+function queuePlacementUpdate() {
+  if (placementUpdateTimer) window.clearTimeout(placementUpdateTimer);
+  placementUpdateTimer = window.setTimeout(() => {
+    placeModelAtCurrentPosition();
+  }, 180);
+}
+
+function syncPlacementFromOffsets() {
+  currentPlacement.lon = MODEL_POSITION.lon + currentPlacement.lonOffset;
+  currentPlacement.lat = MODEL_POSITION.lat + currentPlacement.latOffset;
+}
+
+function syncSliderControls() {
+  const controlMap = {
+    lonOffset: "#lon-offset-value",
+    latOffset: "#lat-offset-value",
+    heightOffset: "#height-offset-value",
+    heading: "#heading-value"
+  };
+  document.querySelectorAll("[data-placement-control]").forEach((input) => {
+    const key = input.dataset.placementControl;
+    input.value = currentPlacement[key];
+    const valueElement = document.querySelector(controlMap[key]);
+    if (!valueElement) return;
+    if (key === "heightOffset") valueElement.textContent = `${Math.round(currentPlacement[key])}m`;
+    else if (key === "heading") valueElement.textContent = `${Math.round(currentPlacement[key])}deg`;
+    else valueElement.textContent = currentPlacement[key].toFixed(4);
+  });
 }
 
 function addModel(height) {
@@ -228,6 +273,7 @@ function updatePlacementStatus() {
   if (offsetElement) {
     offsetElement.textContent = `${Math.round(currentPlacement.heightOffset)}m / ${Math.round(currentPlacement.heading)}deg`;
   }
+  syncSliderControls();
 }
 
 function showError(message) {

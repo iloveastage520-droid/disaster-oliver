@@ -69,6 +69,28 @@
             <button class="button button-secondary" type="button" data-nudge-heading="-5">左轉</button>
             <button class="button button-secondary" type="button" data-nudge-heading="5">右轉</button>
           </div>
+          <div class="fuxing-slider-controls" aria-label="模型連續微調">
+            <label>
+              <span>東西</span>
+              <input type="range" min="-0.01" max="0.01" step="0.0001" value="0" data-placement-control="lonOffset">
+              <strong id="lon-offset-value">0.0000</strong>
+            </label>
+            <label>
+              <span>南北</span>
+              <input type="range" min="-0.01" max="0.01" step="0.0001" value="0" data-placement-control="latOffset">
+              <strong id="lat-offset-value">0.0000</strong>
+            </label>
+            <label>
+              <span>高度</span>
+              <input type="range" min="-250" max="250" step="5" value="0" data-placement-control="heightOffset">
+              <strong id="height-offset-value">0m</strong>
+            </label>
+            <label>
+              <span>旋轉</span>
+              <input type="range" min="-180" max="180" step="1" value="0" data-placement-control="heading">
+              <strong id="heading-value">0deg</strong>
+            </label>
+          </div>
           <label class="check-field cesium-toggle">
             <input id="model-toggle" type="checkbox" checked>
             <span>顯示薄型模型</span>
@@ -92,6 +114,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-nudge-controls"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260803-fuxing-slider-controls"></script>
 </body>
 </html>

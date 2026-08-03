@@ -404,3 +404,34 @@ body.laonong-command-page .cesium-page {
     display: none;
   }
 }
+
+.fuxing-model-page .cesium-control-panel {
+  max-height: calc(100vh - 132px);
+  overflow-y: auto;
+}
+
+.fuxing-slider-controls {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.fuxing-slider-controls label {
+  display: grid;
+  grid-template-columns: 44px minmax(120px, 1fr) 64px;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.fuxing-slider-controls input[type="range"] {
+  width: 100%;
+  accent-color: #38bdf8;
+}
+
+.fuxing-slider-controls strong {
+  color: #67e8f9;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

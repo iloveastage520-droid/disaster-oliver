@@ -116,6 +116,7 @@ let radarLayer = null;
 let stormFrame = 0;
 let animationTimer = null;
 const stormEntities = [];
+const radarCloudEntities = [];
 const riverEntities = [];
 const particleEntities = [];
 const buildingEntities = [];
@@ -336,6 +337,22 @@ function addStormBands() {
       });
       entity.stormBand = { ...band, dbz: cellDbz, color: radarCssColor(cellDbz), index, cell, cellIndex };
       stormEntities.push(entity);
+
+      const cloud = viewer.entities.add({
+        name: `雷達雲團 ${cellDbz} dBZ`,
+        position: CesiumLib.Cartesian3.fromDegrees(band.lon + cell.lonOffset, band.lat + cell.latOffset, STORM_CLOUD_TOP + 260),
+        billboard: {
+          image: radarCloudSvg(cellDbz),
+          width: cloudPixelSize(band, cell) * 1.35,
+          height: cloudPixelSize(band, cell) * 0.78,
+          color: CesiumLib.Color.WHITE.withAlpha(cloudAlpha(cellDbz, band.alpha)),
+          horizontalOrigin: CesiumLib.HorizontalOrigin.CENTER,
+          verticalOrigin: CesiumLib.VerticalOrigin.CENTER,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      });
+      cloud.stormBand = entity.stormBand;
+      radarCloudEntities.push(cloud);
     });
   });
 }
@@ -514,6 +531,24 @@ function animateScenario() {
       .withAlpha(Math.min((pulse + scenarioStepIndex * 0.018) * (band.cellIndex ? 0.82 : 1), 0.54));
     entity.show = stormToggle.checked;
   });
+  radarCloudEntities.forEach((entity) => {
+    const band = entity.stormBand;
+    const center = stormCellCenter(band, stormFrame + band.index * 8);
+    const scenarioDbz = Math.max(10, Math.min(68, band.dbz + scenario.rainBoost));
+    const alphaPulse = Math.sin((stormFrame + band.cellIndex * 3) * 0.22) * 0.04;
+    entity.position = CesiumLib.Cartesian3.fromDegrees(
+      center.lon,
+      center.lat,
+      STORM_CLOUD_TOP + 210 + scenarioStepIndex * 42 + band.cellIndex * 4
+    );
+    entity.billboard.image = radarCloudSvg(scenarioDbz);
+    entity.billboard.width = cloudPixelSize(band, band.cell) * (1.20 + scenarioStepIndex * 0.035);
+    entity.billboard.height = cloudPixelSize(band, band.cell) * (0.66 + scenarioStepIndex * 0.020);
+    entity.billboard.color = CesiumLib.Color.WHITE.withAlpha(
+      Math.max(0.16, Math.min(0.64, cloudAlpha(scenarioDbz, band.alpha) + alphaPulse))
+    );
+    entity.show = stormToggle.checked;
+  });
   updateScenarioStatus(scenario);
   updateRiverFlood(activeBands, scenario);
   updateParticles(activeBands);
@@ -610,6 +645,9 @@ function updateLayerVisibility() {
   stormEntities.forEach((entity) => {
     entity.show = stormToggle.checked;
   });
+  radarCloudEntities.forEach((entity) => {
+    entity.show = stormToggle.checked;
+  });
   buildingEntities.forEach((entity) => {
     entity.show = buildingToggle.checked;
   });
@@ -655,16 +693,23 @@ function stormCenter(band, phase) {
 }
 
 function stormRectangle(band, cell, phase) {
-  const center = stormCenter(band, phase);
-  const lon = center.lon + cell.lonOffset;
-  const lat = center.lat + cell.latOffset;
+  const center = stormCellCenter({ ...band, cell }, phase);
   const halfSize = Math.max(band.width, band.depth) * cell.scale / 2;
   return CesiumLib.Rectangle.fromDegrees(
-    lon - halfSize,
-    lat - halfSize,
-    lon + halfSize,
-    lat + halfSize
+    center.lon - halfSize,
+    center.lat - halfSize,
+    center.lon + halfSize,
+    center.lat + halfSize
   );
+}
+
+function stormCellCenter(band, phase) {
+  const center = stormCenter(band, phase);
+  const cell = band.cell || { lonOffset: 0, latOffset: 0 };
+  return {
+    lon: center.lon + cell.lonOffset,
+    lat: center.lat + cell.latOffset
+  };
 }
 
 function degreesToMeters(degrees) {
@@ -704,6 +749,42 @@ function radarCssColor(dbz) {
   if (dbz >= 35) return "#fde047";
   if (dbz > 0) return "#4ade80";
   return "#67e8f9";
+}
+
+function cloudPixelSize(band, cell) {
+  return Math.max(64, Math.min(190, 920 * Math.max(band.width, band.depth) * cell.scale));
+}
+
+function cloudAlpha(dbz, baseAlpha) {
+  const intensity = Math.max(0, Math.min(1, (dbz - 18) / 48));
+  return baseAlpha + 0.16 + intensity * 0.20;
+}
+
+function radarCloudSvg(dbz) {
+  const tint = radarCssColor(dbz);
+  const glow = dbz >= 50 ? tint : "#e2e8f0";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="150" viewBox="0 0 260 150">
+    <defs>
+      <filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+      <radialGradient id="cloud" cx="48%" cy="47%" r="64%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+        <stop offset="52%" stop-color="#dbeafe" stop-opacity="0.62"/>
+        <stop offset="100%" stop-color="#94a3b8" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="core" cx="52%" cy="55%" r="48%">
+        <stop offset="0%" stop-color="${tint}" stop-opacity="0.78"/>
+        <stop offset="100%" stop-color="${tint}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g filter="url(#blur)">
+      <ellipse cx="78" cy="84" rx="58" ry="28" fill="url(#cloud)"/>
+      <ellipse cx="125" cy="68" rx="72" ry="38" fill="url(#cloud)"/>
+      <ellipse cx="177" cy="84" rx="62" ry="30" fill="url(#cloud)"/>
+      <ellipse cx="138" cy="92" rx="95" ry="35" fill="url(#core)"/>
+      <ellipse cx="138" cy="99" rx="112" ry="25" fill="${glow}" fill-opacity="0.12"/>
+    </g>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function markerColor(type) {

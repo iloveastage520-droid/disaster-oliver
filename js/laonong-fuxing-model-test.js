@@ -52,12 +52,14 @@ const FUXING_COMMUNITY_BUILDINGS = [
   { lon: 120.80425, lat: 23.21620, angle: -16, width: 38, depth: 22, height: 17 }
 ];
 const FUXING_RIVER_AXIS = [
-  [120.798250, 23.211780],
+  [120.782656, 23.187095],
+  [120.788800, 23.196700],
+  [120.795070, 23.207380],
   [120.800140, 23.214520],
-  [120.802180, 23.217340],
   [120.803373, 23.219192],
-  [120.804670, 23.222780],
-  [120.805720, 23.226340]
+  [120.806434, 23.228510],
+  [120.811851, 23.244394],
+  [120.818430, 23.249572]
 ];
 
 const viewer = new CesiumLib.Viewer("cesium-container", {
@@ -94,7 +96,7 @@ viewer.scene.verticalExaggerationRelativeHeight = 0;
 
 const cameraViews = {
   overview: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.804, 23.215, 4200),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.805, 23.221, 6200),
     orientation: {
       heading: CesiumLib.Math.toRadians(42),
       pitch: CesiumLib.Math.toRadians(-31),
@@ -118,7 +120,7 @@ const cameraViews = {
     }
   },
   island: {
-    destination: CesiumLib.Cartesian3.fromDegrees(120.8052, 23.2144, 3100),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.812, 23.210, 5200),
     orientation: {
       heading: CesiumLib.Math.toRadians(44),
       pitch: CesiumLib.Math.toRadians(-21),
@@ -364,7 +366,7 @@ function updateSkyIsland(modelHeight) {
   setDisplayModeStatus(skyIslandToggle.checked ? "天空島" : "貼地");
   if (!skyIslandEntities.length) createSkyIslandEntities(modelHeight);
   const center = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight);
-  const coneCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 280);
+  const coneCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 380);
   const shadowCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16);
   skyIslandEntities[0].position = center;
   skyIslandEntities[1].position = coneCenter;
@@ -382,8 +384,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島草地平台",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight),
     ellipse: {
-      semiMajorAxis: 1120,
-      semiMinorAxis: 720,
+      semiMajorAxis: 4200,
+      semiMinorAxis: 1450,
       height: modelHeight,
       material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.30),
       outline: true,
@@ -393,11 +395,11 @@ function createSkyIslandEntities(modelHeight) {
   });
   const cone = viewer.entities.add({
     name: "天空島岩層",
-    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 280),
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 380),
     cylinder: {
-      length: 560,
-      topRadius: 620,
-      bottomRadius: 105,
+      length: 760,
+      topRadius: 1650,
+      bottomRadius: 180,
       material: CesiumLib.Color.fromCssColorString("#6b4f35").withAlpha(0.62),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#fde68a").withAlpha(0.42)
@@ -407,8 +409,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島地面投影",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16),
     ellipse: {
-      semiMajorAxis: 820,
-      semiMinorAxis: 520,
+      semiMajorAxis: 2650,
+      semiMinorAxis: 920,
       height: currentPlacement.groundHeight + 16,
       material: CesiumLib.Color.BLACK.withAlpha(0.18),
       outline: false,
@@ -419,8 +421,8 @@ function createSkyIslandEntities(modelHeight) {
     name: "天空島光暈",
     position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18),
     ellipse: {
-      semiMajorAxis: 1380,
-      semiMinorAxis: 850,
+      semiMajorAxis: 4850,
+      semiMinorAxis: 1750,
       height: modelHeight + 18,
       material: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.12),
       outline: true,
@@ -463,13 +465,13 @@ function updateShowcaseEffects(modelHeight) {
 
 function createShowcaseEffects(modelHeight) {
   const scanColor = CesiumLib.Color.fromCssColorString("#38bdf8");
-  [920, 1220, 1540].forEach((radius, index) => {
+  [1900, 2850, 3800].forEach((radius, index) => {
     showcaseEntities.push(viewer.entities.add({
       name: "數位孿生島掃描環",
       position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + SHOWCASE_SCAN_HEIGHT_OFFSET + index * 26),
       ellipse: {
         semiMajorAxis: radius,
-        semiMinorAxis: radius * 0.64,
+        semiMinorAxis: radius * 0.36,
         height: modelHeight + SHOWCASE_SCAN_HEIGHT_OFFSET + index * 26,
         material: scanColor.withAlpha(0.04 + index * 0.025),
         outline: true,
@@ -621,12 +623,12 @@ function createRiverCommunityBuildings() {
   FUXING_RIVER_AXIS.slice(0, -1).forEach(([startLon, startLat], index) => {
     const [endLon, endLat] = FUXING_RIVER_AXIS[index + 1];
     const segmentAngle = bearingDegrees(startLon, startLat, endLon, endLat);
-    for (let step = 0; step < 3; step += 1) {
-      const t = (step + 0.28) / 3.55;
+    for (let step = 0; step < 5; step += 1) {
+      const t = (step + 0.32) / 5.45;
       const lon = startLon + (endLon - startLon) * t;
       const lat = startLat + (endLat - startLat) * t;
       [-1, 1].forEach((side) => {
-        const distance = side * (36 + ((index + step) % 3) * 18);
+        const distance = side * (42 + ((index + step) % 4) * 24);
         const shifted = offsetPoint(lon, lat, segmentAngle + 90, distance);
         buildings.push({
           lon: shifted.lon,
@@ -635,8 +637,21 @@ function createRiverCommunityBuildings() {
           width: 26 + ((index + step) % 4) * 5,
           depth: 18 + ((index + step) % 3) * 4,
           height: 12 + ((index + step) % 5) * 3,
-          flooded: Math.abs(distance) <= 54
+          flooded: Math.abs(distance) <= 76
         });
+        if ((index + step) % 2 === 0) {
+          const backDistance = side * (112 + ((index + step) % 3) * 28);
+          const back = offsetPoint(lon, lat, segmentAngle + 90, backDistance);
+          buildings.push({
+            lon: back.lon,
+            lat: back.lat,
+            angle: segmentAngle + (side > 0 ? -4 : 4),
+            width: 24 + ((index + step) % 5) * 6,
+            depth: 18 + ((index + step) % 4) * 3,
+            height: 10 + ((index + step) % 4) * 4,
+            flooded: false
+          });
+        }
       });
     }
   });
@@ -649,7 +664,7 @@ function addFloodWaterLayer() {
     name: "天空島河道水面",
     polyline: {
       positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(flattenRiverHeights(placementHeight(currentPlacement.groundHeight) + 14)),
-      width: 18,
+      width: 26,
       material: new CesiumLib.PolylineGlowMaterialProperty({
         glowPower: 0.24,
         taperPower: 0.65,
@@ -661,7 +676,7 @@ function addFloodWaterLayer() {
   floodEntities.push(viewer.entities.add({
     name: "天空島河道漫溢示意",
     polygon: {
-      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(130)),
+      hierarchy: CesiumLib.Cartesian3.fromDegreesArray(floodRibbonFootprint(210)),
       height: placementHeight(currentPlacement.groundHeight) + 12,
       material: CesiumLib.Color.fromCssColorString("#60a5fa").withAlpha(0.28),
       outline: true,

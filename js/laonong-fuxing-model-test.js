@@ -300,13 +300,13 @@ function updateSkyIsland(modelHeight) {
   const enabled = skyIslandToggle.checked && modelToggle.checked;
   setDisplayModeStatus(skyIslandToggle.checked ? "天空島" : "貼地");
   if (!skyIslandEntities.length) createSkyIslandEntities(modelHeight);
-  const center = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 78);
-  const coneCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 360);
+  const center = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight);
+  const coneCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 280);
   const shadowCenter = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, currentPlacement.groundHeight + 16);
   skyIslandEntities[0].position = center;
   skyIslandEntities[1].position = coneCenter;
   skyIslandEntities[2].position = shadowCenter;
-  skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112);
+  skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18);
   updateShowcaseEffects(modelHeight);
   skyIslandEntities.forEach((entity) => {
     entity.show = enabled;
@@ -316,11 +316,11 @@ function updateSkyIsland(modelHeight) {
 function createSkyIslandEntities(modelHeight) {
   const top = viewer.entities.add({
     name: "天空島草地平台",
-    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 78),
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight),
     ellipse: {
       semiMajorAxis: 1120,
       semiMinorAxis: 720,
-      height: modelHeight - 78,
+      height: modelHeight,
       material: CesiumLib.Color.fromCssColorString("#4ade80").withAlpha(0.30),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#bbf7d0").withAlpha(0.88),
@@ -329,7 +329,7 @@ function createSkyIslandEntities(modelHeight) {
   });
   const cone = viewer.entities.add({
     name: "天空島岩層",
-    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 360),
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 280),
     cylinder: {
       length: 560,
       topRadius: 620,
@@ -353,11 +353,11 @@ function createSkyIslandEntities(modelHeight) {
   });
   const glow = viewer.entities.add({
     name: "天空島光暈",
-    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight - 112),
+    position: CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18),
     ellipse: {
       semiMajorAxis: 1380,
       semiMinorAxis: 850,
-      height: modelHeight - 112,
+      height: modelHeight + 18,
       material: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.12),
       outline: true,
       outlineColor: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.38),

@@ -124,6 +124,7 @@ let labelEntity = null;
 const skyIslandEntities = [];
 const showcaseEntities = [];
 const buildingEntities = [];
+const buildingMetadata = [];
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -358,6 +359,7 @@ function updateSkyIsland(modelHeight) {
   skyIslandEntities[2].position = shadowCenter;
   skyIslandEntities[3].position = CesiumLib.Cartesian3.fromDegrees(currentPlacement.lon, currentPlacement.lat, modelHeight + 18);
   updateShowcaseEffects(modelHeight);
+  updateCommunityBuildingHeights(modelHeight);
   skyIslandEntities.forEach((entity) => {
     entity.show = enabled;
   });
@@ -501,6 +503,7 @@ function createShowcaseEffects(modelHeight) {
 
 async function addCommunityBuildings() {
   if (buildingEntities.length) {
+    updateCommunityBuildingHeights(placementHeight(currentPlacement.groundHeight));
     buildingEntities.forEach((entity) => {
       entity.show = communityToggle.checked;
     });
@@ -539,7 +542,7 @@ async function addCommunityBuildings() {
       : CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.72);
     const hierarchyPositions = building.footprint.flatMap(([pointLon, pointLat]) => [pointLon, pointLat]);
 
-    buildingEntities.push(viewer.entities.add({
+    const entity = viewer.entities.add({
       name: isOsm ? "復興部落 OSM 建物" : "復興部落聚落示意建物",
       position: CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + building.height + 18),
       polygon: {
@@ -562,7 +565,29 @@ async function addCommunityBuildings() {
         show: false
       } : undefined,
       show: communityToggle.checked
-    }));
+    });
+    buildingEntities.push(entity);
+    buildingMetadata.push({
+      entity,
+      lon,
+      lat,
+      terrainBaseHeight: baseHeight,
+      buildingHeight: building.height
+    });
+  });
+  updateCommunityBuildingHeights(placementHeight(currentPlacement.groundHeight));
+}
+
+function updateCommunityBuildingHeights(platformHeight) {
+  if (!buildingMetadata.length) return;
+  buildingMetadata.forEach(({ entity, lon, lat, terrainBaseHeight, buildingHeight }) => {
+    const baseHeight = skyIslandToggle.checked ? platformHeight + 10 : terrainBaseHeight;
+    entity.position = CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + buildingHeight + 18);
+    entity.polygon.height = baseHeight;
+    entity.polygon.extrudedHeight = baseHeight + buildingHeight;
+    if (entity.label) {
+      entity.label.show = communityToggle.checked && skyIslandToggle.checked;
+    }
   });
 }
 

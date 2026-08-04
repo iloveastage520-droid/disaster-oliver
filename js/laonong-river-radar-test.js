@@ -44,6 +44,7 @@ viewer.scene.verticalExaggerationRelativeHeight = 0;
 const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
 const REAL_RIVER_GEOJSON_URL = "../../data/laonong-river-real.geojson";
 const REAL_FLOWLINE_GEOJSON_URL = "../../data/laonong-river-flowline.geojson";
+const REAL_BASIN_GEOJSON_URL = "../../data/laonong-subbasin-boundary.geojson";
 const STORM_CLOUD_BOTTOM = 1880;
 const STORM_CLOUD_TOP = 2020;
 const SCENARIO_STEPS = [
@@ -122,6 +123,7 @@ const particleEntities = [];
 const buildingEntities = [];
 const markerEntities = [];
 const realRiverEntities = [];
+const basinEntities = [];
 const settlementAreaEntities = [];
 const floodSurgeEntities = [];
 const waterRippleEntities = [];
@@ -155,6 +157,7 @@ loadFlowlinePath();
 addRiver();
 addStormBands();
 addRiskMarkers();
+loadBasinBoundary();
 loadRealRiverLayer();
 loadRadarLayer();
 animationTimer = window.setInterval(animateScenario, 430);
@@ -577,6 +580,49 @@ async function loadRealRiverLayer() {
   }
 }
 
+async function loadBasinBoundary() {
+  try {
+    const response = await fetch(`${REAL_BASIN_GEOJSON_URL}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const coordinates = data.features?.[0]?.geometry?.coordinates?.[0] || [];
+    if (coordinates.length < 3) throw new Error("Invalid basin polygon");
+    const degreeArray = coordinates.flatMap(([lon, lat]) => [lon, lat]);
+    const positions = CesiumLib.Cartesian3.fromDegreesArray(degreeArray);
+
+    const basinFill = viewer.entities.add({
+      name: "荖濃溪真實流域範圍",
+      polygon: {
+        hierarchy: positions,
+        clampToGround: true,
+        material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.055),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.74)
+      },
+      show: riverToggle.checked
+    });
+
+    const basinOutline = viewer.entities.add({
+      name: "荖濃溪真實流域邊界",
+      polyline: {
+        positions,
+        clampToGround: true,
+        width: 3,
+        material: new CesiumLib.PolylineGlowMaterialProperty({
+          glowPower: 0.18,
+          taperPower: 0.65,
+          color: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.92)
+        })
+      },
+      show: riverToggle.checked
+    });
+
+    basinEntities.push(basinFill, basinOutline);
+  } catch (error) {
+    console.warn("Laonong basin boundary load failed", error);
+  }
+}
+
 function animateScenario() {
   stormFrame += 1;
   scenarioStepIndex = Math.floor((stormFrame / 18) % SCENARIO_STEPS.length);
@@ -769,6 +815,9 @@ function updateLayerVisibility() {
     entity.show = riverToggle.checked;
   });
   realRiverEntities.forEach((entity) => {
+    entity.show = riverToggle.checked;
+  });
+  basinEntities.forEach((entity) => {
     entity.show = riverToggle.checked;
   });
   floodSurgeEntities.forEach((entity) => {

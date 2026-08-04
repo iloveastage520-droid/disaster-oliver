@@ -9,6 +9,9 @@ CesiumLib.Ion.defaultAccessToken = "";
 
 const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
 const MODEL_URL = "https://raw.githubusercontent.com/iloveastage520-droid/disaster-oliver/274b822531a7bf01097e8783d159fc92340a00a2/assets/models/laonong-fuxing/fuxing-tribe-laonong.glb";
+const REAL_BUILDINGS_URL = "../../data/laonong-upper-settlement-buildings.geojson";
+const BASIN_BOUNDARY_URL = "../../data/laonong-subbasin-boundary.geojson";
+const REAL_RIVER_FLOWLINE_URL = "../../data/laonong-river-flowline.geojson";
 const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
 const MODEL_HEIGHT_OFFSET = 0;
 const DEFAULT_MODEL_PLATFORM_OFFSET = -680;
@@ -147,7 +150,10 @@ const showcaseEntities = [];
 const buildingEntities = [];
 const buildingMetadata = [];
 const floodEntities = [];
+const basinEntities = [];
 const settlementIslandEntities = [];
+let basinBoundaryRing = [];
+let activeRiverAxis = FUXING_RIVER_AXIS;
 let currentPlacement = {
   lon: MODEL_POSITION.lon,
   lat: MODEL_POSITION.lat,
@@ -234,6 +240,9 @@ communityToggle.addEventListener("change", () => {
   floodEntities.forEach((entity) => {
     entity.show = communityToggle.checked && skyIslandToggle.checked;
   });
+  basinEntities.forEach((entity) => {
+    entity.show = communityToggle.checked;
+  });
 });
 
 viewer.camera.setView(cameraViews.island);
@@ -250,13 +259,17 @@ async function setupTerrain() {
   try {
     viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
     setTerrainStatus("ArcGIS DEM");
+    await loadRealRiverFlowline();
     await placeModelAtCurrentPosition();
+    await addBasinBoundary();
     await addCommunityBuildings();
     window.setTimeout(() => viewer.camera.setView(cameraViews.island), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
     console.warn("Terrain load failed", error);
+    loadRealRiverFlowline();
     addModel(placementHeight(760));
+    addBasinBoundary();
     addCommunityBuildings();
   }
 }
@@ -612,13 +625,7 @@ async function addCommunityBuildings() {
     return;
   }
 
-  const riverBuildings = createRiverCommunityBuildings().map((building) => ({
-    footprint: rectangleFootprint(building),
-    height: building.height,
-    source: "river-demo",
-    flooded: building.flooded
-  }));
-  const buildings = [...riverBuildings];
+  const buildings = await loadRealCommunityBuildings();
   const samples = buildings.map((building) => CesiumLib.Cartographic.fromDegrees(...centroidOf(building.footprint)));
   let groundSamples = [];
   try {
@@ -640,7 +647,7 @@ async function addCommunityBuildings() {
     const hierarchyPositions = building.footprint.flatMap(([pointLon, pointLat]) => [pointLon, pointLat]);
 
     const entity = viewer.entities.add({
-      name: building.flooded ? `${building.settlement || ""}河岸淹水影響建物` : `${building.settlement || ""}聚落模擬建物`,
+      name: building.flooded ? `${building.settlement || ""}河岸淹水影響建物` : `${building.settlement || ""}真實建物`,
       position: CesiumLib.Cartesian3.fromDegrees(lon, lat, baseHeight + building.height + 18),
       polygon: {
         hierarchy: CesiumLib.Cartesian3.fromDegreesArray(hierarchyPositions),
@@ -665,6 +672,39 @@ async function addCommunityBuildings() {
   updateCommunityBuildingHeights(placementHeight(currentPlacement.groundHeight));
 }
 
+async function loadRealCommunityBuildings() {
+  try {
+    const response = await fetch(REAL_BUILDINGS_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const buildings = data.features
+      .map((feature, index) => {
+        const footprint = feature.geometry?.coordinates?.[0];
+        if (!footprint?.length) return null;
+        const center = centroidOf(footprint);
+        const height = Number(feature.properties?.height || 14);
+        return {
+          footprint,
+          height,
+          source: "real-building",
+          flooded: feature.properties?.risk === "high" && (distanceToRiverAxis(center[0], center[1]) < 0.0016 || index % 9 === 0),
+          settlement: feature.properties?.settlement || "荖濃溪上游"
+        };
+      })
+      .filter(Boolean);
+    if (buildings.length) return buildings;
+  } catch (error) {
+    console.warn("Real Fuxing buildings load failed, fallback to simulated buildings", error);
+  }
+  return createRiverCommunityBuildings().map((building) => ({
+    footprint: rectangleFootprint(building),
+    height: building.height,
+    source: "river-demo",
+    flooded: building.flooded,
+    settlement: building.settlement
+  }));
+}
+
 function updateCommunityBuildingHeights(platformHeight) {
   if (!buildingMetadata.length) return;
   buildingMetadata.forEach(({ entity, lon, lat, terrainBaseHeight, buildingHeight }) => {
@@ -677,6 +717,77 @@ function updateCommunityBuildingHeights(platformHeight) {
     }
   });
   updateFloodWaterHeights(platformHeight);
+  updateBasinBoundaryHeights(platformHeight);
+}
+
+async function addBasinBoundary() {
+  if (basinEntities.length) {
+    updateBasinBoundaryHeights(placementHeight(currentPlacement.groundHeight));
+    return;
+  }
+  try {
+    const response = await fetch(BASIN_BOUNDARY_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const feature = data.features?.[0];
+    const rings = feature?.geometry?.coordinates;
+    if (!rings?.length) return;
+    const outerRing = rings[0];
+    basinBoundaryRing = outerRing;
+    basinEntities.push(viewer.entities.add({
+      name: "真實流域範圍",
+      polygon: {
+        hierarchy: CesiumLib.Cartesian3.fromDegreesArray(outerRing.flatMap(([lon, lat]) => [lon, lat])),
+        clampToGround: true,
+        material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.075),
+        outline: true,
+        outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.82)
+      },
+      show: communityToggle.checked
+    }));
+    basinEntities.push(viewer.entities.add({
+      name: "真實流域邊界線",
+      polyline: {
+        positions: CesiumLib.Cartesian3.fromDegreesArray(outerRing.flatMap(([lon, lat]) => [lon, lat])),
+        width: 3,
+        material: new CesiumLib.PolylineGlowMaterialProperty({
+          glowPower: 0.18,
+          taperPower: 0.65,
+          color: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.92)
+        }),
+        clampToGround: true
+      },
+      show: communityToggle.checked
+    }));
+  } catch (error) {
+    console.warn("Basin boundary load failed", error);
+  }
+}
+
+function updateBasinBoundaryHeights(platformHeight) {
+  if (!basinEntities.length) return;
+  if (basinEntities[1].polyline && basinBoundaryRing.length) {
+    basinEntities[1].polyline.positions = CesiumLib.Cartesian3.fromDegreesArray(basinBoundaryRing.flatMap(([lon, lat]) => [lon, lat]));
+  }
+  basinEntities.forEach((entity) => {
+    entity.show = communityToggle.checked;
+  });
+}
+
+async function loadRealRiverFlowline() {
+  try {
+    const response = await fetch(REAL_RIVER_FLOWLINE_URL);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const coordinates = data.features?.[0]?.geometry?.coordinates;
+    if (Array.isArray(coordinates) && coordinates.length > 2) {
+      activeRiverAxis = coordinates;
+      updateFloodWaterHeights(placementHeight(currentPlacement.groundHeight));
+    }
+  } catch (error) {
+    console.warn("Real Laonong river flowline load failed, fallback to settlement axis", error);
+    activeRiverAxis = FUXING_RIVER_AXIS;
+  }
 }
 
 function createRiverCommunityBuildings() {
@@ -751,15 +862,15 @@ function updateFloodWaterHeights(platformHeight) {
 }
 
 function flattenRiverHeights(height) {
-  return FUXING_RIVER_AXIS.flatMap(([lon, lat]) => [lon, lat, height]);
+  return activeRiverAxis.flatMap(([lon, lat]) => [lon, lat, height]);
 }
 
 function floodRibbonFootprint(widthMeters) {
   const left = [];
   const right = [];
-  FUXING_RIVER_AXIS.forEach(([lon, lat], index) => {
-    const previous = FUXING_RIVER_AXIS[Math.max(0, index - 1)];
-    const next = FUXING_RIVER_AXIS[Math.min(FUXING_RIVER_AXIS.length - 1, index + 1)];
+  activeRiverAxis.forEach(([lon, lat], index) => {
+    const previous = activeRiverAxis[Math.max(0, index - 1)];
+    const next = activeRiverAxis[Math.min(activeRiverAxis.length - 1, index + 1)];
     const angle = bearingDegrees(previous[0], previous[1], next[0], next[1]);
     const halfWidth = widthMeters / 2 + (index % 2) * 18;
     const leftPoint = offsetPoint(lon, lat, angle + 90, halfWidth);
@@ -768,6 +879,23 @@ function floodRibbonFootprint(widthMeters) {
     right.unshift([rightPoint.lon, rightPoint.lat]);
   });
   return [...left, ...right].flatMap(([lon, lat]) => [lon, lat]);
+}
+
+function distanceToRiverAxis(lon, lat) {
+  let minimum = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < activeRiverAxis.length - 1; index += 1) {
+    const [startLon, startLat] = activeRiverAxis[index];
+    const [endLon, endLat] = activeRiverAxis[index + 1];
+    const dx = endLon - startLon;
+    const dy = endLat - startLat;
+    const lengthSquared = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((lon - startLon) * dx + (lat - startLat) * dy) / lengthSquared));
+    const projectedLon = startLon + t * dx;
+    const projectedLat = startLat + t * dy;
+    const distance = Math.hypot(lon - projectedLon, lat - projectedLat);
+    minimum = Math.min(minimum, distance);
+  }
+  return minimum;
 }
 
 function rectangleFootprint({ lon, lat, angle, width, depth }) {

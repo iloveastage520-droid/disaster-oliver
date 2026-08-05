@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Disaster Oliver Fuxing tribe 3D thin model Cesium test.">
-  <title>復興部落模型測試 | Disaster Oliver</title>
+  <meta name="description" content="Disaster Oliver Laonong River forecast 3D Cesium visualization.">
+  <title>荖濃溪預報(Forecast) | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
   <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
-  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260804-real-river-flowline">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260804-fx-water-overlay">
 </head>
 <body class="laonong-command-page fuxing-model-page" data-page="fuxing-model-test">
   <main class="cesium-page">
-    <section class="cesium-stage laonong-command-stage" aria-label="復興部落模型測試 3D 場景">
+    <section class="cesium-stage laonong-command-stage" aria-label="荖濃溪預報 3D 場景">
       <div id="cesium-container" class="cesium-container"></div>
 
       <section class="laonong-title-panel fuxing-showcase-title" aria-label="系統標題">
         <div class="laonong-logo-mark"></div>
         <div>
-          <p>UAV 空拍模型・天空島展示</p>
-          <h1>荖濃溪流域三維展示系統</h1>
+          <p>水資料預測・聚落建物影響推演</p>
+          <h1>荖濃溪預報(Forecast)</h1>
         </div>
       </section>
 
@@ -38,8 +38,8 @@
 
       <section class="fuxing-island-card" data-fuxing-panel-target="info" aria-label="數位孿生島資訊">
         <button type="button" aria-label="關閉">×</button>
-        <p>荖濃溪上游八部落・數位孿生島</p>
-        <h2>梅山至寶山天空島節點</h2>
+        <p>荖濃溪上游聚落・數位孿生島</p>
+        <h2>梅山至寶山聚落範圍</h2>
         <div>
           <span>UAV 傾斜攝影模型</span>
           <span>更新時間・2025/08/02</span>
@@ -54,100 +54,28 @@
         <span>淹水警戒 <b>8 處</b></span>
       </aside>
 
-      <aside class="fuxing-tool-rail" aria-label="工具列">
-        <button type="button">返回流域</button>
-        <button type="button">圖層控制</button>
-        <button type="button">災害分析</button>
-        <button type="button">AI 巡檢</button>
-        <button type="button">監測工具</button>
-      </aside>
-
-      <aside class="cesium-control-panel fuxing-control-panel" data-fuxing-panel-target="controls" aria-label="復興模型測試控制">
+      <aside class="cesium-control-panel fuxing-control-panel" data-fuxing-panel-target="controls" aria-label="荖濃溪預報控制">
         <div class="cesium-panel-content">
           <p class="eyebrow">CesiumJS</p>
-          <h1>UAV 模型校正</h1>
-          <div class="cesium-status-grid">
-            <div>
-              <span>模型來源</span>
-              <strong>真實 UAV GLB</strong>
-            </div>
-            <div>
-              <span>檔案大小</span>
-              <strong>約 74MB</strong>
-            </div>
-            <div>
-              <span>地形</span>
-              <strong id="terrain-status">載入中</strong>
-            </div>
-            <div>
-              <span>模型</span>
-              <strong id="model-status">載入中</strong>
-            </div>
-            <div>
-              <span>座標</span>
-              <strong id="position-status">--</strong>
-            </div>
-            <div>
-              <span>偏移/旋轉</span>
-              <strong id="offset-status">--</strong>
-            </div>
-            <div>
-              <span>展示模式</span>
-              <strong id="display-mode-status">天空島</strong>
-            </div>
-          </div>
-          <div class="cesium-actions" role="group" aria-label="鏡頭控制">
-            <button class="button button-primary" type="button" data-camera="overview">總覽</button>
-            <button class="button button-secondary" type="button" data-camera="close">近看</button>
-            <button class="button button-secondary" type="button" data-camera="top">俯視</button>
-            <button class="button button-secondary" type="button" data-camera="island">天空島</button>
-          </div>
-          <div class="cesium-actions fuxing-nudge-actions" role="group" aria-label="模型水平校正">
-            <button class="button button-secondary" type="button" data-nudge-lat="0.0005">北</button>
-            <button class="button button-secondary" type="button" data-nudge-lon="-0.0005">西</button>
-            <button class="button button-secondary" type="button" data-nudge-lon="0.0005">東</button>
-            <button class="button button-secondary" type="button" data-nudge-lat="-0.0005">南</button>
-          </div>
-          <div class="cesium-actions fuxing-nudge-actions" role="group" aria-label="模型高度與旋轉校正">
-            <button class="button button-secondary" type="button" data-nudge-height="-10">降</button>
-            <button class="button button-secondary" type="button" data-nudge-height="10">升</button>
-            <button class="button button-secondary" type="button" data-nudge-heading="-5">左轉</button>
-            <button class="button button-secondary" type="button" data-nudge-heading="5">右轉</button>
-          </div>
-          <div class="fuxing-slider-controls" aria-label="模型連續微調">
-            <label>
-              <span>東西</span>
-              <input type="range" min="-0.01" max="0.01" step="0.0001" value="0" data-placement-control="lonOffset">
-              <strong id="lon-offset-value">0.0000</strong>
-            </label>
-            <label>
-              <span>南北</span>
-              <input type="range" min="-0.01" max="0.01" step="0.0001" value="0" data-placement-control="latOffset">
-              <strong id="lat-offset-value">0.0000</strong>
-            </label>
-            <label>
-              <span>高度</span>
-              <input type="range" min="-250" max="250" step="5" value="0" data-placement-control="heightOffset">
-              <strong id="height-offset-value">0m</strong>
-            </label>
-            <label>
-              <span>貼合</span>
-              <input type="range" min="-1200" max="200" step="10" value="-680" data-placement-control="modelVerticalOffset">
-              <strong id="model-vertical-offset-value">-680m</strong>
-            </label>
-            <label>
-              <span>旋轉</span>
-              <input type="range" min="-180" max="180" step="1" value="0" data-placement-control="heading">
-              <strong id="heading-value">0deg</strong>
-            </label>
-            <label>
-              <span>比例</span>
-              <input type="range" min="1" max="5" step="0.25" value="2" data-placement-control="scale">
-              <strong id="scale-value">2x</strong>
-            </label>
-          </div>
+          <h1>圖層開關</h1>
+          <label class="fuxing-select-field">
+            <span>底圖</span>
+            <select id="basemap-select">
+              <option value="google-hybrid" selected>Google 混合衛星</option>
+              <option value="google-satellite">Google 純衛星</option>
+              <option value="arcgis-imagery">ArcGIS 影像</option>
+              <option value="osm">OpenStreetMap</option>
+            </select>
+          </label>
+          <label class="fuxing-select-field">
+            <span>視角模式</span>
+            <select id="scene-mode-select">
+              <option value="3d" selected>3D 地形</option>
+              <option value="2d">2D 平面</option>
+            </select>
+          </label>
           <label class="check-field cesium-toggle">
-            <input id="model-toggle" type="checkbox" checked>
+            <input id="model-toggle" type="checkbox">
             <span>顯示真實 UAV 模型</span>
           </label>
           <label class="check-field cesium-toggle">
@@ -155,13 +83,26 @@
             <span>地形高度感</span>
           </label>
           <label class="check-field cesium-toggle">
-            <input id="sky-island-toggle" type="checkbox" checked>
-            <span>天空島展示</span>
+            <input id="radar-toggle" type="checkbox" checked>
+            <span>展示雷達回波 / 建物發光</span>
           </label>
           <label class="check-field cesium-toggle">
-            <input id="community-toggle" type="checkbox" checked>
-            <span>上游八部落天空島</span>
+            <input id="basin-toggle" type="checkbox" checked>
+            <span>荖濃溪流域外框</span>
           </label>
+          <label class="check-field cesium-toggle">
+            <input id="building-toggle" type="checkbox" checked>
+            <span>真實建物</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="settlement-toggle" type="checkbox" checked>
+            <span>聚落雙圈範圍</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="water-toggle" type="checkbox" checked>
+            <span>wbchen 水資料</span>
+          </label>
+          <input id="sky-island-toggle" type="checkbox" checked hidden>
         </div>
       </aside>
 
@@ -170,10 +111,30 @@
         <span><i class="cesium-real-building"></i>真實 UAV 模型</span>
         <span><i class="cesium-radar"></i>荖濃溪真實流域</span>
         <span><i class="cesium-real-river"></i>八部落真實建物</span>
-        <span><i class="cesium-radar"></i>真實溪流線與漫溢</span>
-        <span><i class="cesium-radar"></i>天空島底座</span>
+        <span><i class="cesium-radar"></i>水資料 2D / 3D 套疊</span>
+        <span><i class="cesium-radar"></i>展示雷達回波 / 建物發光</span>
+        <span><i class="cesium-radar"></i>聚落雙圈範圍</span>
         <span><i class="cesium-real-river"></i>Google 混合衛星</span>
       </div>
+
+      <section class="fuxing-water-inset" aria-label="wbchen 水資料 2D 動畫">
+        <div>
+          <span>wbchen 水資料</span>
+          <strong id="wbchen-water-time">2026/05/27 10:00</strong>
+        </div>
+        <figure>
+          <figcaption>fx 復興</figcaption>
+          <img id="fx-water-frame" src="../../assets/wbchen-water/fx/Frame_1.png" alt="fx 復興水資料 2D 時序圖">
+        </figure>
+        <figure>
+          <figcaption>qhrwl 上游</figcaption>
+          <img id="qhrwl-water-frame" src="../../assets/wbchen-water/qhrwl/Frame_1.png" alt="qhrwl 上游水資料 2D 時序圖">
+        </figure>
+        <figure>
+          <figcaption>blrwl 寶山</figcaption>
+          <img id="wbchen-water-frame" src="../../assets/wbchen-water/Frame_1.png" alt="blrwl 寶山水資料 2D 時序圖">
+        </figure>
+      </section>
 
       <section class="fuxing-bottom-timeline" data-fuxing-panel-target="timeline" aria-label="事件時間軸">
         <button type="button">▶</button>
@@ -192,6 +153,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/laonong-fuxing-model-test.js?v=20260804-real-river-flowline"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260805-scene-mode-lock"></script>
 </body>
 </html>

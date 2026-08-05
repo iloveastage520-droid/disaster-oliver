@@ -450,6 +450,7 @@ body.laonong-command-page .cesium-page {
 .fuxing-island-card,
 .fuxing-flow-panel,
 .fuxing-tool-rail,
+.fuxing-water-inset,
 .fuxing-bottom-timeline {
   position: absolute;
   z-index: 7;
@@ -555,6 +556,57 @@ body.laonong-command-page .cesium-page {
   font-size: 18px;
 }
 
+.fuxing-water-inset {
+  left: 22px;
+  bottom: 126px;
+  width: min(340px, 25vw);
+  overflow: hidden;
+  border: 1px solid rgba(125, 211, 252, 0.30);
+  border-radius: 8px;
+  color: #e0f2fe;
+  background: rgba(2, 11, 22, 0.78);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34), inset 0 0 28px rgba(14, 165, 233, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.fuxing-water-inset div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.18);
+}
+
+.fuxing-water-inset span {
+  color: #7dd3fc;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fuxing-water-inset strong {
+  font-size: 12px;
+}
+
+.fuxing-water-inset figure {
+  margin: 0;
+}
+
+.fuxing-water-inset figcaption {
+  padding: 7px 10px 0;
+  color: #bae6fd;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.fuxing-water-inset img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.55 / 1;
+  object-fit: contain;
+  background: rgba(8, 47, 73, 0.26);
+}
+
 .fuxing-tool-rail {
   top: 104px;
   right: 26px;
@@ -583,7 +635,28 @@ body.laonong-command-page .cesium-page {
   right: 26px;
   bottom: 118px;
   width: 410px;
-  max-height: 42vh;
+  max-height: 58vh;
+  overflow-y: auto;
+}
+
+.fuxing-select-field {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 12px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fuxing-select-field select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  border-radius: 6px;
+  color: #e0f2fe;
+  background: rgba(15, 23, 42, 0.92);
+  font: inherit;
+  padding: 0 10px;
 }
 
 .fuxing-bottom-timeline {
@@ -671,6 +744,22 @@ body.laonong-command-page .cesium-page {
   .fuxing-flow-panel,
   .fuxing-tool-rail {
     display: none;
+  }
+
+  .fuxing-water-inset {
+    left: 10px;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    width: min(45vw, 190px);
+  }
+
+  .fuxing-water-inset div {
+    padding: 6px 7px;
+  }
+
+  .fuxing-water-inset span,
+  .fuxing-water-inset strong,
+  .fuxing-water-inset figcaption {
+    font-size: 10px;
   }
 
   .fuxing-mobile-dock {
@@ -768,5 +857,122 @@ body.laonong-command-page .cesium-page {
 
   .fuxing-model-page .cesium-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .wulai-model-page .laonong-command-stage {
+    min-height: 100svh;
+  }
+
+  .wulai-model-page .laonong-title-panel {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    padding: 10px 12px;
+  }
+
+  .wulai-model-page .laonong-title-panel h1 {
+    max-width: 72vw;
+    font-size: 18px;
+    line-height: 1.22;
+  }
+
+  .wulai-model-page .cesium-control-panel,
+  .wulai-model-page .cesium-legend {
+    display: none;
+  }
+
+  .wulai-model-page .cesium-control-panel.is-mobile-open,
+  .wulai-model-page .cesium-legend.is-mobile-open {
+    position: absolute;
+    right: 10px;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px);
+    left: 10px;
+    z-index: 23;
+    display: block;
+    width: auto;
+  }
+
+  .wulai-model-page .cesium-control-panel.is-mobile-open {
+    top: auto;
+    max-height: 58svh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .wulai-model-page .cesium-status-grid,
+  .wulai-model-page .cesium-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.wulai-model-page [data-view-mode] {
+  white-space: nowrap;
+}
+
+.wulai-panel-collapse,
+.wulai-panel-peek {
+  border: 1px solid rgba(125, 211, 252, 0.36);
+  border-radius: 8px;
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.14);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.wulai-panel-collapse {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.wulai-panel-peek {
+  position: absolute;
+  top: 146px;
+  left: 32px;
+  z-index: 18;
+  display: none;
+  min-height: 38px;
+  padding: 0 14px;
+  background: rgba(2, 11, 22, 0.78);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.wulai-model-page .cesium-control-panel {
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.wulai-model-page .cesium-control-panel.is-panel-collapsed {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-18px);
+}
+
+.wulai-control-collapsed .wulai-panel-peek {
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .wulai-panel-peek {
+    top: 82px;
+    left: 10px;
+    min-height: 34px;
+  }
+
+  .wulai-panel-collapse {
+    top: 10px;
+    right: 10px;
+  }
+
+  .wulai-model-page .cesium-control-panel.is-panel-collapsed {
+    display: none;
   }
 }

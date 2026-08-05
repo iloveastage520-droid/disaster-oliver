@@ -41,6 +41,15 @@ const DEMO_RADAR_BANDS = [
   { lon: 120.710, lat: 23.112, width: 0.076, depth: 0.052, dbz: 45, driftLon: 0.018, driftLat: -0.008, rotation: 28 },
   { lon: 120.785, lat: 23.165, width: 0.150, depth: 0.120, dbz: 36, driftLon: 0.012, driftLat: -0.006, rotation: 10 }
 ];
+const DEMO_TYPHOON_FORECAST_POINTS = [
+  { lon: 122.45, lat: 21.45, label: "-6hr", status: "past" },
+  { lon: 122.05, lat: 21.82, label: "-3hr", status: "past" },
+  { lon: 121.55, lat: 22.20, label: "現在", status: "analysis" },
+  { lon: 121.08, lat: 22.54, label: "+6hr", status: "forecast" },
+  { lon: 120.72, lat: 22.88, label: "+12hr", status: "forecast" },
+  { lon: 120.38, lat: 23.16, label: "+24hr", status: "forecast" }
+];
+const DEMO_TYPHOON_PATH_HEIGHT = 3200;
 const MODEL_POSITION = { lon: 120.80255, lat: 23.21625 };
 const MODEL_HEIGHT_OFFSET = 0;
 const DEFAULT_MODEL_PLATFORM_OFFSET = -680;
@@ -206,6 +215,7 @@ const basinEntities = [];
 const wbchenWaterEntities = [];
 const demoRadarEntities = [];
 const demoRadarWindEntities = [];
+const typhoonForecastEntities = [];
 const settlementIslandEntities = [];
 const intelRiverEntities = [];
 const settlementScanEntities = [];
@@ -236,6 +246,9 @@ const waterToggle = document.querySelector("#water-toggle");
 const radarToggle = document.querySelector("#radar-toggle");
 const basemapSelect = document.querySelector("#basemap-select");
 const sceneModeSelect = document.querySelector("#scene-mode-select");
+const fuxingControlPanel = document.querySelector(".fuxing-control-panel");
+const fuxingPanelToggle = document.querySelector(".fuxing-panel-toggle");
+const impactCardMaps = Array.from(document.querySelectorAll("[data-impact-settlement]"));
 
 basemapSelect?.addEventListener("change", () => {
   setBasemap(basemapSelect.value);
@@ -243,6 +256,12 @@ basemapSelect?.addEventListener("change", () => {
 
 sceneModeSelect?.addEventListener("change", () => {
   setSceneMode(sceneModeSelect.value);
+});
+
+fuxingPanelToggle?.addEventListener("click", () => {
+  const isCollapsed = fuxingControlPanel.classList.toggle("is-panel-collapsed");
+  fuxingPanelToggle.setAttribute("aria-expanded", String(!isCollapsed));
+  fuxingPanelToggle.textContent = isCollapsed ? "圖層" : "收合";
 });
 
 function setBasemap(id) {
@@ -404,6 +423,7 @@ async function setupTerrain() {
     await addCommunityBuildings();
     addWbchenWaterOverlay();
     addDemoRadarOverlay();
+    addTyphoonForecastOverlay();
     window.setTimeout(() => viewer.camera.setView(cameraViews.island), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
@@ -414,6 +434,7 @@ async function setupTerrain() {
     addCommunityBuildings();
     addWbchenWaterOverlay();
     addDemoRadarOverlay();
+    addTyphoonForecastOverlay();
   }
 }
 
@@ -966,11 +987,100 @@ async function addCommunityBuildings() {
   updateCommunityBuildingHeights(placementHeight(currentPlacement.groundHeight));
 }
 
+function renderImpactCards(features) {
+  if (!impactCardMaps.length || !features.length) return;
+  impactCardMaps.forEach((svg) => {
+    const settlement = svg.dataset.impactSettlement;
+    const settlementFeatures = features
+      .filter((feature) => feature.properties?.settlement === settlement)
+      .map((feature) => {
+        const footprint = footprintFromFeature(feature);
+        if (!footprint?.length) return null;
+        const center = centroidOf(footprint);
+        return {
+          footprint,
+          center,
+          risk: feature.properties?.risk || "low"
+        };
+      })
+      .filter(Boolean);
+    renderImpactCardMap(svg, settlementFeatures);
+  });
+}
+
+function footprintFromFeature(feature) {
+  const geometry = feature.geometry;
+  if (!geometry) return null;
+  if (geometry.type === "Polygon") return geometry.coordinates?.[0] || null;
+  if (geometry.type === "MultiPolygon") return geometry.coordinates?.[0]?.[0] || null;
+  return null;
+}
+
+function renderImpactCardMap(svg, buildings) {
+  if (!buildings.length) return;
+  svg.textContent = "";
+  const width = 250;
+  const height = 130;
+  const pad = 18;
+  const centerLon = medianOf(buildings.map((building) => building.center[0]));
+  const centerLat = medianOf(buildings.map((building) => building.center[1]));
+  const selected = buildings
+    .slice()
+    .sort((a, b) => distanceScore(a.center, centerLon, centerLat) - distanceScore(b.center, centerLon, centerLat))
+    .slice(0, 86);
+  const points = selected.flatMap((building) => building.footprint);
+  const minLon = Math.min(...points.map((point) => point[0]));
+  const maxLon = Math.max(...points.map((point) => point[0]));
+  const minLat = Math.min(...points.map((point) => point[1]));
+  const maxLat = Math.max(...points.map((point) => point[1]));
+  const lonSpan = Math.max(maxLon - minLon, 0.00001);
+  const latSpan = Math.max(maxLat - minLat, 0.00001);
+  const scale = Math.min((width - pad * 2) / lonSpan, (height - pad * 2) / latSpan);
+  const offsetX = (width - lonSpan * scale) / 2;
+  const offsetY = (height - latSpan * scale) / 2;
+  const project = ([lon, lat]) => [
+    offsetX + (lon - minLon) * scale,
+    offsetY + (maxLat - lat) * scale
+  ];
+
+  appendSvgPath(svg, "impact-island-base", "M22 92 C38 42 88 20 150 22 C205 24 235 52 230 88 C224 116 184 124 124 122 C64 120 24 110 22 92 Z");
+  appendSvgPath(svg, "impact-flood-area", "M28 92 C65 72 100 69 132 76 C168 84 194 82 226 66 L226 102 C178 118 111 118 54 106 C42 103 33 98 28 92 Z");
+  appendSvgPath(svg, "impact-river-line", "M30 95 C72 74 105 76 138 83 C171 91 196 84 226 68");
+
+  selected.forEach((building, index) => {
+    const d = building.footprint
+      .map((point, pointIndex) => {
+        const [x, y] = project(point);
+        return `${pointIndex === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+      })
+      .join(" ") + " Z";
+    const affected = building.risk === "high" || building.center[1] < centerLat || index % 11 === 0;
+    appendSvgPath(svg, `impact-building ${affected ? "impact" : "normal"}`, d);
+  });
+}
+
+function appendSvgPath(svg, className, d) {
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", className);
+  path.setAttribute("d", d);
+  svg.appendChild(path);
+}
+
+function medianOf(values) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] || 0;
+}
+
+function distanceScore([lon, lat], centerLon, centerLat) {
+  return (lon - centerLon) ** 2 + (lat - centerLat) ** 2;
+}
+
 async function loadRealCommunityBuildings() {
   try {
     const response = await fetch(REAL_BUILDINGS_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
+    renderImpactCards(data.features || []);
     const buildings = data.features
       .map((feature, index) => {
         const footprint = feature.geometry?.coordinates?.[0];
@@ -1059,6 +1169,96 @@ function updateDemoRadarOverlayHeight(platformHeight) {
     entity.rectangle.height = platformHeight + 900 + entity.demoRadarIndex * 4;
     entity.show = radarToggle.checked && skyIslandToggle.checked;
   });
+}
+
+function addTyphoonForecastOverlay() {
+  if (typhoonForecastEntities.length) return;
+  const currentIndex = Math.max(0, DEMO_TYPHOON_FORECAST_POINTS.findIndex((point) => point.status === "analysis"));
+  const pastPoints = DEMO_TYPHOON_FORECAST_POINTS.slice(0, currentIndex + 1);
+  const forecastPoints = DEMO_TYPHOON_FORECAST_POINTS.slice(currentIndex);
+  const toPositions = (points) => points.flatMap((point) => [
+    point.lon,
+    point.lat,
+    DEMO_TYPHOON_PATH_HEIGHT
+  ]);
+  const pastTrack = viewer.entities.add({
+    name: "颱風過去路徑測試",
+    polyline: {
+      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(toPositions(pastPoints)),
+      width: 6,
+      material: new CesiumLib.PolylineGlowMaterialProperty({
+        glowPower: 0.20,
+        taperPower: 0.75,
+        color: CesiumLib.Color.fromCssColorString("#ef4444").withAlpha(0.92)
+      }),
+      clampToGround: false
+    }
+  });
+  typhoonForecastEntities.push(pastTrack);
+
+  const forecastTrack = viewer.entities.add({
+    name: "颱風未來預報路徑測試",
+    polyline: {
+      positions: CesiumLib.Cartesian3.fromDegreesArrayHeights(toPositions(forecastPoints)),
+      width: 7,
+      material: new CesiumLib.PolylineGlowMaterialProperty({
+        glowPower: 0.26,
+        taperPower: 0.75,
+        color: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.96)
+      }),
+      clampToGround: false
+    }
+  });
+  typhoonForecastEntities.push(forecastTrack);
+
+  DEMO_TYPHOON_FORECAST_POINTS.forEach((point, index) => {
+    const isCurrent = point.status === "analysis";
+    const isPast = point.status === "past";
+    const color = isCurrent
+      ? CesiumLib.Color.fromCssColorString("#f8fafc")
+      : CesiumLib.Color.fromCssColorString(isPast ? "#ef4444" : "#38bdf8");
+    const labelBackground = isCurrent ? "#7f1d1d" : isPast ? "#450a0a" : "#082f49";
+    const entity = viewer.entities.add({
+      name: `颱風預報節點 ${point.label}`,
+      position: CesiumLib.Cartesian3.fromDegrees(point.lon, point.lat, DEMO_TYPHOON_PATH_HEIGHT + 40 + index * 8),
+      point: {
+        pixelSize: isCurrent ? 15 : 11,
+        color,
+        outlineColor: CesiumLib.Color.fromCssColorString(isCurrent ? "#ef4444" : "#0f172a"),
+        outlineWidth: isCurrent ? 4 : 2,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      },
+      label: {
+        text: point.label,
+        font: "800 13px Microsoft JhengHei, sans-serif",
+        fillColor: CesiumLib.Color.WHITE,
+        outlineColor: CesiumLib.Color.BLACK.withAlpha(0.74),
+        outlineWidth: 4,
+        style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new CesiumLib.Cartesian2(0, isCurrent ? -34 : -28),
+        showBackground: true,
+        backgroundColor: CesiumLib.Color.fromCssColorString(labelBackground).withAlpha(0.58),
+        backgroundPadding: new CesiumLib.Cartesian2(8, 5),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
+    typhoonForecastEntities.push(entity);
+  });
+
+  const impactCone = viewer.entities.add({
+    name: "颱風外圍環流影響範圍",
+    position: CesiumLib.Cartesian3.fromDegrees(120.74, 23.05, DEMO_TYPHOON_PATH_HEIGHT - 180),
+    ellipse: {
+      semiMajorAxis: 52000,
+      semiMinorAxis: 26000,
+      rotation: CesiumLib.Math.toRadians(38),
+      height: DEMO_TYPHOON_PATH_HEIGHT - 180,
+      material: CesiumLib.Color.fromCssColorString("#fb7185").withAlpha(0.10),
+      outline: true,
+      outlineColor: CesiumLib.Color.fromCssColorString("#fb7185").withAlpha(0.34)
+    }
+  });
+  typhoonForecastEntities.push(impactCone);
 }
 
 function animateDemoRadarOverlay() {

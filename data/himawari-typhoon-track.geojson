@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "name": "deprecated_himawari_typhoon_track",
+  "deprecated": true,
+  "note": "Deprecated. The Himawari page uses data/cwa-typhoon-track.geojson for latest CWA typhoon data.",
+  "features": []
+}

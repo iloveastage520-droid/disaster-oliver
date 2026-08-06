@@ -9,8 +9,6 @@ CesiumLib.Ion.defaultAccessToken = "";
 
 const BUILDINGS_URL = "../../data/wulai/wulai-old-street-buildings.geojson";
 const RIVER_URL = "../../data/wulai/wulai-real-river.geojson";
-const MODEL_URL = "../../assets/models/wulai/nanshi-river-wulai.glb";
-const TILESET_URL = "../../assets/tiles/wulai-uav/tileset.json";
 const ISLAND_CENTER = { lon: 121.549, lat: 24.859 };
 const ISLAND_HEIGHT = 980;
 const ISLAND_ROTATION = CesiumLib.Math.toRadians(32);
@@ -28,9 +26,6 @@ const WULAI_WATER_BOUNDS = {
   east: 121.5740111,
   west: 121.5449556
 };
-const MODEL_SCALE = 4;
-const MODEL_LOCAL_MIN_Z = 115.2459945678711;
-const MODEL_HEIGHT = ISLAND_HEIGHT + 42 - MODEL_LOCAL_MIN_Z * MODEL_SCALE;
 const VIEW_MODES = {
   real: {
     buildings: false,
@@ -131,14 +126,6 @@ const cameraViews = {
       roll: 0
     }
   },
-  uav: {
-    destination: CesiumLib.Cartesian3.fromDegrees(121.549, 24.859, 1540),
-    orientation: {
-      heading: CesiumLib.Math.toRadians(18),
-      pitch: CesiumLib.Math.toRadians(-58),
-      roll: 0
-    }
-  },
   top: {
     destination: CesiumLib.Cartesian3.fromDegrees(121.549, 24.859, 3300),
     orientation: {
@@ -174,7 +161,6 @@ let lastWbchenWulaiWaterUpdate = 0;
 let lastBuildingRadarUpdate = 0;
 let riverLayerAdded = false;
 const buildingToggle = document.querySelector("#building-toggle");
-const modelToggle = document.querySelector("#model-toggle");
 const riverToggle = document.querySelector("#river-toggle");
 const radarToggle = document.querySelector("#radar-toggle");
 const controlPanel = document.querySelector("[data-wulai-control-panel]");
@@ -189,21 +175,6 @@ if (riverToggle) {
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", async () => {
-    if (button.dataset.camera === "uav") {
-      setViewMode("real");
-      toggleControlPanel(false);
-      if (modelReady && modelPrimitive?.boundingSphere) {
-        viewer.camera.flyToBoundingSphere(modelPrimitive.boundingSphere, {
-          duration: 1,
-          offset: new CesiumLib.HeadingPitchRange(
-            CesiumLib.Math.toRadians(18),
-            CesiumLib.Math.toRadians(-46),
-            Math.max(modelPrimitive.boundingSphere.radius * 2.8, 760)
-          )
-        });
-        return;
-      }
-    }
     viewer.camera.flyTo({
       ...cameraViews[button.dataset.camera],
       duration: 1
@@ -218,10 +189,6 @@ document.querySelectorAll("[data-view-mode]").forEach((button) => {
 });
 
 buildingToggle.addEventListener("change", () => {
-  applyLayerVisibility();
-});
-
-modelToggle.addEventListener("change", () => {
   applyLayerVisibility();
 });
 
@@ -245,44 +212,10 @@ viewer.camera.setView(cameraViews.overview);
 setupMobilePanels();
 addSkyIsland();
 addWbchenWulaiWaterLayer();
-addUavModel();
 setupRiverAndBuildings();
 setViewMode("hybrid");
 viewer.clock.onTick.addEventListener(animateRiverFlow);
 setTimeout(checkCanvas, 2200);
-
-async function addUavModel() {
-  setModelStatus("3D Tiles 解析中");
-  try {
-    modelPrimitive = await CesiumLib.Cesium3DTileset.fromUrl(TILESET_URL, {
-      maximumScreenSpaceError: 1,
-      dynamicScreenSpaceError: true,
-      showCreditsOnScreen: false
-    });
-    modelPrimitive.show = modelToggle.checked && VIEW_MODES[currentViewMode].model;
-    viewer.scene.primitives.add(modelPrimitive);
-    modelReady = true;
-    setModelStatus(`3D Tiles 已加入 / 半徑 ${Math.round(modelPrimitive.boundingSphere.radius)}m`);
-  } catch (error) {
-    console.warn("UAV 3D Tiles render failed", error);
-    setModelStatus("3D Tiles 失敗");
-    showError("南勢溪 UAV 3D Tiles 測試失敗。這個測試包仍是單一 258MB tile，正式版需要切片與 LOD。");
-  }
-
-  modelHelperEntities.push(viewer.entities.add({
-    name: "UAV 模型位置提示",
-    position: CesiumLib.Cartesian3.fromDegrees(ISLAND_CENTER.lon, ISLAND_CENTER.lat, ISLAND_HEIGHT + 36),
-    ellipse: {
-      semiMajorAxis: 1550,
-      semiMinorAxis: 1120,
-      height: ISLAND_HEIGHT + 36,
-      material: CesiumLib.Color.fromCssColorString("#f8fafc").withAlpha(0.045),
-      outline: true,
-      outlineColor: CesiumLib.Color.fromCssColorString("#f8fafc").withAlpha(0.42),
-      rotation: ISLAND_ROTATION
-    }
-  }));
-}
 
 async function setupRiverAndBuildings() {
   await loadRiverGeometry();
@@ -724,8 +657,7 @@ function addWbchenWulaiWaterLayer() {
         transparent: true,
         color: CesiumLib.Color.WHITE.withAlpha(0.82)
       }),
-      outline: true,
-      outlineColor: CesiumLib.Color.fromCssColorString("#bae6fd").withAlpha(0.68),
+      outline: false,
       rotation: 0
     },
     show: riverToggle?.checked ?? true
@@ -952,11 +884,9 @@ function setViewMode(mode) {
 
 function applyLayerVisibility() {
   const mode = VIEW_MODES[currentViewMode];
-  if (modelPrimitive) {
-    modelPrimitive.show = modelToggle.checked && mode.model;
-  }
+  if (modelPrimitive) modelPrimitive.show = false;
   modelHelperEntities.forEach((entity) => {
-    entity.show = modelToggle.checked && mode.model;
+    entity.show = false;
   });
   buildingEntities.forEach((entity) => {
     entity.show = buildingToggle.checked && mode.buildings;
@@ -1196,11 +1126,6 @@ function showError(message) {
 function checkCanvas() {
   const canvas = document.querySelector("#cesium-container canvas");
   if (!canvas) showError("Cesium canvas 沒有建立，請重新整理或確認瀏覽器支援 WebGL。");
-}
-
-function setModelStatus(text) {
-  const element = document.querySelector("#model-status");
-  if (element) element.textContent = text;
 }
 
 function setRiverStatus(text) {

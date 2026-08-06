@@ -48,10 +48,6 @@
               <strong id="building-status">載入中</strong>
             </div>
             <div>
-              <span>UAV 模型</span>
-              <strong id="model-status">載入中</strong>
-            </div>
-            <div>
               <span>河道</span>
               <strong id="river-status">載入中</strong>
             </div>
@@ -62,7 +58,6 @@
           </div>
           <div class="cesium-actions" role="group" aria-label="鏡頭控制">
             <button class="button button-primary" type="button" data-camera="overview">總覽</button>
-            <button class="button button-secondary" type="button" data-camera="uav">UAV近看</button>
             <button class="button button-secondary" type="button" data-camera="street">島面</button>
             <button class="button button-secondary" type="button" data-camera="top">俯視</button>
           </div>
@@ -76,10 +71,6 @@
             <span>顯示 3D 建物</span>
           </label>
           <label class="check-field cesium-toggle">
-            <input id="model-toggle" type="checkbox" checked>
-            <span>顯示南勢溪 UAV 模型</span>
-          </label>
-          <label class="check-field cesium-toggle">
             <input id="river-toggle" type="checkbox" checked>
             <span>nswl 烏來水資料</span>
           </label>
@@ -89,7 +80,6 @@
       <div class="cesium-legend" data-wulai-panel-target="legend" aria-label="烏來建物圖例">
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>烏來天空島平台</span>
-        <span><i class="cesium-real-building"></i>南勢溪 UAV 模型</span>
         <span><i class="cesium-real-building"></i>F_BUILD 建物</span>
         <span><i class="cesium-radar"></i>nswl 烏來水資料</span>
         <span><i class="cesium-real-river"></i>純展示背景</span>
@@ -101,6 +91,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/wulai-building-test.js?v=20260806-wulai-nswl-axis-fix"></script>
+  <script src="../../js/wulai-building-test.js?v=20260806-wulai-no-uav"></script>
 </body>
 </html>

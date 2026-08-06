@@ -7,9 +7,9 @@
   <title>烏來天空島建物測試 | Disaster Oliver</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
   <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
-  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260803-laonong-livecams">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260806-wulai-visible-foot-water">
 </head>
-<body class="laonong-command-page" data-page="wulai-building-test">
+<body class="laonong-command-page wulai-model-page" data-page="wulai-building-test">
   <main class="cesium-page">
     <section class="cesium-stage laonong-command-stage" aria-label="烏來建物 3D 測試場景">
       <div id="cesium-container" class="cesium-container"></div>
@@ -22,8 +22,16 @@
         </div>
       </section>
 
-      <aside class="cesium-control-panel" aria-label="烏來建物測試控制">
+      <div class="fuxing-mobile-dock wulai-mobile-dock" aria-label="手機面板控制">
+        <button type="button" data-wulai-panel="controls">控制</button>
+        <button type="button" data-wulai-panel="legend">圖例</button>
+      </div>
+
+      <button class="wulai-panel-peek" type="button" data-panel-toggle aria-expanded="true">控制</button>
+
+      <aside class="cesium-control-panel" data-wulai-control-panel data-wulai-panel-target="controls" aria-label="烏來建物測試控制">
         <div class="cesium-panel-content">
+          <button class="wulai-panel-collapse" type="button" data-panel-toggle aria-label="收合控制面板">收合</button>
           <p class="eyebrow">CesiumJS</p>
           <h1>天空島情境測試</h1>
           <div class="cesium-status-grid">
@@ -40,32 +48,51 @@
               <strong id="building-status">載入中</strong>
             </div>
             <div>
+              <span>UAV 模型</span>
+              <strong id="model-status">載入中</strong>
+            </div>
+            <div>
+              <span>河道</span>
+              <strong id="river-status">載入中</strong>
+            </div>
+            <div>
               <span>底圖</span>
-              <strong>Google 混合衛星</strong>
+              <strong>純展示場景</strong>
             </div>
           </div>
           <div class="cesium-actions" role="group" aria-label="鏡頭控制">
             <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+            <button class="button button-secondary" type="button" data-camera="uav">UAV近看</button>
             <button class="button button-secondary" type="button" data-camera="street">島面</button>
             <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+          </div>
+          <div class="cesium-actions" role="group" aria-label="顯示模式">
+            <button class="button button-secondary" type="button" data-view-mode="real">真實</button>
+            <button class="button button-primary" type="button" data-view-mode="hybrid">混合</button>
+            <button class="button button-secondary" type="button" data-view-mode="analysis">分析</button>
           </div>
           <label class="check-field cesium-toggle">
             <input id="building-toggle" type="checkbox" checked>
             <span>顯示 3D 建物</span>
           </label>
           <label class="check-field cesium-toggle">
+            <input id="model-toggle" type="checkbox" checked>
+            <span>顯示南勢溪 UAV 模型</span>
+          </label>
+          <label class="check-field cesium-toggle">
             <input id="river-toggle" type="checkbox" checked>
-            <span>淹水河道示意</span>
+            <span>nswl 烏來水資料</span>
           </label>
         </div>
       </aside>
 
-      <div class="cesium-legend" aria-label="烏來建物圖例">
+      <div class="cesium-legend" data-wulai-panel-target="legend" aria-label="烏來建物圖例">
         <strong>圖層</strong>
         <span><i class="cesium-radar"></i>烏來天空島平台</span>
+        <span><i class="cesium-real-building"></i>南勢溪 UAV 模型</span>
         <span><i class="cesium-real-building"></i>F_BUILD 建物</span>
-        <span><i class="cesium-radar"></i>南勢溪淹水示意</span>
-        <span><i class="cesium-real-river"></i>Google 混合衛星</span>
+        <span><i class="cesium-radar"></i>nswl 烏來水資料</span>
+        <span><i class="cesium-real-river"></i>純展示背景</span>
       </div>
     </section>
   </main>
@@ -74,6 +101,6 @@
     window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
-  <script src="../../js/wulai-building-test.js?v=20260803-wulai-sky-island"></script>
+  <script src="../../js/wulai-building-test.js?v=20260806-wulai-nswl-axis-fix"></script>
 </body>
 </html>

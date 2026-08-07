@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="全國關鍵基礎設施總覽">
+  <title>全國關鍵基礎設施總覽 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../css/style.css?v=20260807-critical-infrastructure">
+  <style>
+    body[data-page="critical-infrastructure"] {
+      overflow: hidden;
+    }
+
+    body[data-page="critical-infrastructure"] main {
+      padding: 0;
+    }
+
+    .critical-panel h1 {
+      font-size: 34px;
+      line-height: 1.12;
+    }
+
+    .critical-layer {
+      background: #ffd166;
+    }
+
+    .critical-point {
+      background: #38bdf8;
+    }
+
+    .critical-cctv {
+      background: #fb7185;
+    }
+
+    .critical-national {
+      background: #a78bfa;
+    }
+
+    .critical-road-flow {
+      background: #67e8f9;
+    }
+
+    .critical-typhoon {
+      background: linear-gradient(90deg, #67e8f9, #fb7185);
+    }
+
+    .critical-cctv-card {
+      display: none;
+    }
+
+    .critical-cctv-card.is-compact .critical-cctv-frame {
+      display: none;
+    }
+
+    .critical-cctv-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .critical-cctv-list button {
+      display: grid;
+      gap: 3px;
+      margin: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(226, 232, 240, 0.18);
+      border-radius: 6px;
+      color: inherit;
+      background: rgba(255, 255, 255, 0.055);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .critical-cctv-list button.is-active {
+      border-color: rgba(125, 211, 252, 0.56);
+      background: rgba(56, 189, 248, 0.14);
+    }
+
+    .critical-cctv-list strong,
+    .critical-cctv-frame strong {
+      color: #e0f2fe;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .critical-cctv-list span {
+      color: #9fb3ca;
+      font-size: 12px;
+    }
+
+    .critical-cctv-frame {
+      display: grid;
+      gap: 8px;
+    }
+
+    .critical-cctv-frame video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px solid rgba(226, 232, 240, 0.22);
+      border-radius: 6px;
+      background: #020711;
+      object-fit: cover;
+    }
+
+    .critical-cctv-frame a {
+      margin-top: 0;
+    }
+
+    .critical-floating-video {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      z-index: 6;
+      top: auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 10px;
+      width: min(920px, calc(100vw - 36px));
+      padding: 10px;
+      border: 1px solid rgba(125, 211, 252, 0.42);
+      border-radius: 8px;
+      color: #e5f7ff;
+      background: rgba(3, 12, 24, 0.78);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(14px);
+      pointer-events: auto;
+      transform: translateX(-50%);
+    }
+
+    .critical-floating-video.is-collapsed {
+      width: auto;
+      min-width: 0;
+      grid-template-columns: 1fr;
+      padding: 0;
+      border-color: rgba(125, 211, 252, 0.5);
+      background: rgba(3, 12, 24, 0.86);
+    }
+
+    .critical-floating-video.is-collapsed .critical-video-tile {
+      display: none;
+    }
+
+    .critical-video-toggle {
+      display: none;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 8px;
+      color: #02111c;
+      background: #7dd3fc;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .critical-floating-video.is-collapsed .critical-video-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .critical-video-collapse {
+      position: absolute;
+      top: -42px;
+      right: 0;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(125, 211, 252, 0.42);
+      border-radius: 8px;
+      color: #bae6fd;
+      background: rgba(3, 12, 24, 0.78);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .critical-floating-video.is-collapsed .critical-video-collapse {
+      display: none;
+    }
+
+    .critical-video-tile {
+      display: grid;
+      gap: 7px;
+      padding: 8px;
+      border: 1px solid rgba(226, 232, 240, 0.16);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.055);
+      cursor: pointer;
+    }
+
+    .critical-video-tile.is-active {
+      border-color: rgba(125, 211, 252, 0.72);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.18);
+    }
+
+    .critical-video-tile strong {
+      display: block;
+      color: #e0f2fe;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .critical-video-tile video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px solid rgba(226, 232, 240, 0.22);
+      border-radius: 6px;
+      background: #020711;
+      object-fit: cover;
+    }
+
+    .critical-callout-line {
+      display: none;
+    }
+
+    .critical-callout-line line {
+      stroke: rgba(125, 211, 252, 0.9);
+      stroke-width: 2;
+      stroke-dasharray: 7 7;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.75));
+    }
+  </style>
+</head>
+<body data-page="critical-infrastructure">
+  <header class="site-header">
+    <a class="brand" href="../index.html" aria-label="Disaster Oliver 首頁">
+      <span class="brand-mark">DO</span>
+      <span class="brand-text">Disaster Oliver</span>
+    </a>
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="baoer-zongdui.html">關鍵基礎設施</a>
+      <a href="../index.html">頁面索引</a>
+    </nav>
+  </header>
+
+  <main class="cesium-page">
+    <section class="cesium-stage" aria-label="全國關鍵基礎設施總覽場景">
+      <div id="critical-container" class="cesium-container"></div>
+
+      <aside class="cesium-control-panel critical-panel is-collapsed" aria-label="關鍵基礎設施控制">
+        <button class="cesium-panel-toggle" type="button" aria-expanded="false">控制</button>
+        <div class="cesium-panel-content">
+          <p class="eyebrow">Critical Infrastructure</p>
+          <h1>全國關鍵基礎設施總覽</h1>
+          <div class="cesium-status-grid">
+            <div>
+              <span>全台</span>
+              <strong>68 處</strong>
+            </div>
+            <div>
+              <span>已定位</span>
+              <strong>1 處</strong>
+            </div>
+            <div>
+              <span>周邊建物</span>
+              <strong id="critical-building-status">讀取中</strong>
+            </div>
+          </div>
+          <div class="cesium-actions" role="group" aria-label="鏡頭控制">
+            <button class="button button-primary" type="button" data-camera="overview">總覽</button>
+            <button class="button button-secondary" type="button" data-camera="local">保二</button>
+            <button class="button button-secondary" type="button" data-camera="low">低空斜視</button>
+            <button class="button button-secondary" type="button" data-camera="top">俯視</button>
+            <button class="button button-secondary" type="button" data-camera="typhoon">颱風</button>
+          </div>
+          <label class="check-field cesium-toggle">
+            <input id="critical-building-toggle" type="checkbox" checked>
+            <span>周邊建物</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="critical-radius-toggle" type="checkbox" checked>
+            <span>500m 範圍</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="critical-road-toggle" type="checkbox" checked>
+            <span>道路流光</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="critical-national-toggle" type="checkbox" checked>
+            <span>全台 68 處</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="critical-typhoon-toggle" type="checkbox" checked>
+            <span>颱風路徑</span>
+          </label>
+        </div>
+      </aside>
+
+      <div class="cesium-legend" aria-label="圖例">
+        <strong>圖層</strong>
+        <span><i class="critical-point"></i>關鍵設施</span>
+        <span><i class="critical-layer"></i>周邊建物</span>
+        <span><i class="critical-national"></i>全台設施</span>
+        <span><i class="critical-typhoon"></i>颱風路徑</span>
+        <span><i class="critical-road-flow"></i>道路流光</span>
+        <span><i class="critical-cctv"></i>附近即時影像</span>
+      </div>
+
+      <aside class="cesium-livecam-card critical-cctv-card is-compact" aria-label="附近即時影像">
+        <div class="cesium-livecam-heading">
+          <span>Live CCTV</span>
+          <strong>附近即時影像</strong>
+        </div>
+        <div class="critical-cctv-frame">
+          <strong id="critical-cctv-title">新店寶橋路235巷</strong>
+          <a id="critical-cctv-link" href="https://focustaiwan.net/cctv/c000033" target="_blank" rel="noopener">開啟原始影像頁</a>
+        </div>
+        <div class="critical-cctv-list">
+          <button class="is-active" type="button" data-cctv-index="0">
+            <strong>新店寶橋路235巷</strong>
+            <span>約 190m · 新北市政府交通局</span>
+          </button>
+          <button type="button" data-cctv-index="1">
+            <strong>寶橋路、中興路口</strong>
+            <span>約 380m · 新北市政府</span>
+          </button>
+          <button type="button" data-cctv-index="2">
+            <strong>北新路二段、寶橋路口</strong>
+            <span>約 890m · 新北市政府交通局</span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="critical-floating-video" id="critical-floating-video-card" aria-label="附近 CCTV 影像列">
+        <button class="critical-video-toggle" id="critical-video-toggle" type="button">即時影像 3</button>
+        <button class="critical-video-collapse" id="critical-video-collapse" type="button">收合</button>
+        <button class="critical-video-tile is-active" type="button" data-cctv-index="0">
+          <strong>新店寶橋路235巷</strong>
+          <video id="critical-cctv-video-0" controls autoplay muted playsinline></video>
+        </button>
+        <button class="critical-video-tile" type="button" data-cctv-index="1">
+          <strong>寶橋路、中興路口</strong>
+          <video id="critical-cctv-video-1" controls autoplay muted playsinline></video>
+        </button>
+        <button class="critical-video-tile" type="button" data-cctv-index="2">
+          <strong>北新路二段、寶橋路口</strong>
+          <video id="critical-cctv-video-2" controls autoplay muted playsinline></video>
+        </button>
+      </div>
+      <svg class="critical-callout-line" aria-hidden="true">
+        <line id="critical-callout-line" x1="0" y1="0" x2="0" y2="0"></line>
+      </svg>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+    if (window.location.protocol === "file:") {
+      const localUrl = "http://localhost:8000/pages/baoer-zongdui.html";
+      document.body.insertAdjacentHTML(
+        "afterbegin",
+        `<div style="position:fixed;inset:76px 18px auto 18px;z-index:9999;padding:14px 16px;border:1px solid rgba(125,211,252,.45);border-radius:8px;color:#e5f7ff;background:rgba(3,12,24,.92);font:14px/1.5 system-ui,sans-serif;">此頁需要透過本機伺服器開啟，正在切換到 <a style="color:#7dd3fc" href="${localUrl}">${localUrl}</a></div>`
+      );
+      window.setTimeout(() => {
+        window.location.href = localUrl;
+      }, 700);
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../vendor/hls.min.js?v=1.5.17"></script>
+  <script src="../js/critical-infrastructure.js?v=20260807-typhoon-dynamic"></script>
+  <script src="../js/cesium-panel-toggle.js?v=20260731-vertical-panel-toggle"></script>
+</body>
+</html>

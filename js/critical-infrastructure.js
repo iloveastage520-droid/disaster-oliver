@@ -49,7 +49,7 @@ const liveCameras = [
 ];
 const BUILDINGS_URL = "../data/baoer-zongdui/buildings-500m.geojson";
 const ROADS_URL = "../data/baoer-zongdui/roads-500m.geojson";
-const NATIONAL_INFRASTRUCTURE_URL = "../data/critical-infrastructure-68-demo.geojson";
+const NATIONAL_INFRASTRUCTURE_URL = "../data/critical-infrastructure-ncdr.geojson";
 const TYPHOON_TRACK_URL = "../data/cwa-typhoon-track.geojson";
 const TYPHOON_WIND_PROBABILITY_URL = "../data/cwa-typhoon-wind-probability.geojson";
 
@@ -265,7 +265,7 @@ function addRadius() {
 
 async function loadNationalInfrastructure() {
   try {
-    const response = await fetch(`${NATIONAL_INFRASTRUCTURE_URL}?v=20260807`, { cache: "force-cache" });
+    const response = await fetch(`${NATIONAL_INFRASTRUCTURE_URL}?v=20260812-ncdr`, { cache: "force-cache" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const geojson = await response.json();
     nationalInfrastructureEntities = geojson.features.map(addNationalInfrastructurePoint).filter(Boolean);
@@ -326,6 +326,8 @@ function addNationalInfrastructurePoint(feature) {
 function infrastructureColor(category) {
   const colors = {
     "發電": "#7dd3fc",
+    "電力": "#7dd3fc",
+    "能源": "#93c5fd",
     "石化": "#818cf8",
     "港口": "#38bdf8",
     "機場": "#93c5fd",

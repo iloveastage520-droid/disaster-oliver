@@ -60,21 +60,31 @@ const viewer = new CesiumLib.Viewer("critical-container", {
   fullscreenButton: false,
   geocoder: false,
   homeButton: false,
-  infoBox: true,
+  infoBox: false,
   sceneModePicker: false,
-  selectionIndicator: true,
+  selectionIndicator: false,
   timeline: false,
   navigationHelpButton: false,
   shouldAnimate: true,
   terrainProvider: new CesiumLib.EllipsoidTerrainProvider()
 });
 
-viewer.imageryLayers.removeAll();
-viewer.imageryLayers.addImageryProvider(new CesiumLib.UrlTemplateImageryProvider({
-  url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-  credit: "CartoDB Dark Matter, OpenStreetMap",
-  maximumLevel: 20
-}));
+const basemaps = {
+  dark: {
+    url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+    credit: "CartoDB Dark Matter, OpenStreetMap",
+    maximumLevel: 20
+  },
+  "google-hybrid": {
+    url: "https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+    credit: "Google Hybrid",
+    subdomains: ["0", "1", "2", "3"],
+    maximumLevel: 20
+  }
+};
+
+let activeBasemapLayer = null;
+setBasemap("dark");
 
 viewer.scene.backgroundColor = CesiumLib.Color.fromCssColorString("#07111f");
 viewer.scene.globe.depthTestAgainstTerrain = false;
@@ -144,9 +154,26 @@ let roadFlowFrame = 0;
 let activeHls = [];
 let selectedLiveCameraIndex = 0;
 let pulseFrame = 0;
+let focusPulseEntity = null;
+let focusPulseTimer = null;
+let selectedFocusEntity = null;
+let selectedInfrastructureEntity = null;
+let selectedFocusColor = null;
+let selectedOriginalPointColor = null;
+let selectedOriginalPointSize = null;
+const resourceCard = document.querySelector("#critical-resource-card");
+const resourceCategory = document.querySelector("#critical-resource-category");
+const resourceTitle = document.querySelector("#critical-resource-title");
+const resourceList = document.querySelector("#critical-resource-list");
+const scenarioList = document.querySelector("#critical-scenario-list");
+const resourceClose = document.querySelector("#critical-resource-close");
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
   button.addEventListener("click", () => flyToView(button.dataset.camera));
+});
+
+document.querySelector("#critical-basemap-select")?.addEventListener("change", (event) => {
+  setBasemap(event.target.value);
 });
 
 document.querySelector("#critical-building-toggle").addEventListener("change", (event) => {
@@ -197,6 +224,10 @@ document.querySelector("#critical-typhoon-toggle").addEventListener("change", (e
 
 document.querySelector("#critical-video-toggle")?.addEventListener("click", () => setVideoStripCollapsed(false));
 document.querySelector("#critical-video-collapse")?.addEventListener("click", () => setVideoStripCollapsed(true));
+resourceClose?.addEventListener("click", () => {
+  resourceCard?.classList.add("is-hidden");
+  clearSelectedInfrastructureFocus();
+});
 
 setCameraView("low");
 addFacility();
@@ -210,6 +241,8 @@ initLiveVideos();
 selectLiveCamera(0, { fly: false });
 setVideoStripCollapsed(true);
 startInfrastructurePulse();
+initInfrastructurePickHandler();
+viewer.scene.postRender.addEventListener(updateSelectedFocusRing);
 setTimeout(checkCesiumCanvas, 2500);
 
 function setCameraView(viewName) {
@@ -221,6 +254,221 @@ function flyToView(viewName) {
     ...cameraViews[viewName],
     duration: 1.25
   });
+}
+
+function setBasemap(basemapKey) {
+  const config = basemaps[basemapKey] || basemaps.dark;
+  if (activeBasemapLayer) {
+    viewer.imageryLayers.remove(activeBasemapLayer, true);
+  } else {
+    viewer.imageryLayers.removeAll();
+  }
+  activeBasemapLayer = viewer.imageryLayers.addImageryProvider(new CesiumLib.UrlTemplateImageryProvider(config));
+  viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString(basemapKey === "google-hybrid" ? "#111827" : "#030712");
+}
+
+function initInfrastructurePickHandler() {
+  const handler = new CesiumLib.ScreenSpaceEventHandler(viewer.scene.canvas);
+  handler.setInputAction((movement) => {
+    const picked = viewer.scene.pick(movement.position);
+    const entity = picked?.id;
+    const isInfrastructure = Boolean(entity?.properties?.criticalInfrastructure?.getValue?.());
+    if (!isInfrastructure) return;
+    viewer.selectedEntity = undefined;
+    setSelectedInfrastructureFocus(entity);
+    focusInfrastructureEntity(entity);
+    showInfrastructureResources(entity);
+  }, CesiumLib.ScreenSpaceEventType.LEFT_CLICK);
+}
+
+function setSelectedInfrastructureFocus(entity) {
+  clearSelectedInfrastructureFocus();
+  selectedInfrastructureEntity = entity;
+  const position = entity.position?.getValue?.(CesiumLib.JulianDate.now());
+  if (!position) return;
+  const category = entity.properties?.category?.getValue?.() || "";
+  selectedFocusColor = infrastructureColor(category);
+  if (entity.point) {
+    selectedOriginalPointColor = entity.point.color;
+    selectedOriginalPointSize = entity.point.pixelSize;
+    entity.point.color = selectedFocusColor.brighten(0.42, new CesiumLib.Color());
+    entity.point.pixelSize = 18;
+    entity.point.outlineColor = CesiumLib.Color.WHITE;
+    entity.point.outlineWidth = 4;
+  }
+  const cartographic = CesiumLib.Cartographic.fromCartesian(position);
+  const lon = CesiumLib.Math.toDegrees(cartographic.longitude);
+  const lat = CesiumLib.Math.toDegrees(cartographic.latitude);
+  selectedFocusEntity = viewer.entities.add({
+    name: "目前選取設施",
+    position: CesiumLib.Cartesian3.fromDegrees(lon, lat, 1850),
+    ellipse: {
+      semiMajorAxis: 18000,
+      semiMinorAxis: 18000,
+      material: selectedFocusColor.withAlpha(0.16),
+      outline: true,
+      outlineColor: selectedFocusColor.brighten(0.42, new CesiumLib.Color()).withAlpha(0.95),
+      height: 1820
+    }
+  });
+}
+
+function clearSelectedInfrastructureFocus() {
+  if (selectedInfrastructureEntity?.point) {
+    if (selectedOriginalPointColor) selectedInfrastructureEntity.point.color = selectedOriginalPointColor;
+    if (selectedOriginalPointSize) selectedInfrastructureEntity.point.pixelSize = selectedOriginalPointSize;
+    selectedInfrastructureEntity.point.outlineColor = CesiumLib.Color.WHITE;
+    selectedInfrastructureEntity.point.outlineWidth = 2;
+  }
+  if (selectedFocusEntity) viewer.entities.remove(selectedFocusEntity);
+  selectedFocusEntity = null;
+  selectedInfrastructureEntity = null;
+  selectedFocusColor = null;
+  selectedOriginalPointColor = null;
+  selectedOriginalPointSize = null;
+}
+
+function updateSelectedFocusRing() {
+  if (selectedFocusEntity?.ellipse && selectedFocusColor) {
+    const t = (Date.now() % 1600) / 1600;
+    const wave = 0.5 + Math.sin(t * Math.PI * 2) * 0.5;
+    selectedFocusEntity.ellipse.semiMajorAxis = 15000 + wave * 7000;
+    selectedFocusEntity.ellipse.semiMinorAxis = 15000 + wave * 7000;
+    selectedFocusEntity.ellipse.material = selectedFocusColor.withAlpha(0.1 + wave * 0.1);
+    selectedFocusEntity.ellipse.outlineColor = selectedFocusColor.brighten(0.42, new CesiumLib.Color()).withAlpha(0.62 + wave * 0.34);
+  }
+}
+
+function showInfrastructureResources(entity) {
+  const props = entity.properties;
+  const name = props.name?.getValue?.() || entity.name || "關鍵基礎設施";
+  const category = props.category?.getValue?.() || "關鍵基礎設施";
+  const id = props.id?.getValue?.() || "";
+  const lon = Number(props.lon?.getValue?.());
+  const lat = Number(props.lat?.getValue?.());
+  const resources = buildFacilityResources(category, name);
+  resourceCard?.style.setProperty("--resource-accent", infrastructureColorValue(category));
+  if (resourceCategory) resourceCategory.textContent = `${category} | ${id}`;
+  if (resourceTitle) resourceTitle.textContent = name;
+  if (resourceList) {
+    resourceList.innerHTML = resources.items.map((item) => `
+      <li>
+        <span aria-hidden="true">${item.icon}</span>
+        <span>${item.label}</span>
+        <b>${item.value}</b>
+      </li>
+    `).join("");
+  }
+  renderScenarioList(name, category);
+  resourceCard?.classList.remove("is-hidden");
+  replayResourceCardAnimation();
+}
+
+function replayResourceCardAnimation() {
+  if (!resourceCard) return;
+  resourceCard.classList.remove("is-active");
+  void resourceCard.offsetWidth;
+  resourceCard.classList.add("is-active");
+}
+
+function renderScenarioList(name, category) {
+  if (!scenarioList) return;
+  const scenarioBase = category === "水資源" ? "水庫" : category === "石化" ? "廠區" : category === "通訊" ? "通訊站" : "設施";
+  const scenarios = [
+    {
+      title: `${name}${scenarioBase}緊急應變`,
+      agency: "內政部警政署保安警察第二總隊",
+      time: "2026/06/17 15:08"
+    },
+    {
+      title: `總隊-${name}支援調度`,
+      agency: "內政部警政署保安警察第二總隊",
+      time: "2026/06/17 15:08"
+    }
+  ];
+  scenarioList.innerHTML = scenarios.map((scenario) => `
+    <li class="critical-scenario-row">
+      <div>
+        <div class="critical-scenario-tools" aria-hidden="true">
+          <i>⌛</i><i>✎</i><i>↗</i>
+        </div>
+        <div class="critical-scenario-title">${scenario.title}</div>
+      </div>
+      <div class="critical-scenario-agency">${scenario.agency}</div>
+      <div class="critical-scenario-time">${scenario.time}</div>
+    </li>
+  `).join("");
+}
+
+function focusInfrastructureEntity(entity) {
+  const position = entity.position?.getValue?.(CesiumLib.JulianDate.now());
+  if (!position) return;
+  if (focusPulseTimer) window.clearInterval(focusPulseTimer);
+  if (focusPulseEntity) viewer.entities.remove(focusPulseEntity);
+  const cartographic = CesiumLib.Cartographic.fromCartesian(position);
+  const lon = CesiumLib.Math.toDegrees(cartographic.longitude);
+  const lat = CesiumLib.Math.toDegrees(cartographic.latitude);
+  const category = entity.properties?.category?.getValue?.() || "";
+  const focusColor = infrastructureColor(category);
+  let frame = 0;
+  focusPulseEntity = viewer.entities.add({
+    name: "設施選取聚焦",
+    position: CesiumLib.Cartesian3.fromDegrees(lon, lat, 1700),
+    ellipse: {
+      semiMajorAxis: 12000,
+      semiMinorAxis: 12000,
+      material: focusColor.withAlpha(0.24),
+      outline: true,
+      outlineColor: focusColor.brighten(0.36, new CesiumLib.Color()).withAlpha(0.84),
+      height: 1680
+    }
+  });
+  focusPulseTimer = window.setInterval(() => {
+    frame += 1;
+    if (!focusPulseEntity?.ellipse) return;
+    const t = frame / 32;
+    const wave = Math.sin(Math.min(1, t) * Math.PI);
+    focusPulseEntity.ellipse.semiMajorAxis = 9000 + t * 28000;
+    focusPulseEntity.ellipse.semiMinorAxis = 9000 + t * 28000;
+    focusPulseEntity.ellipse.material = focusColor.withAlpha(0.28 * wave);
+    focusPulseEntity.ellipse.outlineColor = focusColor.brighten(0.36, new CesiumLib.Color()).withAlpha(0.86 * wave);
+    if (frame >= 32) {
+      window.clearInterval(focusPulseTimer);
+      focusPulseTimer = null;
+      if (focusPulseEntity) viewer.entities.remove(focusPulseEntity);
+      focusPulseEntity = null;
+    }
+  }, 28);
+}
+
+function buildFacilityResources(category, name) {
+  const categoryBoost = {
+    "發電": 2,
+    "電力": 2,
+    "能源": 2,
+    "石化": 3,
+    "水資源": 1,
+    "科學園區": 2,
+    "通訊": 1,
+    "交通": 1
+  }[category] || 0;
+  const seed = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4;
+  const staff = 14 + categoryBoost * 2 + seed;
+  const readiness = Math.min(99, 90 + categoryBoost + seed);
+  return {
+    staff,
+    readiness,
+    comms: readiness >= 94 ? "正常" : "需複核",
+    items: [
+      { icon: "🚙", label: "勤務車輛", value: `${2 + seed} / ${3 + seed} 可用` },
+      { icon: "📻", label: "無線電", value: `${10 + categoryBoost} / ${12 + categoryBoost} 可用` },
+      { icon: "🔋", label: "發電機", value: `${1 + Math.min(seed, 1)} / ${1 + Math.min(seed, 1)} 可用` },
+      { icon: "🎥", label: "移動監控", value: `${1 + categoryBoost} / ${2 + categoryBoost} 可用` },
+      { icon: "🧰", label: "管制器材", value: `${28 + categoryBoost * 3 + seed} 組` },
+      { icon: "🚧", label: "防護裝備", value: `${14 + categoryBoost * 2} 套` },
+      { icon: "🩹", label: "AED / 急救", value: `${2 + Math.min(seed, 1)} 組` }
+    ]
+  };
 }
 
 function addFacility() {
@@ -281,6 +529,15 @@ function addNationalInfrastructurePoint(feature) {
   const isLocalFacility = Math.abs(lon - facility.lon) < 0.002 && Math.abs(lat - facility.lat) < 0.002;
   const point = viewer.entities.add({
     name: props.name || props.id || "關鍵基礎設施",
+    properties: {
+      criticalInfrastructure: true,
+      id: props.id || "",
+      name: props.name || "",
+      category: props.category || "",
+      status: props.status || "",
+      lon,
+      lat
+    },
     position: CesiumLib.Cartesian3.fromDegrees(lon, lat, isLocalFacility ? 72 : 1600),
     point: {
       pixelSize: isLocalFacility ? 13 : 10,
@@ -290,14 +547,15 @@ function addNationalInfrastructurePoint(feature) {
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     label: {
-      text: props.id || "",
-      font: "700 11px sans-serif",
+      text: props.name || props.id || "",
+      font: '800 17px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
       fillColor: CesiumLib.Color.WHITE,
       outlineColor: CesiumLib.Color.BLACK,
       outlineWidth: 3,
       style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new CesiumLib.Cartesian2(0, -18),
-      scaleByDistance: new CesiumLib.NearFarScalar(80000, 1, 700000, 0.35),
+      pixelOffset: new CesiumLib.Cartesian2(0, -24),
+      scaleByDistance: new CesiumLib.NearFarScalar(80000, 1, 380000, 0.34),
+      translucencyByDistance: new CesiumLib.NearFarScalar(180000, 1, 520000, 0),
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     description: `<strong>${props.name || "--"}</strong><br>ID: ${props.id || "--"}<br>類別: ${props.category || "--"}<br>縣市: ${props.city || "--"}<br>狀態: ${props.status || "--"}<br>${props.note || ""}`
@@ -324,6 +582,10 @@ function addNationalInfrastructurePoint(feature) {
 }
 
 function infrastructureColor(category) {
+  return CesiumLib.Color.fromCssColorString(infrastructureColorValue(category));
+}
+
+function infrastructureColorValue(category) {
   const colors = {
     "發電": "#7dd3fc",
     "電力": "#7dd3fc",
@@ -336,7 +598,7 @@ function infrastructureColor(category) {
     "交通": "#22d3ee",
     "通訊": "#a5b4fc"
   };
-  return CesiumLib.Color.fromCssColorString(colors[category] || "#bae6fd");
+  return colors[category] || "#bae6fd";
 }
 
 function pulseColor(frameWave) {

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>??DF055 ????? 3D Terrain Test</title>
+  <link rel="stylesheet" href="three-demo.css">
+</head>
+<body>
+  <div id="scene"></div>
+  <header class="hud title">
+    <h1>??DF055 ?????</h1>
+    <p>Simplified 2D Debris-Flow Prototype ? 3D Terrain Test</p>
+  </header>
+  <section class="hud controls">
+    <button id="playBtn" type="button">? Play</button>
+    <button id="pauseBtn" type="button">? Pause</button>
+    <button id="resetBtn" type="button">Reset</button>
+    <label>??
+      <input id="timeSlider" type="range" min="0" max="60" step="1" value="0">
+    </label>
+    <label>????
+      <input id="zScale" type="range" min="0.6" max="3.5" step="0.1" value="1.8">
+    </label>
+    <label>????
+      <select id="speedSelect">
+        <option value="420">?</option>
+        <option value="240" selected>??</option>
+        <option value="120">?</option>
+      </select>
+    </label>
+  </section>
+  <aside class="hud stats">
+    <div>?????<strong id="timeLabel">0</strong> ?</div>
+    <dl>
+      <dt>????</dt><dd id="maxDepth">--</dd>
+      <dt>????</dt><dd id="maxVelocity">--</dd>
+      <dt>????</dt><dd id="affectedArea">--</dd>
+      <dt>moving area</dt><dd id="movingArea">--</dd>
+    </dl>
+  </aside>
+  <div class="legend">
+    <span>Depth 0 m</span>
+    <div class="depth-bar"></div>
+    <span>? 5 m</span>
+  </div>
+  <div class="disclaimer">???????????????????????</div>
+  <script src="three-app.js?v=terrain-test-restore-1"></script>
+</body>
+</html>

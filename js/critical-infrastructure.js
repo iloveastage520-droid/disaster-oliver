@@ -50,8 +50,20 @@ const liveCameras = [
 const BUILDINGS_URL = "../data/baoer-zongdui/buildings-500m.geojson";
 const ROADS_URL = "../data/baoer-zongdui/roads-500m.geojson";
 const NATIONAL_INFRASTRUCTURE_URL = "../data/critical-infrastructure-ncdr.geojson";
+const WARGAME_FEEDS = {
+  live: {
+    label: "即時",
+    url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZmb2YXtPKLpRmmL0hqqtaFn6LBp1IbnrPHXO-EMwF0W5rKNdP2AnK6SDTzdsd0jB353Tr41nLbpX/pub?gid=695160338&single=true&output=csv"
+  },
+  resilience: {
+    label: "城鎮韌性演習",
+    url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZmb2YXtPKLpRmmL0hqqtaFn6LBp1IbnrPHXO-EMwF0W5rKNdP2AnK6SDTzdsd0jB353Tr41nLbpX/pub?gid=634456011&single=true&output=csv"
+  }
+};
 const TYPHOON_TRACK_URL = "../data/cwa-typhoon-track.geojson";
 const TYPHOON_WIND_PROBABILITY_URL = "../data/cwa-typhoon-wind-probability.geojson";
+const mapDataset = document.body?.dataset?.mapDataset || "critical-infrastructure";
+let activeWargameFeed = "live";
 
 const viewer = new CesiumLib.Viewer("critical-container", {
   animation: false,
@@ -95,7 +107,7 @@ viewer.scene.postProcessStages.fxaa.enabled = true;
 
 const cameraViews = {
   overview: {
-    destination: CesiumLib.Cartesian3.fromDegrees(121.0, 23.75, 820000),
+    destination: CesiumLib.Cartesian3.fromDegrees(120.95, 23.75, 1150000),
     orientation: {
       heading: CesiumLib.Math.toRadians(0),
       pitch: CesiumLib.Math.toRadians(-90),
@@ -161,19 +173,45 @@ let selectedInfrastructureEntity = null;
 let selectedFocusColor = null;
 let selectedOriginalPointColor = null;
 let selectedOriginalPointSize = null;
+let wargameProjectFeatures = [];
+let recentWargameProjects = [];
 const resourceCard = document.querySelector("#critical-resource-card");
 const resourceCategory = document.querySelector("#critical-resource-category");
 const resourceTitle = document.querySelector("#critical-resource-title");
 const resourceList = document.querySelector("#critical-resource-list");
 const scenarioList = document.querySelector("#critical-scenario-list");
+const historyList = document.querySelector("#critical-history-list");
+const historyDetails = document.querySelector(".critical-history-details");
 const resourceClose = document.querySelector("#critical-resource-close");
+const timelineTrack = document.querySelector("#critical-timeline-track");
+const timelineCount = document.querySelector("#critical-timeline-count");
+const timelinePlayButton = document.querySelector("#critical-timeline-play");
+let timelineItems = [];
+let timelinePlaybackTimer = null;
+let timelinePlaybackIndex = 0;
+let timelinePlaybackActive = false;
 
 document.querySelectorAll("[data-camera]").forEach((button) => {
-  button.addEventListener("click", () => flyToView(button.dataset.camera));
+  button.addEventListener("click", () => {
+    flyToView(button.dataset.camera);
+    if (button.dataset.camera === "overview") showWargameOverviewPanel();
+  });
 });
 
 document.querySelector("#critical-basemap-select")?.addEventListener("change", (event) => {
   setBasemap(event.target.value);
+});
+
+document.querySelectorAll("[data-wargame-feed]").forEach((button) => {
+  button.addEventListener("click", () => switchWargameFeed(button.dataset.wargameFeed));
+});
+
+timelinePlayButton?.addEventListener("click", () => {
+  if (timelinePlaybackTimer) {
+    stopTimelinePlayback();
+  } else {
+    startTimelinePlayback();
+  }
 });
 
 document.querySelector("#critical-building-toggle").addEventListener("change", (event) => {
@@ -208,10 +246,11 @@ document.querySelector("#critical-national-toggle").addEventListener("change", (
   nationalInfrastructureEntities.forEach((entity) => {
     entity.show = event.target.checked;
     if (entity.pulseEntity) entity.pulseEntity.show = event.target.checked;
+    if (entity.rangeEntity) entity.rangeEntity.show = event.target.checked;
   });
 });
 
-document.querySelector("#critical-typhoon-toggle").addEventListener("change", (event) => {
+document.querySelector("#critical-typhoon-toggle")?.addEventListener("change", (event) => {
   typhoonEntities.forEach((entity) => {
     entity.show = event.target.checked;
   });
@@ -225,21 +264,31 @@ document.querySelector("#critical-typhoon-toggle").addEventListener("change", (e
 document.querySelector("#critical-video-toggle")?.addEventListener("click", () => setVideoStripCollapsed(false));
 document.querySelector("#critical-video-collapse")?.addEventListener("click", () => setVideoStripCollapsed(true));
 resourceClose?.addEventListener("click", () => {
-  resourceCard?.classList.add("is-hidden");
   clearSelectedInfrastructureFocus();
+  if (mapDataset === "wargame-projects") {
+    showWargameOverviewPanel();
+  } else {
+    resourceCard?.classList.add("is-hidden");
+  }
 });
 
-setCameraView("low");
-addFacility();
-addLiveCameras();
-addRadius();
+setCameraView("overview");
+if (mapDataset !== "wargame-projects") {
+  addFacility();
+  addLiveCameras();
+  addRadius();
+}
 loadNationalInfrastructure();
-loadTyphoonTrack();
-loadRoads();
-loadBuildings();
-initLiveVideos();
-selectLiveCamera(0, { fly: false });
-setVideoStripCollapsed(true);
+if (mapDataset !== "wargame-projects") {
+  loadTyphoonTrack();
+}
+if (mapDataset !== "wargame-projects") {
+  loadRoads();
+  loadBuildings();
+  initLiveVideos();
+  selectLiveCamera(0, { fly: false });
+  setVideoStripCollapsed(true);
+}
 startInfrastructurePulse();
 initInfrastructurePickHandler();
 viewer.scene.postRender.addEventListener(updateSelectedFocusRing);
@@ -344,22 +393,21 @@ function showInfrastructureResources(entity) {
   const name = props.name?.getValue?.() || entity.name || "關鍵基礎設施";
   const category = props.category?.getValue?.() || "關鍵基礎設施";
   const id = props.id?.getValue?.() || "";
-  const lon = Number(props.lon?.getValue?.());
-  const lat = Number(props.lat?.getValue?.());
-  const resources = buildFacilityResources(category, name);
+  const context = {
+    group: props.group?.getValue?.() || "",
+    createdAt: props.createdAt?.getValue?.() || "",
+    updatedAt: props.updatedAt?.getValue?.() || "",
+    status: props.status?.getValue?.() || "",
+    keyword: props.keyword?.getValue?.() || ""
+  };
+  resourceCard?.classList.remove("is-overview");
   resourceCard?.style.setProperty("--resource-accent", infrastructureColorValue(category));
   if (resourceCategory) resourceCategory.textContent = `${category} | ${id}`;
   if (resourceTitle) resourceTitle.textContent = name;
-  if (resourceList) {
-    resourceList.innerHTML = resources.items.map((item) => `
-      <li>
-        <span aria-hidden="true">${item.icon}</span>
-        <span>${item.label}</span>
-        <b>${item.value}</b>
-      </li>
-    `).join("");
-  }
-  renderScenarioList(name, category);
+  renderResourceList(category, name);
+  renderScenarioList(name, category, context);
+  renderHistoryList(name, category, context);
+  if (historyDetails) historyDetails.open = false;
   resourceCard?.classList.remove("is-hidden");
   replayResourceCardAnimation();
 }
@@ -371,21 +419,26 @@ function replayResourceCardAnimation() {
   resourceCard.classList.add("is-active");
 }
 
-function renderScenarioList(name, category) {
+function renderResourceList(category, name) {
+  if (!resourceList) return;
+  const resources = buildFacilityResources(category, name);
+  resourceList.innerHTML = resources.items.map((item) => `
+    <li>
+      <span aria-hidden="true">${item.icon}</span>
+      <span>${item.label}</span>
+      <b>${item.value}</b>
+    </li>
+  `).join("");
+}
+
+function renderScenarioList(name, category, context = {}) {
   if (!scenarioList) return;
   const scenarioBase = category === "水資源" ? "水庫" : category === "石化" ? "廠區" : category === "通訊" ? "通訊站" : "設施";
-  const scenarios = [
-    {
-      title: `${name}${scenarioBase}緊急應變`,
-      agency: "內政部警政署保安警察第二總隊",
-      time: "2026/06/17 15:08"
-    },
-    {
-      title: `總隊-${name}支援調度`,
-      agency: "內政部警政署保安警察第二總隊",
-      time: "2026/06/17 15:08"
-    }
-  ];
+  const scenarios = [{
+    title: mapDataset === "wargame-projects" ? name : `${name}${scenarioBase}緊急應變`,
+    agency: context.group || "內政部警政署保安警察第二總隊",
+    time: mapDataset === "wargame-projects" ? context.updatedAt || "--" : context.createdAt || "2026/06/17 15:08"
+  }];
   scenarioList.innerHTML = scenarios.map((scenario) => `
     <li class="critical-scenario-row">
       <div>
@@ -398,6 +451,92 @@ function renderScenarioList(name, category) {
       <div class="critical-scenario-time">${scenario.time}</div>
     </li>
   `).join("");
+}
+
+function renderHistoryList(name, category, context = {}) {
+  if (!historyList) return;
+  if (mapDataset === "wargame-projects") {
+    const histories = [
+      {
+        title: context.status || "專案同步狀態待確認",
+        agency: context.group || "未填寫",
+        time: context.updatedAt || "--"
+      },
+      {
+        title: context.keyword ? `辨識關鍵字：${context.keyword}` : "定位關鍵字待確認",
+        agency: category,
+        time: context.updatedAt || "--"
+      }
+    ];
+    historyList.innerHTML = histories.map((history) => `
+      <li class="critical-scenario-row">
+        <div>
+          <div class="critical-scenario-tools" aria-hidden="true">
+            <i>檢</i><i>錄</i><i>↗</i>
+          </div>
+          <div class="critical-scenario-title">${history.title}</div>
+        </div>
+        <div class="critical-scenario-agency">${history.agency}</div>
+        <div class="critical-scenario-time">${history.time}</div>
+      </li>
+    `).join("");
+    return;
+  }
+  const historyBase = category === "水資源" ? "水情" : category === "石化" ? "災害" : category === "通訊" ? "通訊" : "安全";
+  const histories = [
+    {
+      title: `${name}${historyBase}巡檢紀錄`,
+      agency: "內政部警政署保安警察第二總隊",
+      time: "2026/05/28 09:30"
+    },
+    {
+      title: `${name}周邊交通管制演練`,
+      agency: "內政部警政署保安警察第二總隊",
+      time: "2026/04/19 14:20"
+    },
+    {
+      title: `${name}通訊備援測試`,
+      agency: "內政部警政署保安警察第二總隊",
+      time: "2026/03/06 10:15"
+    }
+  ];
+  historyList.innerHTML = histories.map((history) => `
+    <li class="critical-scenario-row">
+      <div>
+        <div class="critical-scenario-tools" aria-hidden="true">
+          <i>檢</i><i>錄</i><i>↗</i>
+        </div>
+        <div class="critical-scenario-title">${history.title}</div>
+      </div>
+      <div class="critical-scenario-agency">${history.agency}</div>
+      <div class="critical-scenario-time">${history.time}</div>
+    </li>
+  `).join("");
+}
+
+function buildFacilityResources(category, name) {
+  const categoryBoost = {
+    "發電": 2,
+    "電力": 2,
+    "能源": 2,
+    "石化": 3,
+    "水資源": 1,
+    "科學園區": 2,
+    "通訊": 1,
+    "交通": 1
+  }[category] || 0;
+  const seed = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4;
+  return {
+    items: [
+      { icon: "🚙", label: "勤務車輛", value: `${2 + seed} / ${3 + seed} 可用` },
+      { icon: "📻", label: "無線電", value: `${10 + categoryBoost} / ${12 + categoryBoost} 可用` },
+      { icon: "🔋", label: "發電機", value: `${1 + Math.min(seed, 1)} / ${1 + Math.min(seed, 1)} 可用` },
+      { icon: "🎥", label: "移動監控", value: `${1 + categoryBoost} / ${2 + categoryBoost} 可用` },
+      { icon: "🧰", label: "管制器材", value: `${28 + categoryBoost * 3 + seed} 組` },
+      { icon: "🚧", label: "防護裝備", value: `${14 + categoryBoost * 2} 套` },
+      { icon: "🩹", label: "AED / 急救", value: `${2 + Math.min(seed, 1)} 組` }
+    ]
+  };
 }
 
 function focusInfrastructureEntity(entity) {
@@ -439,36 +578,6 @@ function focusInfrastructureEntity(entity) {
       focusPulseEntity = null;
     }
   }, 28);
-}
-
-function buildFacilityResources(category, name) {
-  const categoryBoost = {
-    "發電": 2,
-    "電力": 2,
-    "能源": 2,
-    "石化": 3,
-    "水資源": 1,
-    "科學園區": 2,
-    "通訊": 1,
-    "交通": 1
-  }[category] || 0;
-  const seed = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4;
-  const staff = 14 + categoryBoost * 2 + seed;
-  const readiness = Math.min(99, 90 + categoryBoost + seed);
-  return {
-    staff,
-    readiness,
-    comms: readiness >= 94 ? "正常" : "需複核",
-    items: [
-      { icon: "🚙", label: "勤務車輛", value: `${2 + seed} / ${3 + seed} 可用` },
-      { icon: "📻", label: "無線電", value: `${10 + categoryBoost} / ${12 + categoryBoost} 可用` },
-      { icon: "🔋", label: "發電機", value: `${1 + Math.min(seed, 1)} / ${1 + Math.min(seed, 1)} 可用` },
-      { icon: "🎥", label: "移動監控", value: `${1 + categoryBoost} / ${2 + categoryBoost} 可用` },
-      { icon: "🧰", label: "管制器材", value: `${28 + categoryBoost * 3 + seed} 組` },
-      { icon: "🚧", label: "防護裝備", value: `${14 + categoryBoost * 2} 套` },
-      { icon: "🩹", label: "AED / 急救", value: `${2 + Math.min(seed, 1)} 組` }
-    ]
-  };
 }
 
 function addFacility() {
@@ -513,13 +622,622 @@ function addRadius() {
 
 async function loadNationalInfrastructure() {
   try {
-    const response = await fetch(`${NATIONAL_INFRASTRUCTURE_URL}?v=20260812-ncdr`, { cache: "force-cache" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const geojson = await response.json();
+    const geojson = mapDataset === "wargame-projects"
+      ? await fetchWargameProjectGeojson()
+      : await fetchNationalInfrastructureGeojson();
+    if (mapDataset === "wargame-projects") wargameProjectFeatures = geojson.features;
     nationalInfrastructureEntities = geojson.features.map(addNationalInfrastructurePoint).filter(Boolean);
+    updateNationalToggleLabel(nationalInfrastructureEntities.length);
+    renderWargameTimeline();
+    showWargameOverviewPanel();
   } catch (error) {
-    showCriticalError(`全台設施資料讀取失敗：${error.message}`);
+    const label = mapDataset === "wargame-projects" ? "兵棋專案點位" : "全台設施資料";
+    showCriticalError(`${label}讀取失敗：${error.message}`);
   }
+}
+
+async function fetchNationalInfrastructureGeojson() {
+  const response = await fetch(`${NATIONAL_INFRASTRUCTURE_URL}?v=20260812-ncdr`, { cache: "force-cache" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+async function fetchWargameProjectGeojson() {
+  const feed = WARGAME_FEEDS[activeWargameFeed] || WARGAME_FEEDS.live;
+  const response = await fetch(`${feed.url}&v=20260814`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const csv = await response.text();
+  const rows = parseCsvRows(csv);
+  const features = spreadOverlappingWargamePoints(rows.map(wargameProjectRowToFeature).filter(isWargameProjectFromAugust));
+  return {
+    type: "FeatureCollection",
+    name: "national-wargame-projects",
+    features
+  };
+}
+
+function isWargameProjectFromAugust(feature) {
+  if (!feature) return false;
+  const updatedAt = parseTaiwanDateTime(feature.properties?.updatedAt);
+  if (!updatedAt) return false;
+  return updatedAt >= new Date(2026, 7, 1, 0, 0, 0);
+}
+
+async function switchWargameFeed(feedKey) {
+  if (mapDataset !== "wargame-projects" || !WARGAME_FEEDS[feedKey] || feedKey === activeWargameFeed) return;
+  stopTimelinePlayback();
+  activeWargameFeed = feedKey;
+  document.querySelectorAll("[data-wargame-feed]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.wargameFeed === activeWargameFeed);
+  });
+  clearSelectedInfrastructureFocus();
+  clearNationalInfrastructureEntities();
+  wargameProjectFeatures = [];
+  recentWargameProjects = [];
+  resourceCard?.classList.add("is-hidden");
+  await loadNationalInfrastructure();
+  setCameraView("overview");
+}
+
+function clearNationalInfrastructureEntities() {
+  nationalInfrastructureEntities.forEach((entity) => {
+    if (entity.rangeEntity) viewer.entities.remove(entity.rangeEntity);
+    if (entity.pulseEntity) viewer.entities.remove(entity.pulseEntity);
+    viewer.entities.remove(entity);
+  });
+  nationalInfrastructureEntities = [];
+}
+
+function parseCsvRows(csv) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+
+  for (let index = 0; index < csv.length; index += 1) {
+    const char = csv[index];
+    const next = csv[index + 1];
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && next === "\n") index += 1;
+      row.push(cell);
+      if (row.some((value) => value.trim())) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  row.push(cell);
+  if (row.some((value) => value.trim())) rows.push(row);
+  const headers = rows.shift() || [];
+  return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header.trim(), (values[index] || "").trim()])));
+}
+
+function wargameProjectRowToFeature(row) {
+  const lat = Number(row["緯度"]);
+  const lon = Number(row["經度"]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  const locationType = row["定位類型"] || "兵棋專案";
+  const group = row["所屬群組"] || "未填寫";
+  const projectName = row["專案名稱"] || "未命名專案";
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [lon, lat]
+    },
+    properties: {
+      id: row["專案ID"] || buildWargameProjectId(row),
+      name: projectName,
+      category: locationType === "關鍵基礎設施" ? "兵棋設施" : locationType,
+      city: row["定位名稱"] || "",
+      status: row["同步時間"] ? `同步 ${row["同步時間"]}` : "待同步",
+      group,
+      createdAt: row["建立時間"] || "",
+      updatedAt: row["最後修改時間"] || "",
+      keyword: row["辨識關鍵字"] || row["關鍵字"] || "",
+      originalLon: lon,
+      originalLat: lat,
+      note: `${group}<br>${row["定位名稱"] || ""}`
+    }
+  };
+}
+
+function buildWargameProjectId(row) {
+  return [
+    row["專案名稱"] || "project",
+    row["所屬群組"] || "group",
+    row["最後修改時間"] || "updated"
+  ].join("|");
+}
+
+function spreadOverlappingWargamePoints(features) {
+  const groups = new Map();
+  features.forEach((feature) => {
+    const [lon, lat] = feature.geometry.coordinates;
+    const key = `${lat.toFixed(6)},${lon.toFixed(6)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(feature);
+  });
+
+  groups.forEach((items) => {
+    if (items.length <= 1) return;
+    const [centerLon, centerLat] = items[0].geometry.coordinates;
+    const radiusKm = getSpreadRadiusKm(items);
+    items.forEach((feature, index) => {
+      const offset = getRandomizedTaiwanVisualOffset(centerLon, centerLat, radiusKm, feature, index);
+      feature.geometry.coordinates = [offset.lon, offset.lat];
+      feature.properties.displayLon = offset.lon;
+      feature.properties.displayLat = offset.lat;
+      feature.properties.spreadCount = items.length;
+      feature.properties.spreadIndex = index + 1;
+    });
+  });
+  return features;
+}
+
+function getSpreadRadiusKm(items) {
+  const hasFacility = items.some((feature) => feature.properties?.category === "兵棋設施" || feature.properties?.category === "關鍵基礎設施");
+  const base = hasFacility ? 3.2 : 7.5;
+  return Math.min(base + items.length * 0.9, hasFacility ? 6 : 12);
+}
+
+function getRandomizedTaiwanVisualOffset(lon, lat, radiusKm, feature, index) {
+  const seed = hashString(`${feature.properties?.id || feature.properties?.name || "project"}|${index}`);
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const angle = (seed % 6283) / 1000 + index * golden;
+  const distanceRatio = 0.22 + (((seed >>> 8) % 1000) / 1000) * 0.78;
+  return constrainTaiwanVisualOffset(lon, lat, radiusKm * distanceRatio, angle);
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function getInlandSpreadAngle(lon, lat) {
+  const taiwanCenter = { lon: 120.96, lat: 23.76 };
+  const deltaLonKm = (taiwanCenter.lon - lon) * 111.32 * Math.cos(CesiumLib.Math.toRadians(lat));
+  const deltaLatKm = (taiwanCenter.lat - lat) * 110.574;
+  return Math.atan2(deltaLatKm, deltaLonKm);
+}
+
+function constrainTaiwanVisualOffset(lon, lat, radiusKm, angle) {
+  const fallbackAngle = getInlandSpreadAngle(lon, lat);
+  const candidateAngles = [angle, angle - 0.42, angle + 0.42, fallbackAngle, fallbackAngle - 0.35, fallbackAngle + 0.35];
+  const candidateRadii = [radiusKm, radiusKm * 0.72, radiusKm * 0.5, radiusKm * 0.32];
+  for (const nextRadius of candidateRadii) {
+    for (const nextAngle of candidateAngles) {
+      const offset = offsetCoordinate(lon, lat, nextRadius, nextAngle);
+      if (isLikelyTaiwanLandDisplay(offset.lon, offset.lat)) return offset;
+    }
+  }
+  return offsetCoordinate(lon, lat, Math.min(radiusKm, 2.2), fallbackAngle);
+}
+
+function isLikelyTaiwanLandDisplay(lon, lat) {
+  if (lon < 120.0 || lon > 122.15 || lat < 21.85 || lat > 25.45) return false;
+  const eastCoastLimit = 121.06 + Math.max(0, lat - 22.2) * 0.28;
+  const westCoastLimit = 120.03 + Math.max(0, lat - 22.25) * 0.09;
+  if (lat > 24.65 && lon > 121.95) return false;
+  if (lat < 22.3 && lon < 120.55) return false;
+  return lon >= westCoastLimit && lon <= eastCoastLimit;
+}
+
+function offsetCoordinate(lon, lat, radiusKm, angle) {
+  const latOffset = (Math.sin(angle) * radiusKm) / 110.574;
+  const lonOffset = (Math.cos(angle) * radiusKm) / (111.32 * Math.cos(CesiumLib.Math.toRadians(lat)));
+  return {
+    lon: lon + lonOffset,
+    lat: lat + latOffset
+  };
+}
+
+function showWargameOverviewPanel() {
+  if (mapDataset !== "wargame-projects" || !resourceCard || !wargameProjectFeatures.length) return;
+  clearSelectedInfrastructureFocus();
+  resourceCard.classList.add("is-overview");
+  resourceCard.style.setProperty("--resource-accent", "#38bdf8");
+  if (resourceCategory) resourceCategory.textContent = "Wargame Updates";
+  if (resourceTitle) resourceTitle.textContent = "兵推即時狀況";
+  if (scenarioList) renderWargameRecentUpdates();
+  if (historyList) historyList.innerHTML = "";
+  if (historyDetails) historyDetails.open = false;
+  resourceCard.classList.remove("is-hidden");
+  replayResourceCardAnimation();
+}
+
+function renderWargameRecentUpdates() {
+  recentWargameProjects = getRecentWargameProjects();
+  const allProjects = getAllWargameProjectsByUpdateTime();
+  if (!allProjects.length) {
+    scenarioList.innerHTML = '<li class="critical-scenario-empty">目前資料源沒有 8 月後可定位專案</li>';
+    return;
+  }
+  const summary = summarizeWargameProjects(allProjects);
+  const recentSummary = summarizeWargameProjects(recentWargameProjects);
+  const latest = allProjects[0]?.properties || {};
+  const feed = WARGAME_FEEDS[activeWargameFeed] || WARGAME_FEEDS.live;
+  scenarioList.innerHTML = `
+    <li>
+      <div class="critical-overview-summary">
+        <div class="critical-overview-stat">
+          <span>8 月專案</span>
+          <strong>${summary.total}</strong>
+        </div>
+        <div class="critical-overview-stat">
+          <span>24 小時</span>
+          <strong>${recentSummary.total}</strong>
+        </div>
+        <div class="critical-overview-stat">
+          <span>涉及單位</span>
+          <strong>${summary.groupCount}</strong>
+        </div>
+        <div class="critical-overview-stat">
+          <span>關鍵設施</span>
+          <strong>${summary.facilityTypeCount}</strong>
+        </div>
+      </div>
+      <div class="critical-overview-latest">
+        <span>${feed.label}｜最新異動</span>
+        <b>${latest.name || "未命名專案"}</b>
+        <span>${latest.group || "未填寫"}｜${latest.updatedAt || "--"}</span>
+      </div>
+      <select class="critical-overview-select" id="critical-overview-project-select" aria-label="選擇 8 月後專案">
+        ${allProjects.map((feature, index) => {
+          const props = feature.properties || {};
+          return `<option value="${index}">${props.name || "未命名專案"}｜${props.updatedAt || "--"}</option>`;
+        }).join("")}
+      </select>
+      <div class="critical-overview-meta" id="critical-overview-project-meta"></div>
+    </li>
+  `;
+  const select = document.querySelector("#critical-overview-project-select");
+  select?.addEventListener("change", () => renderSelectedWargameUpdate(Number(select.value), { fly: true }));
+  renderSelectedWargameUpdate(0, { fly: false });
+}
+
+function summarizeWargameProjects(projects) {
+  const groups = new Set();
+  let cityTypeCount = 0;
+  let facilityTypeCount = 0;
+  projects.forEach((feature) => {
+    const props = feature.properties || {};
+    if (props.group) groups.add(props.group);
+    if (props.category === "縣市" || props.category === "區域") cityTypeCount += 1;
+    if (props.category === "兵棋設施" || props.category === "關鍵基礎設施") facilityTypeCount += 1;
+  });
+  return {
+    total: projects.length,
+    groupCount: groups.size,
+    cityTypeCount,
+    facilityTypeCount
+  };
+}
+
+function renderSelectedWargameUpdate(index, options = {}) {
+  const feature = getAllWargameProjectsByUpdateTime()[index];
+  const meta = document.querySelector("#critical-overview-project-meta");
+  if (!feature || !meta) return;
+  const props = feature.properties || {};
+  meta.innerHTML = `
+    <b>${props.name || "未命名專案"}</b>
+    <span>所屬群組：${props.group || "未填寫"}</span>
+    <span>定位：${props.city || "--"}｜${props.category || "--"}</span>
+    <span>最後修改：${props.updatedAt || "--"}</span>
+    ${props.spreadCount > 1 ? `<span>同座標 ${props.spreadCount} 筆，已於地圖視覺打散</span>` : ""}
+    <span>${props.status || "同步狀態待確認"}</span>
+  `;
+  if (options.fly) {
+    const entity = nationalInfrastructureEntities.find((item) => item.properties?.id?.getValue?.() === props.id);
+    if (entity) {
+      setSelectedInfrastructureFocus(entity);
+      focusInfrastructureEntity(entity);
+    }
+  }
+}
+
+function getAllWargameProjectsByUpdateTime() {
+  return wargameProjectFeatures
+    .filter((feature) => parseTaiwanDateTime(feature.properties?.updatedAt))
+    .sort((a, b) => (parseTaiwanDateTime(b.properties?.updatedAt)?.getTime() || 0) - (parseTaiwanDateTime(a.properties?.updatedAt)?.getTime() || 0));
+}
+
+function renderWargameTimeline() {
+  if (mapDataset !== "wargame-projects" || !timelineTrack) return;
+  timelineItems = groupWargameProjectsByUpdateDay();
+
+  if (timelineCount) timelineCount.textContent = `${timelineItems.length} 天`;
+  if (!timelineItems.length) {
+    timelineTrack.innerHTML = '<div class="critical-scenario-empty">沒有可顯示的最後更新時間</div>';
+    return;
+  }
+
+  const startTime = new Date(2026, 7, 1, 0, 0, 0).getTime();
+  const endTime = timelineItems[timelineItems.length - 1].date.getTime();
+  const span = Math.max(1, endTime - startTime);
+  timelineTrack.innerHTML = `
+    <div class="critical-timeline-line"></div>
+    ${timelineItems.map(({ date, features }, index) => {
+      const props = features[features.length - 1]?.properties || {};
+      const time = date;
+      const position = timelineItems.length === 1 ? 50 : 4 + ((time.getTime() - startTime) / span) * 92;
+      return `
+        <button class="critical-timeline-point" type="button" data-timeline-day="${escapeHtmlAttribute(formatDateKey(time))}" style="left:${position}%;" aria-label="${escapeHtmlAttribute(formatTimelineDayLabel(time))} ${features.length} 筆"></button>
+        <span class="critical-timeline-label" style="left:${position}%;">${formatTimelineLabel(time, index, timelineItems.length)}</span>
+      `;
+    }).join("")}
+  `;
+
+  timelineTrack.querySelectorAll("[data-timeline-day]").forEach((button) => {
+    button.addEventListener("click", () => selectWargameDay(button.dataset.timelineDay));
+  });
+}
+
+function groupWargameProjectsByUpdateDay() {
+  const groups = new Map();
+  wargameProjectFeatures.forEach((feature) => {
+    const time = parseTaiwanDateTime(feature.properties?.updatedAt);
+    if (!time) return;
+    const key = formatDateKey(time);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        date: new Date(time.getFullYear(), time.getMonth(), time.getDate()),
+        features: []
+      });
+    }
+    groups.get(key).features.push(feature);
+  });
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      features: group.features.sort((a, b) => (parseTaiwanDateTime(a.properties?.updatedAt)?.getTime() || 0) - (parseTaiwanDateTime(b.properties?.updatedAt)?.getTime() || 0))
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function selectWargameProjectById(projectId) {
+  const entity = nationalInfrastructureEntities.find((item) => item.properties?.id?.getValue?.() === projectId);
+  if (!entity) return;
+  timelineTrack?.querySelectorAll(".critical-timeline-point").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.timelineProjectId === projectId);
+  });
+  const allIndex = getAllWargameProjectsByUpdateTime().findIndex((feature) => feature.properties?.id === projectId);
+  const select = document.querySelector("#critical-overview-project-select");
+  if (allIndex >= 0 && select) {
+    select.value = String(allIndex);
+    renderSelectedWargameUpdate(allIndex, { fly: false });
+  }
+  setSelectedInfrastructureFocus(entity);
+  focusInfrastructureEntity(entity);
+}
+
+function selectWargameDay(dayKey) {
+  const group = timelineItems.find((item) => item.key === dayKey);
+  if (!group) return;
+  timelineTrack?.querySelectorAll(".critical-timeline-point").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.timelineDay === dayKey);
+  });
+  const latestFeature = [...group.features]
+    .sort((a, b) => (parseTaiwanDateTime(b.properties?.updatedAt)?.getTime() || 0) - (parseTaiwanDateTime(a.properties?.updatedAt)?.getTime() || 0))[0];
+  const latestIndex = getAllWargameProjectsByUpdateTime().findIndex((feature) => feature.properties?.id === latestFeature?.properties?.id);
+  const select = document.querySelector("#critical-overview-project-select");
+  if (latestIndex >= 0 && select) {
+    select.value = String(latestIndex);
+    renderSelectedWargameUpdate(latestIndex, { fly: false });
+  }
+  applyTimelinePlaybackDayState(dayKey);
+  const entity = nationalInfrastructureEntities.find((item) => item.properties?.id?.getValue?.() === latestFeature?.properties?.id);
+  if (entity) focusInfrastructureEntity(entity);
+}
+
+function applyTimelinePlaybackState(currentProjectId) {
+  const currentItem = timelineItems.find((item) => item.feature.properties?.id === currentProjectId);
+  const currentTime = currentItem?.time?.getTime();
+  if (!currentTime) return;
+  const dimColor = CesiumLib.Color.fromCssColorString("#3f5f70");
+  nationalInfrastructureEntities.forEach((entity) => {
+    const entityTime = parseTaiwanDateTime(entity.properties?.updatedAt?.getValue?.());
+    if (!entityTime) return;
+    const isCurrent = entity.properties?.id?.getValue?.() === currentProjectId;
+    const hasOccurred = entityTime.getTime() <= currentTime;
+    entity.show = hasOccurred;
+    if (entity.rangeEntity) entity.rangeEntity.show = hasOccurred;
+    if (entity.pulseEntity) entity.pulseEntity.show = hasOccurred;
+    if (!hasOccurred) return;
+
+    if (entity.point) {
+      entity.point.color = isCurrent ? CesiumLib.Color.fromCssColorString("#f8fbff") : dimColor.withAlpha(0.62);
+      entity.point.pixelSize = isCurrent ? 18 : 9;
+      entity.point.outlineColor = isCurrent ? CesiumLib.Color.fromCssColorString("#67e8f9") : CesiumLib.Color.fromCssColorString("#1e293b");
+      entity.point.outlineWidth = isCurrent ? 4 : 1;
+    }
+    if (entity.label) {
+      entity.label.fillColor = isCurrent ? CesiumLib.Color.WHITE : CesiumLib.Color.fromCssColorString("#94a3b8").withAlpha(0.62);
+      entity.label.outlineWidth = isCurrent ? 4 : 2;
+    }
+    if (entity.rangeEntity?.ellipse) {
+      const baseColor = isCurrent ? CesiumLib.Color.fromCssColorString("#67e8f9") : dimColor;
+      entity.rangeEntity.ellipse.material = baseColor.withAlpha(isCurrent ? 0.026 : 0.004);
+      entity.rangeEntity.ellipse.outlineColor = baseColor.withAlpha(isCurrent ? 0.72 : 0.16);
+    }
+    if (entity.pulseEntity?.pulseBase) {
+      entity.pulseEntity.pulseBase.playbackCurrent = isCurrent;
+      entity.pulseEntity.pulseBase.playbackDimmed = !isCurrent;
+    }
+  });
+}
+
+function applyTimelinePlaybackDayState(currentDayKey) {
+  const currentGroup = timelineItems.find((item) => item.key === currentDayKey);
+  if (!currentGroup) return;
+  const currentTime = currentGroup.date.getTime();
+  const currentIds = new Set(currentGroup.features.map((feature) => feature.properties?.id));
+  const dimColor = CesiumLib.Color.fromCssColorString("#3f5f70");
+  nationalInfrastructureEntities.forEach((entity) => {
+    const entityTime = parseTaiwanDateTime(entity.properties?.updatedAt?.getValue?.());
+    if (!entityTime) return;
+    const entityDayTime = new Date(entityTime.getFullYear(), entityTime.getMonth(), entityTime.getDate()).getTime();
+    const id = entity.properties?.id?.getValue?.();
+    const isCurrent = currentIds.has(id);
+    const hasOccurred = entityDayTime <= currentTime;
+    entity.show = hasOccurred;
+    if (entity.rangeEntity) entity.rangeEntity.show = hasOccurred;
+    if (entity.pulseEntity) entity.pulseEntity.show = hasOccurred;
+    if (!hasOccurred) return;
+
+    if (entity.point) {
+      entity.point.color = isCurrent ? CesiumLib.Color.fromCssColorString("#f8fbff") : dimColor.withAlpha(0.62);
+      entity.point.pixelSize = isCurrent ? 18 : 9;
+      entity.point.outlineColor = isCurrent ? CesiumLib.Color.fromCssColorString("#67e8f9") : CesiumLib.Color.fromCssColorString("#1e293b");
+      entity.point.outlineWidth = isCurrent ? 4 : 1;
+    }
+    if (entity.label) {
+      entity.label.fillColor = isCurrent ? CesiumLib.Color.WHITE : CesiumLib.Color.fromCssColorString("#94a3b8").withAlpha(0.62);
+      entity.label.outlineWidth = isCurrent ? 4 : 2;
+    }
+    if (entity.rangeEntity?.ellipse) {
+      const baseColor = isCurrent ? CesiumLib.Color.fromCssColorString("#67e8f9") : dimColor;
+      entity.rangeEntity.ellipse.material = baseColor.withAlpha(isCurrent ? 0.026 : 0.004);
+      entity.rangeEntity.ellipse.outlineColor = baseColor.withAlpha(isCurrent ? 0.72 : 0.16);
+    }
+    if (entity.pulseEntity?.pulseBase) {
+      entity.pulseEntity.pulseBase.playbackCurrent = isCurrent;
+      entity.pulseEntity.pulseBase.playbackDimmed = !isCurrent;
+    }
+  });
+}
+
+function resetTimelinePlaybackState() {
+  nationalInfrastructureEntities.forEach((entity) => {
+    const base = entity.timelineBase;
+    entity.show = true;
+    if (entity.rangeEntity) entity.rangeEntity.show = true;
+    if (entity.pulseEntity) entity.pulseEntity.show = true;
+    if (entity.point && base) {
+      entity.point.color = base.color;
+      entity.point.pixelSize = base.pointSize;
+      entity.point.outlineColor = base.outlineColor;
+      entity.point.outlineWidth = base.outlineWidth;
+    }
+    if (entity.label) {
+      entity.label.fillColor = CesiumLib.Color.WHITE;
+      entity.label.outlineWidth = mapDataset === "wargame-projects" ? 4 : 3;
+    }
+    if (entity.rangeEntity?.ellipse && base) {
+      entity.rangeEntity.ellipse.material = base.color.withAlpha(mapDataset === "wargame-projects" ? 0.006 : 0.055);
+      entity.rangeEntity.ellipse.outlineColor = base.color.withAlpha(mapDataset === "wargame-projects" ? 0.2 : 0.28);
+    }
+    if (entity.pulseEntity?.pulseBase) {
+      entity.pulseEntity.pulseBase.playbackCurrent = false;
+      entity.pulseEntity.pulseBase.playbackDimmed = false;
+    }
+  });
+}
+
+function startTimelinePlayback() {
+  if (!timelineItems.length || timelinePlaybackTimer) return;
+  timelinePlaybackActive = true;
+  timelinePlaybackIndex = 0;
+  timelinePlayButton?.classList.add("is-playing");
+  if (timelinePlayButton) timelinePlayButton.textContent = "暫停";
+  playTimelineStep();
+  timelinePlaybackTimer = window.setInterval(playTimelineStep, 1600);
+}
+
+function stopTimelinePlayback() {
+  if (timelinePlaybackTimer) {
+    window.clearInterval(timelinePlaybackTimer);
+    timelinePlaybackTimer = null;
+  }
+  timelinePlaybackActive = false;
+  resetTimelinePlaybackState();
+  timelinePlayButton?.classList.remove("is-playing");
+  if (timelinePlayButton) timelinePlayButton.textContent = "循環播放";
+}
+
+function playTimelineStep() {
+  if (!timelineItems.length) {
+    stopTimelinePlayback();
+    return;
+  }
+  const item = timelineItems[timelinePlaybackIndex];
+  if (item?.key) {
+    selectWargameDay(item.key);
+  }
+  timelinePlaybackIndex += 1;
+  if (timelinePlaybackIndex >= timelineItems.length) {
+    timelinePlaybackIndex = 0;
+  }
+}
+
+function formatTimelineLabel(date, index, total) {
+  if (total > 18 && index % Math.ceil(total / 8) !== 0 && index !== total - 1) return "";
+  return formatTimelineDayLabel(date);
+}
+
+function formatTimelineDayLabel(date) {
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function formatDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function escapeHtmlAttribute(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function getRecentWargameProjects() {
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  return wargameProjectFeatures
+    .filter((feature) => {
+      const updatedAt = parseTaiwanDateTime(feature.properties?.updatedAt);
+      return updatedAt && now - updatedAt.getTime() <= oneDayMs && now - updatedAt.getTime() >= 0;
+    })
+    .sort((a, b) => (parseTaiwanDateTime(b.properties?.updatedAt)?.getTime() || 0) - (parseTaiwanDateTime(a.properties?.updatedAt)?.getTime() || 0));
+}
+
+function parseTaiwanDateTime(value) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  const isoLike = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (isoLike) {
+    const [, year, month, day, hour, minute, second = "0"] = isoLike;
+    return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+  }
+  const zhLike = normalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(上午|下午)\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!zhLike) return null;
+  const [, year, month, day, period, rawHour, minute, second = "0"] = zhLike;
+  let hour = Number(rawHour);
+  if (period === "下午" && hour < 12) hour += 12;
+  if (period === "上午" && hour === 12) hour = 0;
+  return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+}
+
+function updateNationalToggleLabel(count) {
+  const label = document.querySelector("#critical-national-toggle-label");
+  if (!label) return;
+  label.textContent = mapDataset === "wargame-projects" ? `兵棋專案 ${count} 處` : `全台 ${count} 處`;
 }
 
 function addNationalInfrastructurePoint(feature) {
@@ -527,6 +1245,15 @@ function addNationalInfrastructurePoint(feature) {
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
   const props = feature.properties || {};
   const isLocalFacility = Math.abs(lon - facility.lon) < 0.002 && Math.abs(lat - facility.lat) < 0.002;
+  const labelFontSize = mapDataset === "wargame-projects" ? 22 : 17;
+  const labelNearScale = mapDataset === "wargame-projects" ? 1.12 : 1;
+  const labelFarScale = mapDataset === "wargame-projects" ? 0.52 : 0.34;
+  const labelFadeStart = mapDataset === "wargame-projects" ? 260000 : 180000;
+  const labelFadeEnd = mapDataset === "wargame-projects" ? 720000 : 520000;
+  const temporalStyle = mapDataset === "wargame-projects" ? wargameTemporalStyle(props.updatedAt) : null;
+  const wargameBaseColor = CesiumLib.Color.fromCssColorString("#67e8f9");
+  const visualColor = mapDataset === "wargame-projects" ? wargameBaseColor : infrastructureColor(props.category);
+  const labelText = mapDataset === "wargame-projects" ? props.group || props.name || props.id || "" : props.name || props.id || "";
   const point = viewer.entities.add({
     name: props.name || props.id || "關鍵基礎設施",
     properties: {
@@ -535,30 +1262,51 @@ function addNationalInfrastructurePoint(feature) {
       name: props.name || "",
       category: props.category || "",
       status: props.status || "",
+      group: props.group || "",
+      createdAt: props.createdAt || "",
+      updatedAt: props.updatedAt || "",
+      keyword: props.keyword || "",
+      originalLon: props.originalLon || lon,
+      originalLat: props.originalLat || lat,
+      spreadCount: props.spreadCount || 1,
       lon,
       lat
     },
     position: CesiumLib.Cartesian3.fromDegrees(lon, lat, isLocalFacility ? 72 : 1600),
     point: {
-      pixelSize: isLocalFacility ? 13 : 10,
-      color: infrastructureColor(props.category),
+      pixelSize: mapDataset === "wargame-projects" ? 12 : isLocalFacility ? 13 : 10,
+      color: visualColor,
       outlineColor: CesiumLib.Color.WHITE,
       outlineWidth: 2,
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     label: {
-      text: props.name || props.id || "",
-      font: '800 17px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
+      text: labelText,
+      font: `900 ${labelFontSize}px "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif`,
       fillColor: CesiumLib.Color.WHITE,
       outlineColor: CesiumLib.Color.BLACK,
-      outlineWidth: 3,
+      outlineWidth: mapDataset === "wargame-projects" ? 4 : 3,
       style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new CesiumLib.Cartesian2(0, -24),
-      scaleByDistance: new CesiumLib.NearFarScalar(80000, 1, 380000, 0.34),
-      translucencyByDistance: new CesiumLib.NearFarScalar(180000, 1, 520000, 0),
+      pixelOffset: new CesiumLib.Cartesian2(0, mapDataset === "wargame-projects" ? -30 : -24),
+      scaleByDistance: new CesiumLib.NearFarScalar(80000, labelNearScale, 420000, labelFarScale),
+      translucencyByDistance: new CesiumLib.NearFarScalar(labelFadeStart, 1, labelFadeEnd, 0),
       disableDepthTestDistance: Number.POSITIVE_INFINITY
     },
     description: `<strong>${props.name || "--"}</strong><br>ID: ${props.id || "--"}<br>類別: ${props.category || "--"}<br>縣市: ${props.city || "--"}<br>狀態: ${props.status || "--"}<br>${props.note || ""}`
+  });
+  const rangeRadius = infrastructureRangeRadius(props.category);
+  const range = viewer.entities.add({
+    name: `${props.id || props.name || "設施"} 可能基地範圍`,
+    position: CesiumLib.Cartesian3.fromDegrees(lon, lat, isLocalFacility ? 64 : 1300),
+    ellipse: {
+      semiMajorAxis: rangeRadius,
+      semiMinorAxis: rangeRadius,
+      material: visualColor.withAlpha(isLocalFacility ? 0.16 : mapDataset === "wargame-projects" ? 0.006 : 0.055),
+      outline: true,
+      outlineColor: visualColor.withAlpha(isLocalFacility ? 0.56 : mapDataset === "wargame-projects" ? 0.2 : 0.28),
+      height: isLocalFacility ? 62 : 1280
+    },
+    show: point.show
   });
   const pulse = viewer.entities.add({
     name: `${props.id || props.name || "設施"} 脈衝`,
@@ -566,23 +1314,90 @@ function addNationalInfrastructurePoint(feature) {
     ellipse: {
       semiMajorAxis: 6500,
       semiMinorAxis: 6500,
-      material: infrastructureColor(props.category).withAlpha(0.16),
+      material: visualColor.withAlpha(0.16),
       outline: true,
-      outlineColor: infrastructureColor(props.category).withAlpha(0.42),
+      outlineColor: visualColor.withAlpha(0.42),
       height: isLocalFacility ? 68 : 1500
     },
     show: point.show
   });
+  point.rangeEntity = range;
   point.pulseEntity = pulse;
+  point.timelineBase = {
+    color: visualColor,
+    pointSize: mapDataset === "wargame-projects" ? 12 : isLocalFacility ? 13 : 10,
+    outlineColor: CesiumLib.Color.WHITE,
+    outlineWidth: 2,
+    updatedAt: props.updatedAt || ""
+  };
   pulse.pulseBase = {
     category: props.category || "",
+    updatedAt: props.updatedAt || "",
+    temporalIntensity: temporalStyle?.intensity || 0.45,
+    pulseRadiusScale: temporalStyle?.pulseRadiusScale || 1,
     isLocalFacility
   };
   return point;
 }
 
+function infrastructureRangeRadius(category) {
+  const radii = {
+    "發電": 18000,
+    "電力": 16000,
+    "能源": 17000,
+    "石化": 20000,
+    "水資源": 14500,
+    "科學園區": 16000,
+    "通訊": 11000,
+    "交通": 12500,
+    "兵棋設施": 15000,
+    "關鍵基礎設施": 15000,
+    "縣市": 12000,
+    "區域": 22000
+  };
+  return radii[category] || 13000;
+}
+
 function infrastructureColor(category) {
   return CesiumLib.Color.fromCssColorString(infrastructureColorValue(category));
+}
+
+function wargameTemporalStyle(updatedAt) {
+  const date = parseTaiwanDateTime(updatedAt);
+  const ageHours = date ? Math.max(0, (Date.now() - date.getTime()) / (60 * 60 * 1000)) : 24;
+  const freshness = Math.max(0, 1 - Math.min(ageHours, 24) / 24);
+  const color = wargameTemporalColor(updatedAt);
+  return {
+    color,
+    intensity: freshness,
+    pointSize: 9 + freshness * 8,
+    outlineColor: freshness > 0.72
+      ? CesiumLib.Color.fromCssColorString("#f8fbff")
+      : CesiumLib.Color.fromCssColorString("#1e293b"),
+    outlineWidth: freshness > 0.72 ? 4 : freshness > 0.38 ? 3 : 2,
+    rangeRadiusScale: 0.34 + freshness * 1.18,
+    pulseRadiusScale: 0.42 + freshness * 1.35,
+    rangeAlpha: 0.006 + freshness * 0.026,
+    rangeOutlineAlpha: 0.24 + freshness * 0.44
+  };
+}
+
+function wargameTemporalColor(updatedAt) {
+  const date = parseTaiwanDateTime(updatedAt);
+  if (!date) return CesiumLib.Color.fromCssColorString("#475569");
+  const ageHours = Math.max(0, (Date.now() - date.getTime()) / (60 * 60 * 1000));
+  const t = Math.min(ageHours / 24, 1);
+  const newest = CesiumLib.Color.fromCssColorString("#f8fbff");
+  const fresh = CesiumLib.Color.fromCssColorString("#22d3ee");
+  const mid = CesiumLib.Color.fromCssColorString("#2563eb");
+  const old = CesiumLib.Color.fromCssColorString("#4c1d95");
+  if (t < 0.24) {
+    return CesiumLib.Color.lerp(newest, fresh, t / 0.24, new CesiumLib.Color());
+  }
+  if (t < 0.62) {
+    return CesiumLib.Color.lerp(fresh, mid, (t - 0.24) / 0.38, new CesiumLib.Color());
+  }
+  return CesiumLib.Color.lerp(mid, old, (t - 0.62) / 0.38, new CesiumLib.Color());
 }
 
 function infrastructureColorValue(category) {
@@ -596,7 +1411,11 @@ function infrastructureColorValue(category) {
     "水資源": "#67e8f9",
     "科學園區": "#60a5fa",
     "交通": "#22d3ee",
-    "通訊": "#a5b4fc"
+    "通訊": "#a5b4fc",
+    "兵棋設施": "#38bdf8",
+    "關鍵基礎設施": "#38bdf8",
+    "縣市": "#60a5fa",
+    "區域": "#22d3ee"
   };
   return colors[category] || "#bae6fd";
 }
@@ -831,15 +1650,20 @@ function startInfrastructurePulse() {
       const pulse = entity.pulseEntity;
       if (!pulse) return;
       pulse.show = entity.show;
+      const playbackBoost = pulse.pulseBase?.playbackCurrent ? 1.35 : pulse.pulseBase?.playbackDimmed ? 0.22 : 1;
+      const intensity = (mapDataset === "wargame-projects" ? pulse.pulseBase?.temporalIntensity ?? 0.45 : 1) * playbackBoost;
+      const radiusScale = mapDataset === "wargame-projects" ? pulse.pulseBase?.pulseRadiusScale ?? 1 : 1;
       const phase = (pulseFrame + index * 11) / 48;
       const wave = 0.5 + Math.sin(phase) * 0.5;
-      const baseRadius = pulse.pulseBase?.isLocalFacility ? 95 : 5200;
-      const radius = baseRadius + wave * (pulse.pulseBase?.isLocalFacility ? 80 : 4200);
+      const baseRadius = pulse.pulseBase?.isLocalFacility ? 95 : (3600 + intensity * 2200) * radiusScale;
+      const radius = baseRadius + wave * (pulse.pulseBase?.isLocalFacility ? 80 : (2100 + intensity * 4300) * radiusScale);
       pulse.ellipse.semiMajorAxis = radius;
       pulse.ellipse.semiMinorAxis = radius;
-      const glow = pulseColor(wave);
-      pulse.ellipse.material = glow.withAlpha(0.035 + wave * 0.08);
-      pulse.ellipse.outlineColor = glow.withAlpha(0.18 + wave * 0.34);
+      const glow = mapDataset === "wargame-projects"
+        ? CesiumLib.Color.fromCssColorString("#67e8f9")
+        : pulseColor(wave);
+      pulse.ellipse.material = glow.withAlpha(mapDataset === "wargame-projects" ? 0.006 + intensity * 0.026 + wave * 0.018 : 0.035 + wave * 0.08);
+      pulse.ellipse.outlineColor = glow.withAlpha(mapDataset === "wargame-projects" ? 0.22 + intensity * 0.44 + wave * 0.16 : 0.18 + wave * 0.34);
     });
     viewer.scene.requestRender();
   }, 90);

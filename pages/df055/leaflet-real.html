@@ -1,0 +1,66 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>高市DF055 土石流模擬 OSM</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="leaflet-demo.css">
+</head>
+<body>
+  <div id="map"></div>
+
+  <header class="title-card">
+    <h1>高市DF055 土石流模擬</h1>
+    <p>Simplified 2D Debris-Flow Prototype · OpenStreetMap 位置檢查</p>
+  </header>
+
+  <section class="panel layers">
+    <label><input id="layerDepth" type="checkbox" checked> 土石流深度</label>
+    <label><input id="layerVelocity" type="checkbox"> 流速</label>
+    <label><input id="layerConcentration" type="checkbox"> 濃度</label>
+    <label><input id="layerDeposition" type="checkbox"> 堆積 proxy</label>
+    <label><input id="layerOfficialDf055" type="checkbox" checked> 水保署DF055</label>
+    <label><input id="layerPoints" type="checkbox" checked> 控制點</label>
+    <label><input id="showArrows" type="checkbox" checked> 顯示流向</label>
+  </section>
+
+  <aside class="panel stats">
+    <div>模擬時間：<strong id="timeLabel">0</strong> 秒</div>
+    <dl>
+      <dt>最大流深</dt><dd id="maxDepth">--</dd>
+      <dt>最大流速</dt><dd id="maxVelocity">--</dd>
+      <dt>影響面積</dt><dd id="affectedArea">--</dd>
+      <dt>moving area</dt><dd id="movingArea">--</dd>
+      <dt>測試入流濃度</dt><dd>C = 0.40</dd>
+    </dl>
+    <div id="queryBox" class="query-box">點擊有水格網可查詢數值。</div>
+  </aside>
+
+  <section class="timeline">
+    <button id="playBtn" type="button">▶ Play</button>
+    <button id="pauseBtn" type="button">⏸ Pause</button>
+    <button id="resetBtn" type="button">Reset</button>
+    <input id="timeSlider" type="range" min="0" max="60" step="1" value="0">
+    <span id="frameLabel">frame 0 / 60</span>
+    <label class="speed-control">播放速度
+      <select id="speedSelect">
+        <option value="420">慢</option>
+        <option value="240" selected>標準</option>
+        <option value="120">快</option>
+      </select>
+    </label>
+  </section>
+
+  <div class="legend">
+    <span>Depth 0 m</span>
+    <div class="depth-bar"></div>
+    <span>≥ 5 m</span>
+  </div>
+  <div class="disclaimer">底圖：OpenStreetMap。模型成果為簡化數值模式測試結果，非正式災害預測。</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="leaflet-real-app.js?v=restore-map-1"></script>
+</body>
+</html>
+

@@ -1,0 +1,45 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DF055 地形挖填概念測試</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div class="panel title"><h1>DF055 地形挖填概念測試</h1><p>Excavate upstream · Deposit downstream</p></div>
+  <div class="panel controls">
+    <button id="beforeBtn" type="button">災前</button>
+    <button id="afterBtn" type="button">災後</button>
+    <button id="toggleBtn" type="button">切換 Before/After</button>
+    <button id="playBtn" type="button">▶ Play</button>
+    <button id="pauseBtn" type="button">⏸ Pause</button>
+    <button id="resetBtn" type="button">Reset</button>
+    <button id="topBtn" type="button">俯視</button>
+    <button id="obliqueBtn" type="button">斜視</button>
+    <select id="multiplierSelect">
+      <option value="1">實際 1×</option>
+      <option value="5">展示 5×</option>
+      <option value="10" selected>展示 10×</option>
+      <option value="20">展示 20×</option>
+    </select>
+  </div>
+  <div class="panel time-panel"><span>150s</span><input id="timeSlider" type="range" min="150" max="600" step="5" value="300"><span>600s</span></div>
+  <aside class="panel info">
+    <div class="mode"><strong id="modeLabel">模擬時間：300 秒</strong></div>
+    <dl>
+      <dt>上游已侵蝕</dt><dd id="erosionVolume">--</dd>
+      <dt>移動中土砂</dt><dd id="movingVolume">--</dd>
+      <dt>下游已堆積</dt><dd id="depositionVolume">--</dd>
+    </dl>
+    <div class="details">詳細資訊：<span id="timeLabel">300s</span> ? 最大挖深 <span id="maxErosion">--</span> ? 最大填高 <span id="maxDeposition">--</span></div>
+  </aside>
+  <div id="status" class="status"></div>
+  <div class="disclaimer">本頁為地形挖填概念測試，視覺倍率不代表實際土方量；非正式災害預測。</div>
+  <script src="excavate-deposit-test.js?v=settlement100"></script>
+</body>
+</html>
+

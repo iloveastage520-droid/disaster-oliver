@@ -158,10 +158,17 @@
       border: 1px solid rgba(127, 29, 29, 0.22);
       border-radius: 4px;
       box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
-      padding: 2px 5px;
+      padding: 3px 6px;
       font-size: 11px;
       font-weight: 800;
+      line-height: 1.25;
       white-space: nowrap;
+    }
+    .typhoon-time-label strong {
+      display: block;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 900;
     }
     .marine-warning-label {
       color: #075985;
@@ -520,15 +527,17 @@
       const p = feature?.properties || {};
       const kind = p.kind || "";
       if (!["analysis-center", "current-center", "forecast-center"].includes(kind)) return "";
+      const title = [p.intlName, p.name].filter(Boolean).join(" ") || p.label || "颱風";
+      const formatLabel = (timeText) => `<strong>${escapeHtml(title)}</strong>${escapeHtml(timeText)}`;
       if (p.forecastHour) {
         const date = new Date(p.initialTime || p.datetime || "");
-        if (Number.isNaN(date.getTime())) return `${p.forecastHour}h`;
+        if (Number.isNaN(date.getTime())) return formatLabel(`${p.forecastHour}h`);
         date.setHours(date.getHours() + (Number(p.forecastHour) || 0));
-        return `${date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`;
+        return formatLabel(date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }));
       }
       const date = new Date(p.datetime || "");
-      if (Number.isNaN(date.getTime())) return p.datetime || "";
-      return date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+      if (Number.isNaN(date.getTime())) return formatLabel(p.datetime || "");
+      return formatLabel(date.toLocaleString("zh-TW", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }));
     }
     function typhoonPopup(feature) {
       const p = feature.properties || {};
@@ -596,7 +605,7 @@
       if (timeLabel) {
         L.marker(frame.point, {
           icon: L.divIcon({
-            html: `<div class="typhoon-time-label">${escapeHtml(timeLabel)}</div>`,
+            html: `<div class="typhoon-time-label">${timeLabel}</div>`,
             className: "empty",
             iconSize: null,
             iconAnchor: [-12, 30]

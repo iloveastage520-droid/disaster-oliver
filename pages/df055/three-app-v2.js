@@ -14,16 +14,17 @@ const ui = {
 
 const params = new URLSearchParams(window.location.search);
 const cleanEmbed = params.get("clean") === "1";
+const physicalV2 = params.get("v2") === "1";
 let demo;
 let canvas;
 let ctx;
 let frameIndex = 0;
 let playing = false;
 let timer = null;
-let zScale = cleanEmbed ? 2.1 : 1.8;
+let zScale = physicalV2 ? 2.35 : cleanEmbed ? 2.1 : 1.8;
 let yaw = -0.72;
-let pitch = cleanEmbed ? 0.68 : 0.76;
-let zoom = cleanEmbed ? 1.22 : 1.08;
+let pitch = physicalV2 ? 0.64 : cleanEmbed ? 0.68 : 0.76;
+let zoom = physicalV2 ? 1.36 : cleanEmbed ? 1.22 : 1.08;
 let dragging = false;
 let dragStart = { x: 0, y: 0, yaw: 0, pitch: 0 };
 
@@ -69,20 +70,25 @@ function project(p) {
 }
 
 function terrainColor(cell) {
-  const low = cleanEmbed ? [70, 110, 78] : [55, 86, 62];
-  const mid = cleanEmbed ? [145, 137, 86] : [130, 121, 76];
-  const high = cleanEmbed ? [190, 181, 145] : [150, 143, 134];
+  const low = physicalV2 ? [38, 76, 76] : cleanEmbed ? [70, 110, 78] : [55, 86, 62];
+  const mid = physicalV2 ? [108, 128, 91] : cleanEmbed ? [145, 137, 86] : [130, 121, 76];
+  const high = physicalV2 ? [196, 204, 174] : cleanEmbed ? [190, 181, 145] : [150, 143, 134];
   const t = cell.elev;
   const mix = t < 0.58 ? t / 0.58 : (t - 0.58) / 0.42;
   const a = t < 0.58 ? low : mid;
   const b = t < 0.58 ? mid : high;
-  const shade = cleanEmbed ? 0.74 + cell.shade * 0.42 : 0.52 + cell.shade * 0.58;
+  const shade = physicalV2 ? 0.86 + cell.shade * 0.34 : cleanEmbed ? 0.74 + cell.shade * 0.42 : 0.52 + cell.shade * 0.58;
   return `rgb(${Math.round(lerp(a[0], b[0], mix) * shade)},${Math.round(lerp(a[1], b[1], mix) * shade)},${Math.round(lerp(a[2], b[2], mix) * shade)})`;
 }
 
 function depthColor(depth, alpha = 0.78) {
   const t = clamp(depth / demo.meta.depthColorCap, 0, 1);
-  const stops = [
+  const stops = physicalV2 ? [
+    [255, 220, 96],
+    [255, 136, 35],
+    [255, 74, 57],
+    [185, 28, 28],
+  ] : [
     [255, 243, 164],
     [245, 167, 66],
     [217, 53, 28],
@@ -129,7 +135,7 @@ function drawTerrain() {
   const items = demo.terrain.map((cell) => ({ cell, ...quadForCell(cell) }));
   items.sort((a, b) => a.depth - b.depth);
   for (const item of items) {
-    drawPoly(item.pts, terrainColor(item.cell), cleanEmbed ? "rgba(4,12,18,0.025)" : "rgba(0,0,0,0.08)");
+    drawPoly(item.pts, terrainColor(item.cell), physicalV2 ? "rgba(103,232,249,0.035)" : cleanEmbed ? "rgba(4,12,18,0.025)" : "rgba(0,0,0,0.08)");
   }
 }
 
@@ -146,23 +152,25 @@ function drawDebris(frame) {
   wet.sort((a, b) => a.depth - b.depth);
 
   ctx.save();
-  ctx.shadowColor = cleanEmbed ? "rgba(255, 138, 35, 0.36)" : "rgba(255, 83, 21, 0.25)";
-  ctx.shadowBlur = cleanEmbed ? 18 : 12;
+  ctx.shadowColor = physicalV2 ? "rgba(255, 99, 45, 0.58)" : cleanEmbed ? "rgba(255, 138, 35, 0.36)" : "rgba(255, 83, 21, 0.25)";
+  ctx.shadowBlur = physicalV2 ? 24 : cleanEmbed ? 18 : 12;
   for (const item of wet) {
-    drawPoly(item.pts, depthColor(item.cell.h, cleanEmbed ? 0.34 : 0.24));
+    drawPoly(item.pts, depthColor(item.cell.h, physicalV2 ? 0.42 : cleanEmbed ? 0.34 : 0.24));
   }
   ctx.restore();
 
   for (const item of wet) {
-    drawPoly(item.pts, depthColor(item.cell.h, cleanEmbed ? 0.92 : 0.82), cleanEmbed ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)");
+    drawPoly(item.pts, depthColor(item.cell.h, physicalV2 ? 0.96 : cleanEmbed ? 0.92 : 0.82), physicalV2 ? "rgba(255,255,255,0.14)" : cleanEmbed ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)");
   }
 }
 
 function drawChannel() {
   ctx.save();
-  ctx.strokeStyle = cleanEmbed ? "rgba(103, 232, 249, 0.98)" : "rgba(90, 213, 255, 0.9)";
-  ctx.lineWidth = cleanEmbed ? 3.4 : 2.2;
-  ctx.setLineDash(cleanEmbed ? [9, 5] : [7, 7]);
+  ctx.strokeStyle = physicalV2 ? "rgba(125, 249, 255, 0.98)" : cleanEmbed ? "rgba(103, 232, 249, 0.98)" : "rgba(90, 213, 255, 0.9)";
+  ctx.lineWidth = physicalV2 ? 4.2 : cleanEmbed ? 3.4 : 2.2;
+  ctx.setLineDash(physicalV2 ? [14, 7] : cleanEmbed ? [9, 5] : [7, 7]);
+  ctx.shadowColor = physicalV2 ? "rgba(103, 232, 249, 0.76)" : "transparent";
+  ctx.shadowBlur = physicalV2 ? 16 : 0;
   ctx.beginPath();
   demo.channel.forEach((p, i) => {
     const nearest = demo.terrain.reduce((best, cell) => {
@@ -180,6 +188,8 @@ function drawChannel() {
 function drawPoint(point, color) {
   const p = project(world(point.x, point.y, point.z + 18));
   ctx.save();
+  ctx.shadowColor = physicalV2 ? color : "transparent";
+  ctx.shadowBlur = physicalV2 ? 14 : 0;
   ctx.fillStyle = color;
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
@@ -215,8 +225,8 @@ function draw() {
   const rect = canvas.getBoundingClientRect();
   ctx.clearRect(0, 0, rect.width, rect.height);
   const grad = ctx.createLinearGradient(0, 0, 0, rect.height);
-  grad.addColorStop(0, cleanEmbed ? "#06111a" : "#071018");
-  grad.addColorStop(1, cleanEmbed ? "#08151c" : "#111b22");
+  grad.addColorStop(0, physicalV2 ? "#020617" : cleanEmbed ? "#06111a" : "#071018");
+  grad.addColorStop(1, physicalV2 ? "#06131b" : cleanEmbed ? "#08151c" : "#111b22");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, rect.width, rect.height);
   drawTerrain();

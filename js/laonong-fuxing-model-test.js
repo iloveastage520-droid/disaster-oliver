@@ -72,6 +72,41 @@ const BASEMAPS = {
     credit: "Google satellite",
     maximumLevel: 19
   },
+  "dark-satellite": {
+    url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+    credit: "Google hybrid satellite darkened",
+    maximumLevel: 19,
+    brightness: 0.28,
+    contrast: 1.48,
+    saturation: 0.48,
+    gamma: 0.68
+  },
+  "dark-hillshade": {
+    url: "https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+    credit: "Esri World Hillshade darkened",
+    maximumLevel: 16,
+    brightness: 0.24,
+    contrast: 2.05,
+    saturation: 0.12,
+    gamma: 0.62
+  },
+  "dark-terrain-hybrid": {
+    url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+    credit: "Google hybrid satellite with terrain shade",
+    maximumLevel: 19,
+    brightness: 0.24,
+    contrast: 1.62,
+    saturation: 0.44,
+    gamma: 0.64,
+    overlay: {
+      url: "https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+      credit: "Esri World Hillshade overlay",
+      maximumLevel: 16,
+      alpha: 0.42,
+      brightness: 0.42,
+      contrast: 1.72
+    }
+  },
   "arcgis-imagery": {
     url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     credit: "Esri World Imagery",
@@ -155,9 +190,11 @@ const viewer = new CesiumLib.Viewer("cesium-container", {
   shouldAnimate: true,
   terrainProvider: new CesiumLib.EllipsoidTerrainProvider()
 });
+window.laonongCesiumViewer = viewer;
 
 viewer.imageryLayers.removeAll();
 let baseImageryLayer = null;
+let shadeImageryLayer = null;
 setBasemap("google-hybrid");
 
 viewer.scene.backgroundColor = CesiumLib.Color.fromCssColorString("#07111f");
@@ -272,7 +309,29 @@ function setBasemap(id) {
     maximumLevel: config.maximumLevel
   });
   if (baseImageryLayer) viewer.imageryLayers.remove(baseImageryLayer, false);
+  if (shadeImageryLayer) {
+    viewer.imageryLayers.remove(shadeImageryLayer, false);
+    shadeImageryLayer = null;
+  }
   baseImageryLayer = viewer.imageryLayers.addImageryProvider(provider, 0);
+  applyImageryStyle(baseImageryLayer, config);
+  if (config.overlay) {
+    const overlayProvider = new CesiumLib.UrlTemplateImageryProvider({
+      url: config.overlay.url,
+      credit: config.overlay.credit,
+      maximumLevel: config.overlay.maximumLevel
+    });
+    shadeImageryLayer = viewer.imageryLayers.addImageryProvider(overlayProvider, 1);
+    applyImageryStyle(shadeImageryLayer, config.overlay);
+  }
+}
+
+function applyImageryStyle(layer, config) {
+  layer.alpha = config.alpha ?? 1;
+  layer.brightness = config.brightness ?? 1;
+  layer.contrast = config.contrast ?? 1;
+  layer.saturation = config.saturation ?? 1;
+  layer.gamma = config.gamma ?? 1;
 }
 
 function setSceneMode(mode) {
@@ -423,7 +482,6 @@ async function setupTerrain() {
     await addCommunityBuildings();
     addWbchenWaterOverlay();
     addDemoRadarOverlay();
-    addTyphoonForecastOverlay();
     window.setTimeout(() => viewer.camera.setView(cameraViews.island), 900);
   } catch (error) {
     setTerrainStatus("平面備援");
@@ -434,7 +492,6 @@ async function setupTerrain() {
     addCommunityBuildings();
     addWbchenWaterOverlay();
     addDemoRadarOverlay();
-    addTyphoonForecastOverlay();
   }
 }
 

@@ -1,0 +1,3117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver Laonong River debris-flow forecast 3D Cesium visualization.">
+  <title>荖濃溪土石流警戒狀態監測 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260805-hide-legend-impact">
+  <style>
+    .debris-terrain-panel .fuxing-impact-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .debris-torrent-panel {
+      position: fixed;
+      left: 18px;
+      top: 188px;
+      z-index: 900;
+      width: 312px;
+      max-height: calc(100vh - 270px);
+      overflow: auto;
+      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 8px;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.42);
+      backdrop-filter: blur(12px);
+      padding: 12px;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+    }
+
+    .debris-torrent-panel.is-collapsed {
+      transform: translateX(calc(-100% - 22px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .debris-panel-toggle {
+      position: fixed;
+      z-index: 1400;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      height: 34px;
+      border: 1px solid rgba(56, 189, 248, 0.34);
+      border-radius: 8px;
+      color: #e0f2fe;
+      background: rgba(2, 6, 23, 0.72);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.34);
+      backdrop-filter: blur(10px);
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .debris-left-toggle {
+      left: 18px;
+      top: 148px;
+    }
+
+    .debris-right-toggle {
+      right: 22px;
+      top: 98px;
+    }
+
+    body.is-left-panel-collapsed .debris-left-toggle {
+      left: 10px;
+    }
+
+    body.is-right-panel-collapsed .debris-right-toggle {
+      right: 10px;
+    }
+
+    .debris-basemap-switcher {
+      position: fixed;
+      right: 22px;
+      top: 22px;
+      z-index: 1400;
+      min-width: 220px;
+      padding: 0;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 8px;
+      color: #e0f2fe;
+      background: rgba(2, 6, 23, 0.72);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.28);
+      backdrop-filter: blur(10px);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-basemap-switcher summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 34px;
+      padding: 0 10px;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .debris-basemap-switcher summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .debris-basemap-switcher summary b {
+      color: #f8fafc;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .debris-basemap-switcher label {
+      display: grid;
+      gap: 6px;
+      padding: 0 10px 10px;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .debris-basemap-switcher select {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 6px;
+      color: #f8fafc;
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 7px;
+    }
+
+    .debris-live-status {
+      position: fixed;
+      right: 22px;
+      top: 66px;
+      z-index: 1390;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 999px;
+      color: #e0f2fe;
+      background: rgba(2, 6, 23, 0.68);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.22);
+      backdrop-filter: blur(10px);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+
+    .debris-live-status i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.84);
+    }
+
+    .fuxing-showcase-tabs {
+      top: 18px;
+      left: 50%;
+      display: grid;
+      grid-template-columns: repeat(4, 132px);
+      gap: 0;
+      transform: translateX(-50%);
+      padding: 0;
+      color: #cbd5e1;
+    }
+
+    .fuxing-showcase-tabs::before {
+      content: "LAONONG / DIGITAL TWIN";
+      grid-column: 1 / -1;
+      margin-bottom: 8px;
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+    }
+
+    .fuxing-showcase-tabs button {
+      position: relative;
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+      min-width: 0;
+      min-height: 72px;
+      padding: 0 8px;
+      border: 0;
+      border-radius: 0;
+      color: #94a3b8;
+      background: transparent;
+      box-shadow: none;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .fuxing-showcase-tabs button::before {
+      content: attr(data-step);
+      color: #e2e8f0;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+    }
+
+    .fuxing-showcase-tabs button::after {
+      content: "";
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: rgba(148, 163, 184, 0.54);
+      transform: translateX(0);
+    }
+
+    .fuxing-showcase-tabs button:last-child::after {
+      display: none;
+    }
+
+    .fuxing-showcase-tabs .mode-dot {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(148, 163, 184, 0.84);
+      border-radius: 50%;
+      color: #020617;
+      background: rgba(15, 23, 42, 0.92);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .fuxing-showcase-tabs .mode-en {
+      color: #cbd5e1;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    .fuxing-showcase-tabs .mode-zh {
+      color: #94a3b8;
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    .fuxing-showcase-tabs .is-complete .mode-dot,
+    .fuxing-showcase-tabs .is-active .mode-dot {
+      border-color: #67e8f9;
+      background: #67e8f9;
+      box-shadow: 0 0 18px rgba(103, 232, 249, 0.58);
+    }
+
+    .fuxing-showcase-tabs .is-complete .mode-dot::before {
+      content: "✓";
+    }
+
+    .fuxing-showcase-tabs .is-active .mode-dot::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #020617;
+    }
+
+    .fuxing-showcase-tabs .is-active .mode-en,
+    .fuxing-showcase-tabs .is-active .mode-zh {
+      color: #ffffff;
+    }
+
+    .debris-basemap-source {
+      display: none;
+    }
+
+    .debris-map-tone {
+      position: absolute;
+      inset: 0;
+      z-index: 420;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease, background 0.22s ease;
+    }
+
+    body[data-map-tone="dark-satellite"] .debris-map-tone {
+      opacity: 1;
+      background: rgba(2, 6, 23, 0.34);
+      mix-blend-mode: multiply;
+    }
+
+    body[data-debris-mode="overview"] .rain-station-marker,
+    body[data-debris-mode="overview"] .debris-route-legend,
+    body[data-debris-mode="overview"] .debris-bottom-sandboxes {
+      display: none;
+    }
+
+    body[data-debris-mode="overview"] .debris-terrain-panel {
+      transform: translateX(calc(100% + 26px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body[data-debris-mode="overview"] .fuxing-flow-panel,
+    body[data-debris-mode="overview"] .fuxing-island-card {
+      display: none;
+    }
+
+    body[data-debris-mode="monitor"] .debris-bottom-sandboxes,
+    body[data-debris-mode="experience"] .debris-bottom-sandboxes {
+      display: none;
+    }
+
+    body[data-debris-mode="monitor"] .debris-route-legend {
+      display: none;
+    }
+
+    body[data-debris-mode="simulate"] .debris-rain-section {
+      display: none;
+    }
+
+    body:not([data-debris-mode="simulate"]) .debris-simulation-engine {
+      display: none;
+    }
+
+    body[data-debris-mode="simulate"] .debris-rain-grid,
+    body[data-debris-mode="simulate"] .debris-rain-stations,
+    body[data-debris-mode="simulate"] .debris-progress,
+    body[data-debris-mode="simulate"] .debris-state-chain,
+    body[data-debris-mode="simulate"] .debris-alert-status {
+      display: none;
+    }
+
+    body[data-debris-mode="experience"] .debris-torrent-panel,
+    body[data-debris-mode="experience"] .debris-terrain-panel,
+    body[data-debris-mode="experience"] .debris-route-legend,
+    body[data-debris-mode="experience"] .debris-top-alert-summary {
+      display: none;
+    }
+
+    body:not([data-debris-mode="experience"]) .debris-experience-panel,
+    body:not([data-debris-mode="experience"]) .debris-physical-entry {
+      display: none;
+    }
+
+    body[data-debris-mode="experience"] .debris-map-tone {
+      opacity: 1;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(103, 232, 249, 0.035), transparent 34%),
+        linear-gradient(90deg, rgba(2, 6, 23, 0.12), rgba(2, 6, 23, 0.02) 48%, rgba(2, 6, 23, 0.2));
+      mix-blend-mode: multiply;
+    }
+
+    body[data-map-tone="dark-hillshade"] .debris-map-tone {
+      opacity: 1;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(56, 189, 248, 0.07), transparent 34%),
+        rgba(2, 6, 23, 0.52);
+      mix-blend-mode: multiply;
+    }
+
+    body[data-map-tone="dark-terrain-hybrid"] .debris-map-tone {
+      opacity: 1;
+      background:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.28), rgba(2, 6, 23, 0.52)),
+        radial-gradient(circle at 42% 34%, rgba(14, 165, 233, 0.08), transparent 32%);
+      mix-blend-mode: multiply;
+    }
+
+    .debris-torrent-panel h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .debris-torrent-panel p {
+      margin: 6px 0 10px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .debris-torrent-map {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 6px 0 10px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .rain-station-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 760;
+      pointer-events: none;
+    }
+
+    .rain-station-marker {
+      position: absolute;
+      display: grid;
+      grid-template-columns: auto auto;
+      align-items: center;
+      gap: 6px;
+      transform: translate(-50%, -50%);
+      color: #e0f2fe;
+      filter: drop-shadow(0 10px 22px rgba(2, 6, 23, 0.72));
+    }
+
+    .rain-station-marker i {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(224, 242, 254, 0.92);
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow:
+        0 0 0 8px rgba(34, 211, 238, 0.15),
+        0 0 24px rgba(34, 211, 238, 0.62);
+      animation: rainStationPulse 1.8s ease-in-out infinite;
+    }
+
+    .rain-station-marker span {
+      padding: 4px 7px;
+      border: 1px solid rgba(103, 232, 249, 0.34);
+      border-radius: 6px;
+      background: rgba(2, 6, 23, 0.76);
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+    }
+
+    .rain-station-marker.is-reference {
+      opacity: 0.58;
+    }
+
+    .rain-station-marker.is-primary i {
+      width: 24px;
+      height: 24px;
+      background: #67e8f9;
+      box-shadow:
+        0 0 0 12px rgba(103, 232, 249, 0.2),
+        0 0 34px rgba(103, 232, 249, 0.84);
+    }
+
+    .rain-station-marker.is-primary span {
+      color: #ffffff;
+      border-color: rgba(103, 232, 249, 0.7);
+      background: rgba(8, 47, 73, 0.92);
+    }
+
+    @keyframes rainStationPulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.76; }
+      50% { transform: scale(1.16); opacity: 1; }
+    }
+
+    .debris-torrent-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .debris-filter-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+      margin: 0 0 8px;
+    }
+
+    .debris-filter-tabs button {
+      min-height: 28px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 6px;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.72);
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .debris-filter-tabs button.is-active {
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #e0f2fe;
+      background: rgba(8, 47, 73, 0.8);
+    }
+
+    .debris-torrent-list li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .debris-torrent-list li:hover,
+    .debris-torrent-list li.is-selected {
+      border-color: rgba(56, 189, 248, 0.48);
+      background: rgba(8, 47, 73, 0.72);
+      transform: translateX(2px);
+    }
+
+    .debris-torrent-list i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f97316;
+      box-shadow: 0 0 14px rgba(249, 115, 22, 0.72);
+    }
+
+    .debris-torrent-list b {
+      display: block;
+      color: #f8fafc;
+      font-size: 12px;
+    }
+
+    .debris-torrent-list span {
+      color: #94a3b8;
+    }
+
+    .debris-torrent-list em {
+      color: #fecaca;
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .debris-torrent-list .is-normal i {
+      background: #64748b;
+      box-shadow: none;
+    }
+
+    .debris-torrent-list .is-normal em {
+      color: #94a3b8;
+    }
+
+    .debris-torrent-list .is-yellow em {
+      color: #fde68a;
+    }
+
+    .debris-torrent-list .is-yellow i {
+      background: #facc15;
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.72);
+    }
+
+    .debris-torrent-list .is-selected em {
+      color: #67e8f9;
+    }
+
+    .debris-torrent-map [data-map-id] {
+      transition: opacity 0.18s ease, stroke-width 0.18s ease;
+    }
+
+    .debris-torrent-map.has-selection [data-map-id] {
+      opacity: 0.34;
+    }
+
+    .debris-torrent-map.has-selection [data-map-id].is-selected {
+      opacity: 1;
+      stroke-width: 4.6px;
+      filter: drop-shadow(0 0 6px rgba(103, 232, 249, 0.74));
+    }
+
+    .debris-twin-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .debris-sandbox-card {
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.74);
+    }
+
+    .debris-sandbox-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .debris-sandbox-head b {
+      color: #f8fafc;
+      font-size: 13px;
+    }
+
+    .debris-sandbox-head .red {
+      color: #fecaca;
+    }
+
+    .debris-sandbox-head .yellow {
+      color: #fde68a;
+    }
+
+    .debris-terrain-frame {
+      width: 100%;
+      height: 210px;
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .debris-selected-card {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.62);
+    }
+
+    .debris-terrain-panel {
+      top: 140px;
+      max-height: calc(100vh - 180px);
+      overflow: auto;
+      transition: transform 0.24s ease, opacity 0.24s ease;
+    }
+
+    .debris-terrain-panel.is-collapsed {
+      transform: translateX(calc(100% + 26px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .debris-experience-panel {
+      position: absolute;
+      right: 28px;
+      top: 132px;
+      z-index: 16;
+      width: min(520px, calc(100vw - 56px));
+      max-height: calc(100vh - 170px);
+      display: grid;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid rgba(103, 232, 249, 0.42);
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, rgba(8, 47, 73, 0.9), rgba(2, 6, 23, 0.94) 52%, rgba(15, 23, 42, 0.9)),
+        radial-gradient(circle at 18% 8%, rgba(34, 211, 238, 0.2), transparent 28%);
+      box-shadow: 0 28px 80px rgba(2, 6, 23, 0.54), 0 0 34px rgba(34, 211, 238, 0.16);
+      color: #e0f2fe;
+      overflow: auto;
+      animation: experiencePanelIn 0.42s ease both;
+    }
+
+    @keyframes experiencePanelIn {
+      from { opacity: 0; transform: translateX(22px) scale(0.985); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    .debris-experience-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      padding-bottom: 10px;
+    }
+
+    .debris-experience-head span {
+      color: #67e8f9;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .debris-experience-head h2 {
+      margin: 4px 0 0;
+      color: #f8fafc;
+      font-size: 24px;
+      line-height: 1.15;
+    }
+
+    .debris-experience-head b {
+      flex: 0 0 auto;
+      padding: 6px 8px;
+      border: 1px solid rgba(251, 113, 133, 0.35);
+      border-radius: 999px;
+      color: #fecaca;
+      background: rgba(127, 29, 29, 0.18);
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .debris-physical-entry {
+      position: absolute;
+      left: 50%;
+      bottom: 128px;
+      z-index: 15;
+      transform: translateX(-50%);
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+      padding: 10px 14px;
+      border: 1px solid rgba(103, 232, 249, 0.4);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.58);
+      box-shadow: 0 14px 36px rgba(2, 6, 23, 0.28), 0 0 20px rgba(34, 211, 238, 0.12);
+      color: #e0f2fe;
+      pointer-events: none;
+    }
+
+    .debris-physical-entry span {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .debris-physical-entry strong {
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .debris-physical-entry i {
+      width: 170px;
+      height: 2px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(103, 232, 249, 0.14);
+    }
+
+    .debris-physical-entry i::after {
+      content: "";
+      display: block;
+      width: 42%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, transparent, #67e8f9, transparent);
+      animation: physicalScan 1.8s ease-in-out infinite;
+    }
+
+    @keyframes physicalScan {
+      from { transform: translateX(-110%); }
+      to { transform: translateX(250%); }
+    }
+
+    .debris-experience-video-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(103, 232, 249, 0.24);
+      border-radius: 8px;
+      background: #020617;
+      box-shadow: inset 0 0 28px rgba(34, 211, 238, 0.08);
+    }
+
+    .debris-experience-video-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(103, 232, 249, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 232, 249, 0.06) 1px, transparent 1px);
+      background-size: 100% 22px, 22px 100%;
+      opacity: 0.38;
+      mix-blend-mode: screen;
+    }
+
+    .debris-experience-video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 2.05 / 1;
+      object-fit: cover;
+      background: #020617;
+    }
+
+    .debris-experience-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .debris-experience-reference {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .debris-experience-reference header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #e0f2fe;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .debris-experience-reference header span {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .debris-experience-reference iframe {
+      width: 100%;
+      height: 330px;
+      border: 1px solid rgba(103, 232, 249, 0.22);
+      border-radius: 8px;
+      background: #020617;
+      box-shadow: inset 0 0 30px rgba(34, 211, 238, 0.08);
+    }
+
+    .debris-experience-meta span,
+    .debris-experience-note {
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.58);
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .debris-experience-meta b {
+      display: block;
+      margin-top: 4px;
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .debris-experience-note {
+      color: #bae6fd;
+      line-height: 1.55;
+    }
+
+    .debris-analysis-close {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      border-radius: 50%;
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.72);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .debris-selected-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.64);
+    }
+
+    .debris-flowpath-card {
+      border: 1px solid rgba(103, 232, 249, 0.18);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.56);
+      overflow: hidden;
+    }
+
+    .debris-flowpath-card summary {
+      padding: 9px 10px;
+      color: #e0f2fe;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    body[data-debris-mode="simulate"] .debris-flowpath-card {
+      display: block;
+    }
+
+    body[data-debris-mode="simulate"] .debris-flowpath-card summary {
+      pointer-events: none;
+      cursor: default;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    body[data-debris-mode="simulate"] .debris-selected-svg {
+      min-height: 190px;
+    }
+
+    .debris-selected-svg text {
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    .debris-alert-panel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .debris-alert-title {
+      display: grid;
+      gap: 4px;
+    }
+
+    .debris-alert-title span {
+      color: #67e8f9;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-alert-title h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .debris-alert-status {
+      display: inline-flex;
+      width: fit-content;
+      padding: 5px 9px;
+      border: 1px solid rgba(251, 113, 133, 0.28);
+      border-radius: 999px;
+      color: #fecaca;
+      background: rgba(127, 29, 29, 0.18);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-alert-status.is-yellow {
+      border-color: rgba(250, 204, 21, 0.32);
+      color: #fde68a;
+      background: rgba(113, 63, 18, 0.2);
+    }
+
+    .debris-rain-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .debris-rain-grid span {
+      padding: 9px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 7px;
+      background: rgba(15, 23, 42, 0.66);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .debris-rain-grid b {
+      display: block;
+      margin-top: 3px;
+      color: #f8fafc;
+      font-size: 17px;
+      line-height: 1.1;
+    }
+
+    .debris-progress {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(51, 65, 85, 0.82);
+    }
+
+    .debris-progress i {
+      display: block;
+      width: var(--progress, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #facc15, #fb7185);
+      box-shadow: 0 0 18px rgba(251, 113, 133, 0.42);
+    }
+
+    .debris-rain-section {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(56, 189, 248, 0.14), transparent 38%),
+        rgba(15, 23, 42, 0.56);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.64);
+    }
+
+    .debris-rain-section h3 {
+      margin: 0;
+      color: #e0f2fe;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .debris-rain-stations {
+      display: grid;
+      gap: 7px;
+      padding: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.16);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.52);
+    }
+
+    .debris-rain-stations h3 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0;
+      color: #e0f2fe;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .debris-rain-stations h3 span {
+      color: #67e8f9;
+      font-size: 11px;
+    }
+
+    .debris-rain-station-list {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .debris-rain-station-list li {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 7px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 7px;
+      color: #cbd5e1;
+      background: rgba(2, 6, 23, 0.34);
+      font-size: 11px;
+      font-weight: 800;
+      overflow: hidden;
+    }
+
+    .debris-rain-station-list li.is-primary {
+      border-color: rgba(56, 189, 248, 0.42);
+      background:
+        radial-gradient(circle at 14% 50%, rgba(103, 232, 249, 0.16), transparent 34%),
+        rgba(8, 47, 73, 0.62);
+      box-shadow:
+        0 0 0 1px rgba(103, 232, 249, 0.14),
+        0 0 26px rgba(56, 189, 248, 0.24);
+    }
+
+    .debris-rain-station-list li.is-primary::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 0%, rgba(103, 232, 249, 0.16) 46%, transparent 72%);
+      transform: translateX(-110%);
+      animation: rainStationScan 2.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes rainStationScan {
+      0%, 28% { transform: translateX(-110%); }
+      72%, 100% { transform: translateX(110%); }
+    }
+
+    .debris-rain-station-list b {
+      color: #f8fafc;
+      font-size: 12px;
+    }
+
+    .debris-rain-station-list strong {
+      color: #67e8f9;
+      font-size: 13px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .debris-state-chain {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .debris-state-chain span {
+      min-height: 46px;
+      padding: 7px 5px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 7px;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.58);
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .debris-state-chain .is-done {
+      color: #e0f2fe;
+      border-color: rgba(56, 189, 248, 0.26);
+    }
+
+    .debris-state-chain .is-alert {
+      color: #fecaca;
+      border-color: rgba(251, 113, 133, 0.32);
+    }
+
+    .debris-rain-chart {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.5);
+    }
+
+    .debris-simulation-engine {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(103, 232, 249, 0.24);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(8, 47, 73, 0.46), rgba(2, 6, 23, 0.74)),
+        rgba(2, 6, 23, 0.78);
+      box-shadow: inset 0 0 28px rgba(34, 211, 238, 0.08);
+      color: #dbeafe;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .debris-simulation-engine h3 {
+      margin: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      color: #67e8f9;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+    }
+
+    .engine-line,
+    .engine-task {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      min-height: 22px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .engine-task {
+      padding-left: 14px;
+      color: #94a3b8;
+    }
+
+    .engine-task::before {
+      content: "├─";
+      margin-right: 5px;
+      color: #475569;
+    }
+
+    .engine-task.is-last::before {
+      content: "└─";
+    }
+
+    .engine-status {
+      color: #86efac;
+      white-space: nowrap;
+    }
+
+    .engine-status.is-running {
+      color: #67e8f9;
+      text-shadow: 0 0 14px rgba(103, 232, 249, 0.56);
+    }
+
+    .engine-status.is-standby {
+      color: #64748b;
+    }
+
+    .engine-bar {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(30, 41, 59, 0.9);
+    }
+
+    .engine-bar i {
+      display: block;
+      width: var(--engine-progress, 78%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #0ea5e9, #67e8f9, #f97316);
+      box-shadow: 0 0 18px rgba(103, 232, 249, 0.46);
+      transition: width 0.2s linear;
+    }
+
+    .engine-complete {
+      display: none;
+      padding: 8px;
+      border: 1px solid rgba(34, 197, 94, 0.24);
+      border-radius: 7px;
+      color: #bbf7d0;
+      background: rgba(20, 83, 45, 0.16);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+
+    .debris-simulation-engine.is-complete .engine-complete {
+      display: block;
+    }
+
+    .engine-run-button {
+      min-height: 34px;
+      border: 1px solid rgba(249, 115, 22, 0.38);
+      border-radius: 7px;
+      color: #fed7aa;
+      background: rgba(124, 45, 18, 0.24);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .debris-sim-sandbox {
+      display: none;
+      border: 1px solid rgba(103, 232, 249, 0.22);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.74);
+    }
+
+    body[data-debris-mode="simulate"] .debris-sim-sandbox {
+      display: block;
+    }
+
+    .debris-sim-sandbox header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      color: #e0f2fe;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-sim-sandbox span {
+      color: #67e8f9;
+    }
+
+    .debris-sim-sandbox iframe {
+      display: block;
+      width: 100%;
+      height: 360px;
+      border: 0;
+      background: #020617;
+    }
+
+    .debris-route-legend {
+      position: fixed;
+      left: 360px;
+      top: 132px;
+      z-index: 880;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 8px;
+      color: #cbd5e1;
+      background: rgba(2, 6, 23, 0.68);
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.26);
+      backdrop-filter: blur(10px);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .debris-route-legend i {
+      width: 24px;
+      height: 4px;
+      border-radius: 999px;
+      background: #f97316;
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.42);
+    }
+
+    .debris-route-legend .is-whitebox {
+      background: linear-gradient(90deg, #22d3ee, #a5f3fc);
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.72);
+    }
+
+    .debris-terrain-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .debris-layer-strip {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .debris-layer-strip span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .debris-layer-strip i {
+      width: 16px;
+      height: 4px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .debris-layer-strip .source { background: #ef4444; }
+    .debris-layer-strip .torrent { background: #f97316; }
+    .debris-layer-strip .road { background: #e5e7eb; }
+    .debris-layer-strip .rain { width: 8px; height: 8px; background: #a78bfa; }
+    .debris-layer-strip .sediment { background: #facc15; }
+
+    .debris-alert-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .debris-alert-summary span {
+      padding: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 7px;
+      background: rgba(15, 23, 42, 0.66);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .debris-alert-summary b {
+      display: block;
+      margin-top: 3px;
+      color: #f8fafc;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .debris-alert-summary .is-red b {
+      color: #fb7185;
+    }
+
+    .debris-alert-summary .is-yellow b {
+      color: #fde047;
+    }
+
+    .debris-top-alert-summary {
+      position: fixed;
+      left: 360px;
+      top: 18px;
+      z-index: 890;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 8px;
+      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.7);
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.28);
+      backdrop-filter: blur(12px);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-top-alert-summary b {
+      color: #f8fafc;
+      font-size: 14px;
+    }
+
+    .debris-top-alert-summary .red { color: #fb7185; }
+    .debris-top-alert-summary .yellow { color: #fde047; }
+    .debris-top-alert-summary .normal { color: #cbd5e1; }
+
+    .fuxing-typhoon-card {
+      display: none;
+    }
+
+    .cesium-legend {
+      opacity: 0.24;
+    }
+
+    .fuxing-bottom-timeline {
+      display: none;
+    }
+
+    .debris-bottom-sandboxes {
+      position: fixed;
+      left: 360px;
+      right: 430px;
+      bottom: 18px;
+      z-index: 880;
+      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.42);
+      backdrop-filter: blur(12px);
+      padding: 10px;
+      transition: left 0.22s ease, right 0.22s ease, max-height 0.22s ease, opacity 0.22s ease;
+    }
+
+    body[data-debris-mode="simulate"] .debris-bottom-sandboxes {
+      left: 360px;
+      right: auto;
+      width: 600px;
+      max-height: 188px;
+      overflow: hidden;
+      opacity: 0.94;
+    }
+
+    body[data-debris-mode="simulate"] .debris-bottom-sandboxes.is-expanded {
+      right: 430px;
+      width: auto;
+      max-height: 270px;
+    }
+
+    body[data-debris-mode="simulate"] .debris-bottom-sandboxes:not(.is-expanded) .debris-mini-card:nth-child(n+4) {
+      display: none;
+    }
+
+    .debris-bottom-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-bottom-head b {
+      color: #f8fafc;
+      font-size: 13px;
+    }
+
+    .debris-bottom-head span {
+      color: #94a3b8;
+    }
+
+    .debris-bottom-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .debris-bottom-toggle {
+      min-width: 30px;
+      height: 26px;
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: 6px;
+      color: #e0f2fe;
+      background: rgba(8, 47, 73, 0.72);
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .debris-sandbox-strip {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(170px, 1fr);
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    body[data-debris-mode="simulate"] .debris-sandbox-strip {
+      grid-auto-columns: 186px;
+      overflow: hidden;
+    }
+
+    body[data-debris-mode="simulate"] .debris-bottom-sandboxes.is-expanded .debris-sandbox-strip {
+      overflow-x: auto;
+    }
+
+    .debris-mini-card {
+      min-width: 170px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 7px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.72);
+      cursor: pointer;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+    }
+
+    .debris-mini-card:hover,
+    .debris-mini-card.is-selected {
+      border-color: rgba(56, 189, 248, 0.54);
+      transform: translateY(-2px);
+    }
+
+    .debris-mini-card.is-selected {
+      border-color: rgba(103, 232, 249, 0.92);
+      box-shadow:
+        0 0 0 2px rgba(56, 189, 248, 0.34),
+        0 0 28px rgba(56, 189, 248, 0.34),
+        inset 0 0 0 1px rgba(224, 242, 254, 0.2);
+    }
+
+    .debris-mini-card.is-selected header {
+      background: rgba(8, 47, 73, 0.92);
+    }
+
+    .debris-mini-card.is-red {
+      border-color: rgba(251, 113, 133, 0.34);
+      box-shadow: inset 0 0 0 1px rgba(127, 29, 29, 0.18);
+    }
+
+    .debris-mini-card.is-yellow {
+      border-color: rgba(250, 204, 21, 0.36);
+      box-shadow: inset 0 0 0 1px rgba(113, 63, 18, 0.18);
+    }
+
+    .debris-mini-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      color: #f8fafc;
+      font-size: 11px;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .debris-mini-card header span {
+      color: #fb7185;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .debris-mini-card.is-yellow header span {
+      color: #fde68a;
+    }
+
+    .debris-mini-card iframe {
+      display: block;
+      width: 100%;
+      height: 120px;
+      border: 0;
+      background: #020617;
+    }
+
+    @media (max-width: 960px) {
+      .debris-torrent-panel {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        top: auto;
+        bottom: 86px;
+        width: auto;
+        max-height: 32vh;
+      }
+
+      .debris-bottom-sandboxes {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+      }
+
+      .debris-basemap-switcher {
+        left: 50%;
+        right: auto;
+        top: 60px;
+        transform: translateX(-50%);
+      }
+
+      .debris-right-toggle {
+        right: 10px;
+        top: 58px;
+      }
+    }
+  </style>
+</head>
+<body class="laonong-command-page fuxing-model-page" data-page="fuxing-model-test" data-debris-mode="simulate">
+  <main class="cesium-page">
+    <section class="cesium-stage laonong-command-stage" aria-label="荖濃溪土石流預報 3D 場景">
+      <div id="cesium-container" class="cesium-container"></div>
+      <div class="debris-map-tone" aria-hidden="true"></div>
+      <div class="rain-station-overlay" id="rain-station-overlay" aria-label="雨量站畫面標記"></div>
+
+      <section class="laonong-title-panel fuxing-showcase-title" aria-label="系統標題">
+        <div class="laonong-logo-mark"></div>
+        <div>
+          <p>土石流警戒・坡地風險推演</p>
+          <h1>荖濃溪土石流警戒狀態監測</h1>
+        </div>
+      </section>
+
+      <section class="debris-top-alert-summary" aria-label="目前土石流警戒摘要">
+        <span>目前土石流警戒</span>
+        <span class="red">紅色 <b id="top-summary-red">0</b></span>
+        <span class="yellow">黃色 <b id="top-summary-yellow">0</b></span>
+        <span class="normal">未達 <b id="top-summary-normal">0</b></span>
+      </section>
+
+      <button class="debris-panel-toggle debris-left-toggle" id="debris-left-toggle" type="button" aria-controls="debris-torrent-panel" aria-expanded="true">‹</button>
+      <button class="debris-panel-toggle debris-right-toggle" id="debris-right-toggle" type="button" aria-controls="debris-analysis-panel" aria-expanded="true">›</button>
+
+      <details class="debris-basemap-switcher">
+        <summary><span>Map Settings</span><b>⋯</b></summary>
+        <label for="debris-basemap-select">
+          <span>Basemap</span>
+          <select id="debris-basemap-select">
+            <option value="google-hybrid" selected>Google 混合衛星</option>
+            <option value="dark-satellite">暗色衛星</option>
+            <option value="dark-hillshade">暗色地形陰影</option>
+            <option value="dark-terrain-hybrid">混合式暗色地形</option>
+            <option value="google-satellite">Google 純衛星</option>
+            <option value="arcgis-imagery">ArcGIS 影像</option>
+            <option value="osm">OpenStreetMap</option>
+          </select>
+        </label>
+      </details>
+
+      <div class="debris-live-status" aria-label="系統即時狀態">
+        <i></i>
+        <span>LIVE</span>
+        <time id="debris-live-clock">2026/08/25 12:40</time>
+      </div>
+
+      <div class="debris-route-legend" aria-label="溪流線圖例">
+        <span><i></i>官方潛勢溪流</span>
+        <span><i class="is-whitebox"></i>20m DEM 推估流路</span>
+      </div>
+
+      <div class="fuxing-mobile-dock" aria-label="手機面板控制">
+        <button type="button" data-fuxing-panel="info">資訊</button>
+        <button type="button" data-fuxing-panel="controls">控制</button>
+        <button type="button" data-fuxing-panel="legend">圖例</button>
+        <button type="button" data-fuxing-panel="impact">沙盤</button>
+      </div>
+
+      <nav class="fuxing-showcase-tabs" aria-label="Digital Twin 模式流程">
+        <button type="button" data-step="01" data-debris-mode-button="overview">
+          <span class="mode-dot"></span>
+          <span class="mode-en">UNDERSTAND</span>
+          <span class="mode-zh">流域認識</span>
+        </button>
+        <button type="button" data-step="02" data-debris-mode-button="monitor">
+          <span class="mode-dot"></span>
+          <span class="mode-en">MONITOR</span>
+          <span class="mode-zh">即時監測</span>
+        </button>
+        <button class="is-active" type="button" data-step="03" data-debris-mode-button="simulate">
+          <span class="mode-dot"></span>
+          <span class="mode-en">SIMULATE</span>
+          <span class="mode-zh">事件推演</span>
+        </button>
+        <button type="button" data-step="04" data-debris-mode-button="experience">
+          <span class="mode-dot"></span>
+          <span class="mode-en">EXPERIENCE</span>
+          <span class="mode-zh">擬真情境</span>
+        </button>
+      </nav>
+
+      <section class="fuxing-island-card" data-fuxing-panel-target="info" aria-label="數位孿生島資訊">
+        <button type="button" aria-label="關閉">×</button>
+        <p>荖濃溪上游聚落・數位孿生島</p>
+        <h2>梅山至寶山聚落範圍</h2>
+        <div>
+          <span>UAV 傾斜攝影模型</span>
+          <span>更新時間・2025/08/02</span>
+        </div>
+      </section>
+
+      <aside class="fuxing-flow-panel" aria-label="流域資訊">
+        <strong>警戒摘要</strong>
+        <span>24hr 累積雨量 <b>依 DF 切換</b></span>
+        <span>土石流警戒 <b id="debris-flow-alert-count">讀取中</b></span>
+        <span>警戒發生 <b>尚未確認</b></span>
+      </aside>
+
+      <aside class="debris-torrent-panel" id="debris-torrent-panel" aria-label="荖濃溪土石流潛勢溪流位置">
+        <h2>荖濃溪土石流潛勢溪流</h2>
+        <p id="debris-data-note">官方 114 年潛勢溪流圖 Sub_basin=荖濃；目前警戒資料時間讀取中。</p>
+        <svg class="debris-torrent-map" id="debris-torrent-map" viewBox="0 0 280 150" role="img" aria-label="荖濃溪土石流潛勢溪流實際相對位置"></svg>
+        <div class="debris-filter-tabs" aria-label="警戒篩選">
+          <button class="is-active" type="button" data-filter="all">全部</button>
+          <button type="button" data-filter="r">紅色</button>
+          <button type="button" data-filter="y">黃色</button>
+          <button type="button" data-filter="n">正常</button>
+        </div>
+        <ul class="debris-torrent-list" id="debris-torrent-list"></ul>
+      </aside>
+
+      <aside class="cesium-control-panel fuxing-control-panel is-panel-collapsed" data-fuxing-panel-target="controls" aria-label="荖濃溪土石流預報控制">
+        <button class="fuxing-panel-toggle" type="button" aria-expanded="false">圖層</button>
+        <div class="cesium-panel-content">
+          <p class="eyebrow">CesiumJS</p>
+          <h1>圖層開關</h1>
+          <label class="fuxing-select-field debris-basemap-source">
+            <span>底圖</span>
+            <select id="basemap-select">
+              <option value="google-hybrid" selected>Google 混合衛星</option>
+              <option value="dark-satellite">暗色衛星</option>
+              <option value="dark-hillshade">暗色地形陰影</option>
+              <option value="dark-terrain-hybrid">混合式暗色地形</option>
+              <option value="google-satellite">Google 純衛星</option>
+              <option value="arcgis-imagery">ArcGIS 影像</option>
+              <option value="osm">OpenStreetMap</option>
+            </select>
+          </label>
+          <label class="fuxing-select-field">
+            <span>視角模式</span>
+            <select id="scene-mode-select">
+              <option value="3d" selected>3D 地形</option>
+              <option value="2d">2D 平面</option>
+            </select>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="model-toggle" type="checkbox">
+            <span>顯示真實 UAV 模型</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="terrain-toggle" type="checkbox" checked>
+            <span>地形高度感</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="radar-toggle" type="checkbox">
+            <span>展示雷達回波 / 建物發光</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="basin-toggle" type="checkbox" checked>
+            <span>荖濃溪流域外框</span>
+          </label>
+          <input id="building-toggle" type="checkbox" hidden>
+          <input id="settlement-toggle" type="checkbox" hidden>
+          <input id="water-toggle" type="checkbox" hidden>
+          <input id="sky-island-toggle" type="checkbox" checked hidden>
+        </div>
+      </aside>
+
+      <div class="cesium-legend" data-fuxing-panel-target="legend" aria-label="復興模型圖例">
+        <strong>Digital Twin 圖層</strong>
+        <span><i class="cesium-radar"></i>河網：藍色</span>
+        <span><i class="cesium-typhoon"></i>崩塌源：紅 / 橘色</span>
+        <span><i class="cesium-real-river"></i>土石流潛勢溪流：橘色</span>
+        <span><i class="cesium-real-river"></i>道路：線</span>
+        <span><i class="cesium-radar"></i>雨量站：點位</span>
+        <span><i class="cesium-typhoon"></i>模擬土砂：動態粒子 / 流體</span>
+      </div>
+
+      <section class="fuxing-impact-panel debris-terrain-panel is-collapsed" id="debris-analysis-panel" data-fuxing-panel-target="impact" aria-label="流域 Digital Twin 沙盤">
+        <div class="fuxing-impact-head">
+          <span>選取溪流警戒狀態</span>
+          <strong id="debris-sandbox-count">讀取中</strong>
+        </div>
+        <div class="fuxing-impact-grid">
+          <div class="debris-twin-stack">
+            <div class="debris-alert-summary" aria-label="警戒摘要">
+              <span>目前警戒<b id="debris-summary-total">0</b></span>
+              <span class="is-red">紅色警戒<b id="debris-summary-red">0</b></span>
+              <span class="is-yellow">黃色警戒<b id="debris-summary-yellow">0</b></span>
+            </div>
+            <article class="debris-selected-card" id="debris-selected-card" aria-label="選取溪流摘要">
+              <div class="debris-alert-panel">
+                <div class="debris-alert-title">
+                  <span id="alert-panel-code">請選取 DF 編號</span>
+                  <h2 id="alert-panel-name">土石流警戒狀態</h2>
+                  <strong class="debris-alert-status" id="alert-panel-status">尚未選取</strong>
+                </div>
+                <section class="debris-rain-section" aria-label="累積雨量圖">
+                  <h3>累積雨量圖</h3>
+                  <svg class="debris-rain-chart" id="rain-history-chart" viewBox="0 0 320 150" role="img" aria-label="雨量與警戒值歷程"></svg>
+                </section>
+                <section class="debris-simulation-engine" id="debris-simulation-engine" aria-label="Simulation Engine">
+                  <h3>SIMULATION ENGINE</h3>
+                  <div class="engine-line">
+                    <span>20m Terrain Model</span>
+                    <b class="engine-status">● READY</b>
+                  </div>
+                  <div class="engine-line">
+                    <span>WhiteboxTools</span>
+                    <b class="engine-status is-running">● ACTIVE</b>
+                  </div>
+                  <div class="engine-task is-last">
+                    <span>Downslope Flowpath</span>
+                    <b class="engine-status is-running" id="engine-flow-status">● RUNNING 78%</b>
+                  </div>
+                  <div class="engine-bar" aria-label="WhiteboxTools 流路推估進度"><i id="engine-flow-progress"></i></div>
+                </section>
+                <section class="debris-sim-sandbox" aria-label="選取溪流 3D 地形沙盤">
+                  <header>
+                    <b>20m DEM SANDBOX</b>
+                    <span id="sim-sandbox-code">--</span>
+                  </header>
+                  <iframe id="sim-sandbox-frame" src="../df064-terrain-sandbox-mini.html?id=DF047&alert=red&mode=simulate" title="選取溪流 3D 地形沙盤"></iframe>
+                </section>
+                <div class="debris-rain-grid">
+                  <span>累積雨量<b id="rain-accum">--</b></span>
+                  <span>警戒基準<b id="rain-threshold">--</b></span>
+                  <span>達成率<b id="rain-rate">--</b></span>
+                  <span>更新時間<b id="rain-updated">--</b></span>
+                </div>
+                <section class="debris-rain-stations" aria-label="流域雨量站">
+                  <h3>流域雨量站 <span id="rain-station-count">6 站</span></h3>
+                  <ul class="debris-rain-station-list" id="rain-station-list"></ul>
+                </section>
+                <div class="debris-progress" aria-label="警戒值達成率"><i id="rain-progress"></i></div>
+                <div class="debris-state-chain" aria-label="警戒狀態鏈">
+                  <span class="is-done">✓ 降雨</span>
+                  <span class="is-done">✓ 雨量累積</span>
+                  <span class="is-alert" id="state-alert">警戒</span>
+                  <span>○ 尚未確認發生</span>
+                </div>
+              </div>
+            </article>
+            <div class="debris-layer-strip" aria-label="沙盤圖層構想">
+              <span><i></i>河網</span>
+              <span><i class="source"></i>崩塌源</span>
+              <span><i class="torrent"></i>潛勢溪流</span>
+              <span><i class="road"></i>道路</span>
+              <span><i class="rain"></i>雨量站</span>
+              <span><i class="sediment"></i>模擬土砂</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="debris-physical-entry" aria-hidden="true">
+        <span>CESIUM DIGITAL TWIN → PHYSICAL SCENE</span>
+        <strong>ENTER PHYSICAL SCENE</strong>
+        <i></i>
+      </div>
+
+      <aside class="debris-experience-panel" aria-label="擬真情境模擬影片">
+        <div class="debris-experience-head">
+          <div>
+            <span>EXPERIENCE / 擬真情境</span>
+            <h2 id="experience-panel-title">DF064 物理場景</h2>
+          </div>
+          <b>SIMULATION</b>
+        </div>
+        <div class="debris-experience-video-shell">
+          <video class="debris-experience-video" id="experience-simulation-video" autoplay muted loop playsinline preload="auto">
+            <source src="../../assets/videos/laonong-debris-flow-forecast/experience-simulation.mp4" type="video/mp4">
+          </video>
+        </div>
+        <section class="debris-experience-reference" aria-label="立體模擬參考">
+          <header>
+            <b>立體模擬參考</b>
+            <span>DF055 / split-view-terrain 右側</span>
+          </header>
+          <iframe src="../df055/three-embed-v2.html?clean=1&v2=1" title="DF055 split-view-terrain 右側立體模擬參考 V2"></iframe>
+        </section>
+        <div class="debris-experience-meta" aria-label="擬真情境來源">
+          <span>範圍切割<b id="experience-basin-code">DF064</b></span>
+          <span>地形來源<b>20m DEM</b></span>
+          <span>路徑來源<b>WhiteboxTools</b></span>
+        </div>
+        <div class="debris-experience-note">
+          SIMULATION｜情境模擬，非即時災情。此區作為「進入同一個山谷物理場景」的測試呈現。
+        </div>
+      </aside>
+
+      <section class="fuxing-bottom-timeline" data-fuxing-panel-target="timeline" aria-label="事件時間軸">
+        <button type="button">▶</button>
+        <div>
+          <span class="is-active">現在<br>預報開始</span>
+          <span class="is-active">+1hr<br>雨帶接近</span>
+          <span class="is-current">+3hr<br>水位上升</span>
+          <span>+6hr<br>聚落警戒</span>
+          <span>+12hr<br>影響擴大</span>
+          <span>+24hr<br>持續監測</span>
+        </div>
+      </section>
+
+      <section class="debris-bottom-sandboxes" aria-label="荖濃溪土石流沙盤切割成果">
+        <div class="debris-bottom-head">
+          <b>土石流潛勢溪流｜3D Digital Twin</b>
+          <div class="debris-bottom-actions">
+            <span id="debris-bottom-note">讀取中</span>
+            <button class="debris-bottom-toggle" id="debris-bottom-toggle" type="button" aria-label="切換底部沙盤大小">＋</button>
+          </div>
+        </div>
+        <div class="debris-sandbox-strip" id="debris-sandbox-strip"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+  </script>
+  <script>
+    (() => {
+      const dataUrl = "../../data/laonong-debris-flow/laonong-alert-torrents.json?v=20260824-laonong-cut";
+      const allPotentialUrl = "../../data/laonong-debris-flow/laonong-all-potential-streams.geojson?v=20260824-all-potential";
+      const basinBoundaryUrl = "../../data/laonong-subbasin-boundary.geojson?v=20260824-mini-basin";
+      const impactAreaUrl = "../../data/laonong-debris-flow/laonong-impact-areas.geojson?v=20260825-impact-area";
+      const riverFlowlineUrl = "../../data/laonong-river-real.geojson?v=20260825-overview-river-real";
+      const els = {
+        note: document.querySelector("#debris-data-note"),
+        flowCount: document.querySelector("#debris-flow-alert-count"),
+        sandboxCount: document.querySelector("#debris-sandbox-count"),
+        total: document.querySelector("#debris-summary-total"),
+        red: document.querySelector("#debris-summary-red"),
+        yellow: document.querySelector("#debris-summary-yellow"),
+        topRed: document.querySelector("#top-summary-red"),
+        topYellow: document.querySelector("#top-summary-yellow"),
+        topNormal: document.querySelector("#top-summary-normal"),
+        torrentList: document.querySelector("#debris-torrent-list"),
+        filterTabs: document.querySelector(".debris-filter-tabs"),
+        leftPanel: document.querySelector("#debris-torrent-panel"),
+        leftToggle: document.querySelector("#debris-left-toggle"),
+        rightToggle: document.querySelector("#debris-right-toggle"),
+        basemapSwitcher: document.querySelector(".debris-basemap-switcher"),
+        visibleBasemapSelect: document.querySelector("#debris-basemap-select"),
+        liveClock: document.querySelector("#debris-live-clock"),
+        modeButtons: document.querySelectorAll("[data-debris-mode-button]"),
+        analysisPanel: document.querySelector("#debris-analysis-panel"),
+        selectedCard: document.querySelector("#debris-selected-card"),
+        selectedSvg: document.querySelector("#debris-selected-svg"),
+        alertCode: document.querySelector("#alert-panel-code"),
+        alertName: document.querySelector("#alert-panel-name"),
+        alertStatus: document.querySelector("#alert-panel-status"),
+        rainAccum: document.querySelector("#rain-accum"),
+        rainThreshold: document.querySelector("#rain-threshold"),
+        rainRate: document.querySelector("#rain-rate"),
+        rainUpdated: document.querySelector("#rain-updated"),
+        rainProgress: document.querySelector("#rain-progress"),
+        rainChart: document.querySelector("#rain-history-chart"),
+        simulationEngine: document.querySelector("#debris-simulation-engine"),
+        engineFlowStatus: document.querySelector("#engine-flow-status"),
+        engineFlowProgress: document.querySelector("#engine-flow-progress"),
+        engineKanakoStatus: document.querySelector("#engine-kanako-status"),
+        simSandboxCode: document.querySelector("#sim-sandbox-code"),
+        simSandboxFrame: document.querySelector("#sim-sandbox-frame"),
+        experienceVideo: document.querySelector("#experience-simulation-video"),
+        experienceTitle: document.querySelector("#experience-panel-title"),
+        experienceBasinCode: document.querySelector("#experience-basin-code"),
+        rainStationCount: document.querySelector("#rain-station-count"),
+        rainStationList: document.querySelector("#rain-station-list"),
+        rainStationOverlay: document.querySelector("#rain-station-overlay"),
+        stateAlert: document.querySelector("#state-alert"),
+        bottomNote: document.querySelector("#debris-bottom-note"),
+        bottomSandboxes: document.querySelector(".debris-bottom-sandboxes"),
+        bottomToggle: document.querySelector("#debris-bottom-toggle"),
+        sandboxStrip: document.querySelector("#debris-sandbox-strip"),
+        miniMap: document.querySelector("#debris-torrent-map")
+      };
+      const levelText = (level) => level === "r" ? "紅" : level === "y" ? "黃" : "無";
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+      let selectedItem = null;
+      let selectedEntities = [];
+      let simulationFlowEntities = [];
+      let baseTorrentEntities = [];
+      let overviewRiverEntities = [];
+      let impactAreaEntities = [];
+      let rainStationEntities = [];
+      let rainStationAnimationStarted = false;
+      let miniMapHeadingSyncStarted = false;
+      let simulationEngineRunId = 0;
+      let currentFilter = "all";
+      let currentMode = "simulate";
+      let allItems = [];
+      let allPotentialFeatures = [];
+      let basinBoundaryFeature = null;
+      let impactAreaFeatures = [];
+      const simulationFlowDurationSeconds = 13.5;
+      const playExperienceVideo = () => {
+        if (!els.experienceVideo || currentMode !== "experience") return;
+        els.experienceVideo.muted = true;
+        els.experienceVideo.loop = true;
+        els.experienceVideo.play().catch(() => {});
+      };
+      const rainStations = [
+        { id: "JS", name: "建山國小", town: "桃源區", lon: 120.6781, lat: 23.1088, h1: 1.5, h6: 65, h12: 65, h24: 65, effective: 158.5 },
+        { id: "TY", name: "桃源區公所", town: "桃源區", lon: 120.759, lat: 23.159, h1: 5, h6: 27.5, h12: 76.5, h24: 178.5, effective: 335.5 },
+        { id: "MB", name: "明霸克露橋", town: "桃源區", lon: 120.739, lat: 23.239, h1: 4.5, h6: 33, h12: 74.5, h24: 162, effective: 310 },
+        { id: "BS", name: "寶山部落", town: "桃源區", lon: 120.708, lat: 23.169, h1: 2.5, h6: 24.5, h12: 75, h24: 219, effective: 465.5 },
+        { id: "XF", name: "新發國小", town: "六龜區", lon: 120.654, lat: 22.996, h1: 0.5, h6: 23.5, h12: 66, h24: 243.5, effective: 492 },
+        { id: "ZL", name: "竹林", town: "六龜區", lon: 120.639, lat: 22.994, h1: 2.5, h6: 19, h12: 56, h24: 152, effective: 303 },
+        { id: "NMX", name: "那瑪夏國中", town: "鄰近參考", lon: 120.692, lat: 23.274, h1: 2.5, h6: 20, h12: 60, h24: 149.5, effective: 282, reference: true },
+        { id: "ML", name: "茂林國小", town: "鄰近參考", lon: 120.664, lat: 22.887, h1: 0, h6: 19, h12: 72, h24: 252.5, effective: 540, reference: true }
+      ];
+
+      const alertLevel = (item) => item.alertLevel || "n";
+      const alertRank = (item) => ({ r: 0, y: 1, n: 2 }[alertLevel(item)] ?? 3);
+      const alertLabel = (item) => alertLevel(item) === "r" ? "紅色警戒" : alertLevel(item) === "y" ? "黃色警戒" : "未達警戒";
+      const rainProfile = (item) => {
+        const base = item.alertLevel === "r" ? 500 : item.alertLevel === "y" ? 420 : 500;
+        const rate = item.alertLevel === "r" ? 1.07 + (Number(item.id.replace(/\D/g, "")) % 8) / 100 : item.alertLevel === "y" ? 0.82 + (Number(item.id.replace(/\D/g, "")) % 10) / 100 : 0.52;
+        const accum = Math.round(base * rate);
+        return {
+          accum,
+          threshold: base,
+          rate: Math.round((accum / base) * 100),
+          updated: "16:20",
+          series: [Math.round(accum * 0.46), Math.round(accum * 0.55), Math.round(accum * 0.66), Math.round(accum * 0.78), Math.round(accum * 0.9), accum]
+        };
+      };
+
+      const distanceKm = (a, b) => {
+        const toRad = (value) => value * Math.PI / 180;
+        const dLat = toRad(b.lat - a.lat);
+        const dLon = toRad(b.lon - a.lon);
+        const lat1 = toRad(a.lat);
+        const lat2 = toRad(b.lat);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+      };
+
+      const itemCenterLonLat = (item) => {
+        if (item?.centroidTwd97) return twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]);
+        const point = item?.flowlineTwd97?.[0];
+        return point ? twd97ToLonLat(point.x, point.y) : null;
+      };
+
+      const nearestRainStations = (item, count = 3) => {
+        const center = itemCenterLonLat(item);
+        if (!center) return rainStations.slice(0, count);
+        return rainStations
+          .map((station) => ({ ...station, distance: distanceKm(center, station) }))
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, count);
+      };
+
+      const rainStationBillboard = (station, isPrimary = false) => {
+        const color = isPrimary ? "#67e8f9" : station.reference ? "#94a3b8" : "#22d3ee";
+        const outer = isPrimary ? "0.42" : station.reference ? "0.18" : "0.28";
+        const svg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="${color}" fill-opacity="${outer}"/>
+            <circle cx="36" cy="36" r="20" fill="#020617" fill-opacity="0.86" stroke="${color}" stroke-width="3"/>
+            <path d="M36 16 C29 25 25 31 25 39 C25 47 30 53 36 53 C42 53 47 47 47 39 C47 31 43 25 36 16Z" fill="${color}"/>
+            <circle cx="36" cy="40" r="6" fill="#e0f2fe" fill-opacity="0.95"/>
+          </svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      };
+
+      const setupPanelControls = () => {
+        const basemapSelect = document.querySelector("#basemap-select");
+        const syncMapTone = (value) => {
+          const darkModes = new Set(["dark-satellite", "dark-hillshade", "dark-terrain-hybrid"]);
+          if (darkModes.has(value)) {
+            document.body.dataset.mapTone = value;
+          } else {
+            delete document.body.dataset.mapTone;
+          }
+        };
+        syncMapTone(els.visibleBasemapSelect?.value || basemapSelect?.value || "");
+        els.visibleBasemapSelect?.addEventListener("change", () => {
+          syncMapTone(els.visibleBasemapSelect.value);
+          if (!basemapSelect) return;
+          basemapSelect.value = els.visibleBasemapSelect.value;
+          basemapSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+        basemapSelect?.addEventListener("change", () => {
+          syncMapTone(basemapSelect.value);
+          if (els.visibleBasemapSelect && els.visibleBasemapSelect.value !== basemapSelect.value) {
+            els.visibleBasemapSelect.value = basemapSelect.value;
+          }
+        });
+        els.leftToggle?.addEventListener("click", () => {
+          const collapsed = els.leftPanel?.classList.toggle("is-collapsed");
+          document.body.classList.toggle("is-left-panel-collapsed", Boolean(collapsed));
+          els.leftToggle.textContent = collapsed ? "›" : "‹";
+          els.leftToggle.setAttribute("aria-expanded", String(!collapsed));
+        });
+        els.rightToggle?.addEventListener("click", () => {
+          const collapsed = els.analysisPanel?.classList.toggle("is-collapsed");
+          document.body.classList.toggle("is-right-panel-collapsed", Boolean(collapsed));
+          els.rightToggle.textContent = collapsed ? "‹" : "›";
+          els.rightToggle.setAttribute("aria-expanded", String(!collapsed));
+        });
+        els.modeButtons?.forEach((button) => {
+          button.addEventListener("click", () => {
+            applyDebrisMode(button.dataset.debrisModeButton || "alert");
+          });
+        });
+        els.bottomToggle?.addEventListener("click", () => {
+          const expanded = els.bottomSandboxes?.classList.toggle("is-expanded");
+          if (els.bottomSandboxes) els.bottomSandboxes.dataset.userExpanded = expanded ? "true" : "false";
+          els.bottomToggle.textContent = expanded ? "－" : "＋";
+          els.bottomToggle.setAttribute("aria-label", expanded ? "縮小底部沙盤" : "放大底部沙盤");
+        });
+      };
+
+      const updateLiveClock = () => {
+        if (!els.liveClock) return;
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat("zh-TW", {
+          timeZone: "Asia/Taipei",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        }).formatToParts(now).reduce((memo, part) => {
+          memo[part.type] = part.value;
+          return memo;
+        }, {});
+        els.liveClock.textContent = `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`;
+      };
+
+      const twd97ToLonLat = (x, y) => {
+        const a = 6378137;
+        const b = 6356752.314245;
+        const lng0 = 121 * Math.PI / 180;
+        const k0 = 0.9999;
+        const dx = x - 250000;
+        const e = Math.sqrt(1 - (b * b) / (a * a));
+        const e1sq = e * e / (1 - e * e);
+        const m = y / k0;
+        const mu = m / (a * (1 - e * e / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256));
+        const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+        const j1 = 3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32;
+        const j2 = 21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32;
+        const j3 = 151 * Math.pow(e1, 3) / 96;
+        const j4 = 1097 * Math.pow(e1, 4) / 512;
+        const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+        const sinfp = Math.sin(fp);
+        const cosfp = Math.cos(fp);
+        const tanfp = Math.tan(fp);
+        const c1 = e1sq * cosfp * cosfp;
+        const t1 = tanfp * tanfp;
+        const r1 = a * (1 - e * e) / Math.pow(1 - e * e * sinfp * sinfp, 1.5);
+        const n1 = a / Math.sqrt(1 - e * e * sinfp * sinfp);
+        const d = dx / (n1 * k0);
+        const q1 = n1 * tanfp / r1;
+        const q2 = d * d / 2;
+        const q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e1sq) * Math.pow(d, 4) / 24;
+        const q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e1sq - 3 * c1 * c1) * Math.pow(d, 6) / 720;
+        const lat = fp - q1 * (q2 - q3 + q4);
+        const q5 = d;
+        const q6 = (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6;
+        const q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e1sq + 24 * t1 * t1) * Math.pow(d, 5) / 120;
+        const lon = lng0 + (q5 - q6 + q7) / cosfp;
+        return { lon: lon * 180 / Math.PI, lat: lat * 180 / Math.PI };
+      };
+
+      const getViewer = () => window.laonongCesiumViewer && window.Cesium ? window.laonongCesiumViewer : null;
+
+      const clearSelectedEntities = () => {
+        const viewer = getViewer();
+        if (!viewer) return;
+        selectedEntities.forEach((entity) => viewer.entities.remove(entity));
+        selectedEntities = [];
+        simulationFlowEntities.forEach((entity) => viewer.entities.remove(entity));
+        simulationFlowEntities = [];
+      };
+
+      const clearBaseTorrentEntities = () => {
+        const viewer = getViewer();
+        if (!viewer) return;
+        baseTorrentEntities.forEach((entity) => viewer.entities.remove(entity));
+        baseTorrentEntities = [];
+      };
+
+      const setEntitiesVisible = (entities, visible) => {
+        entities.forEach((entity) => {
+          entity.show = visible;
+        });
+      };
+
+      const applyDebrisMode = (mode = currentMode) => {
+        currentMode = mode || "alert";
+        document.body.dataset.debrisMode = currentMode;
+        const activeIndex = Array.from(els.modeButtons || []).findIndex((button) => button.dataset.debrisModeButton === currentMode);
+        els.modeButtons?.forEach((button) => {
+          const index = Array.from(els.modeButtons).indexOf(button);
+          button.classList.toggle("is-active", button.dataset.debrisModeButton === currentMode);
+          button.classList.toggle("is-complete", activeIndex >= 0 && index < activeIndex);
+        });
+        if (currentMode === "simulate" && !selectedItem && allItems[0]) {
+          selectTorrent(allItems[0]);
+          return;
+        }
+
+        const showBaseTorrents = true;
+        const showRiverLayer = true;
+        const showImpactAreas = currentMode === "monitor" || currentMode === "simulate" || currentMode === "alert";
+        const showRainStations = currentMode === "monitor" || currentMode === "alert";
+        const showSelectedFlow = currentMode === "simulate" || currentMode === "experience" || currentMode === "alert";
+        const showSimulationFlow = currentMode === "simulate";
+
+        if (currentMode === "simulate" && els.bottomSandboxes?.dataset.userExpanded !== "true") {
+          els.bottomSandboxes?.classList.remove("is-expanded");
+          if (els.bottomToggle) els.bottomToggle.textContent = "＋";
+        }
+
+        setEntitiesVisible(baseTorrentEntities, showBaseTorrents);
+        setEntitiesVisible(overviewRiverEntities, showRiverLayer);
+        setEntitiesVisible(impactAreaEntities, showImpactAreas);
+        setEntitiesVisible(rainStationEntities, showRainStations);
+        setEntitiesVisible(selectedEntities, showSelectedFlow);
+        setEntitiesVisible(simulationFlowEntities, showSimulationFlow);
+
+        updateBaseTorrentEmphasis(selectedItem?.id || null);
+        const viewer = getViewer();
+        if (viewer && showSimulationFlow) {
+          viewer.clock.shouldAnimate = true;
+          updateSimulationEngine();
+        }
+        if (els.experienceVideo) {
+          if (currentMode === "experience") {
+            els.experienceVideo.muted = true;
+            els.experienceVideo.loop = true;
+            els.experienceVideo.currentTime = 0;
+            playExperienceVideo();
+          } else {
+            els.experienceVideo.pause();
+          }
+        }
+        viewer?.scene?.requestRender();
+      };
+      els.experienceVideo?.addEventListener("canplay", playExperienceVideo);
+
+      const lineDistance = (a, b) => {
+        const latScale = 111320;
+        const lonScale = Math.cos(((a.lat + b.lat) / 2) * Math.PI / 180) * latScale;
+        return Math.hypot((b.lon - a.lon) * lonScale, (b.lat - a.lat) * latScale);
+      };
+
+      const interpolateLinePoint = (points, distances, target) => {
+        if (!points.length) return null;
+        if (target <= 0) return points[0];
+        const total = distances[distances.length - 1] || 1;
+        if (target >= total) return points[points.length - 1];
+        const index = distances.findIndex((distance) => distance >= target);
+        const safeIndex = Math.max(1, index);
+        const prevDistance = distances[safeIndex - 1] || 0;
+        const nextDistance = distances[safeIndex] || total;
+        const ratio = (target - prevDistance) / Math.max(nextDistance - prevDistance, 1);
+        const prev = points[safeIndex - 1];
+        const next = points[safeIndex];
+        return {
+          lon: prev.lon + (next.lon - prev.lon) * ratio,
+          lat: prev.lat + (next.lat - prev.lat) * ratio
+        };
+      };
+
+      const addSimulationFlowAnimation = (item, whiteboxPoints) => {
+        const viewer = getViewer();
+        if (!viewer || whiteboxPoints.length < 2) return;
+        const distances = whiteboxPoints.reduce((memo, point, index) => {
+          if (index === 0) return [0];
+          memo.push(memo[index - 1] + lineDistance(whiteboxPoints[index - 1], point));
+          return memo;
+        }, []);
+        const total = distances[distances.length - 1] || 1;
+        const isYellow = item.alertLevel === "y";
+        const color = Cesium.Color.fromCssColorString(isYellow ? "#fde68a" : "#fb7185");
+        const startTime = Cesium.JulianDate.now();
+        const activeLinePositions = new Cesium.CallbackProperty((time) => {
+          const seconds = Cesium.JulianDate.secondsDifference(time, startTime);
+          const progressRatio = Math.min(1, seconds / simulationFlowDurationSeconds);
+          const target = progressRatio * total;
+          const visiblePoints = whiteboxPoints
+            .filter((_, pointIndex) => distances[pointIndex] <= target)
+            .map((point) => Cesium.Cartesian3.fromDegrees(point.lon, point.lat, 42));
+          const head = interpolateLinePoint(whiteboxPoints, distances, target);
+          if (head) visiblePoints.push(Cesium.Cartesian3.fromDegrees(head.lon, head.lat, 42));
+          return visiblePoints.length >= 2 ? visiblePoints : [
+            Cesium.Cartesian3.fromDegrees(whiteboxPoints[0].lon, whiteboxPoints[0].lat, 42),
+            Cesium.Cartesian3.fromDegrees(whiteboxPoints[1].lon, whiteboxPoints[1].lat, 42)
+          ];
+        }, false);
+        simulationFlowEntities.push(viewer.entities.add({
+          name: `${item.id} WhiteboxTools 流路生成`,
+          polyline: {
+            positions: activeLinePositions,
+            width: 9.5,
+            material: new Cesium.PolylineGlowMaterialProperty({
+              glowPower: 0.32,
+              color: Cesium.Color.fromCssColorString("#67e8f9").withAlpha(0.92)
+            }),
+            clampToGround: false
+          }
+        }));
+
+        Array.from({ length: 6 }).forEach((_, index) => {
+          const phase = index / 6;
+          const entity = viewer.entities.add({
+            name: `${item.id} 事件推演流動粒子 ${index + 1}`,
+            position: new Cesium.CallbackProperty((time) => {
+              const seconds = Cesium.JulianDate.secondsDifference(time, startTime);
+              const buildProgress = Math.min(1, seconds / simulationFlowDurationSeconds);
+              const progress = Math.min(1, buildProgress + phase * 0.08) * total;
+              const point = interpolateLinePoint(whiteboxPoints, distances, progress) || whiteboxPoints[0];
+              return Cesium.Cartesian3.fromDegrees(point.lon, point.lat, 36);
+            }, false),
+            point: {
+              pixelSize: new Cesium.CallbackProperty((time) => {
+                const seconds = Cesium.JulianDate.secondsDifference(time, startTime);
+                const pulse = (Math.sin(seconds * 4.2 + index) + 1) / 2;
+                return 8 + pulse * 5;
+              }, false),
+              color: color.withAlpha(isYellow ? 0.62 : 0.9),
+              outlineColor: Cesium.Color.WHITE.withAlpha(0.86),
+              outlineWidth: 1.4,
+              heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            }
+          });
+          simulationFlowEntities.push(entity);
+        });
+      };
+
+      const updateSimulationEngine = () => {
+        if (!els.simulationEngine || currentMode !== "simulate") return;
+        simulationEngineRunId += 1;
+        const runId = simulationEngineRunId;
+        const started = performance.now();
+        els.simulationEngine.classList.remove("is-complete");
+        if (els.engineFlowStatus) {
+          els.engineFlowStatus.classList.add("is-running");
+          els.engineFlowStatus.textContent = "● RUNNING 18%";
+        }
+        if (els.engineKanakoStatus) {
+          els.engineKanakoStatus.textContent = "○ STANDBY";
+          els.engineKanakoStatus.classList.add("is-standby");
+        }
+        if (els.engineFlowProgress) els.engineFlowProgress.style.setProperty("--engine-progress", "18%");
+        const tick = () => {
+          if (currentMode !== "simulate" || runId !== simulationEngineRunId) return;
+          const elapsed = performance.now() - started;
+          const progress = Math.min(100, 18 + (elapsed / (simulationFlowDurationSeconds * 1000)) * 82);
+          if (els.engineFlowProgress) els.engineFlowProgress.style.setProperty("--engine-progress", `${progress.toFixed(0)}%`);
+          if (els.engineFlowStatus) {
+            els.engineFlowStatus.textContent = progress >= 100 ? "✓ COMPLETE" : `● RUNNING ${progress.toFixed(0)}%`;
+            els.engineFlowStatus.classList.toggle("is-running", progress < 100);
+          }
+          if (progress >= 100) {
+            els.simulationEngine.classList.add("is-complete");
+            if (els.engineKanakoStatus) {
+              els.engineKanakoStatus.textContent = "● READY";
+              els.engineKanakoStatus.classList.remove("is-standby");
+            }
+            return;
+          }
+          window.requestAnimationFrame(tick);
+        };
+        tick();
+      };
+
+      const updateBaseTorrentEmphasis = (selectedId) => {
+        baseTorrentEntities.forEach((entity) => {
+          if (entity.polyline?.material?.color) {
+            const isSelected = entity.properties?.torrentId?.getValue?.() === selectedId;
+            const level = entity.properties?.alertLevel?.getValue?.() || "n";
+            const base = level === "r" ? "#fb7185" : level === "y" ? "#facc15" : "#64748b";
+            const overviewAlpha = level === "n" ? 0.38 : 0.68;
+            const overviewWidth = level === "n" ? 3.2 : level === "r" ? 5.8 : 4.8;
+            const experienceAlpha = isSelected ? 0.9 : 0.12;
+            const simulateAlpha = isSelected ? 0.98 : 0.2;
+            const simulateWidth = isSelected ? 8.5 : level === "r" ? 2.8 : level === "y" ? 2.5 : 1.8;
+            const baseLayerAlpha = currentMode === "overview" ? overviewAlpha : currentMode === "experience" ? experienceAlpha : currentMode === "simulate" ? simulateAlpha : isSelected ? 0.96 : 0.46;
+            const baseLayerWidth = currentMode === "overview" ? overviewWidth : currentMode === "experience" ? isSelected ? 8 : 1.7 : currentMode === "simulate" ? simulateWidth : isSelected ? 8 : level === "r" ? 4.2 : level === "y" ? 3.6 : 2.6;
+            entity.polyline.material.color = Cesium.Color.fromCssColorString(base).withAlpha(baseLayerAlpha);
+            entity.polyline.width = baseLayerWidth;
+          }
+          if (entity.point) {
+            const isSelected = entity.properties?.torrentId?.getValue?.() === selectedId;
+            entity.point.pixelSize = currentMode === "overview" ? 6 : currentMode === "experience" ? isSelected ? 18 : 5 : isSelected ? 16 : 8;
+          }
+          if (entity.label) {
+            const isSelected = entity.properties?.torrentId?.getValue?.() === selectedId;
+            entity.label.show = (currentMode !== "experience" && currentMode !== "simulate") || isSelected;
+            entity.label.fillColor = Cesium.Color.fromCssColorString(isSelected ? "#ffffff" : "#dbeafe");
+          }
+        });
+        impactAreaEntities.forEach((entity) => {
+          const isSelected = entity.properties?.torrentId?.getValue?.() === selectedId;
+          const level = entity.properties?.alertLevel?.getValue?.() || "n";
+          const baseColor = level === "y" ? "#facc15" : level === "r" ? "#fb7185" : "#64748b";
+          if (entity.polygon) {
+            entity.polygon.material = Cesium.Color.fromCssColorString(baseColor).withAlpha(isSelected ? 0.24 : level === "n" ? 0.035 : 0.085);
+          }
+          if (entity.polyline) {
+            entity.polyline.width = isSelected ? 4.6 : 2.2;
+            entity.polyline.material = Cesium.Color.fromCssColorString(baseColor).withAlpha(isSelected ? 0.72 : 0.22);
+          }
+        });
+      };
+
+      const geojsonLinePoints = (feature) => {
+        const geometry = feature?.geometry;
+        if (!geometry) return [];
+        const lines = geometry.type === "LineString"
+          ? [geometry.coordinates]
+          : geometry.type === "MultiLineString"
+            ? geometry.coordinates
+            : [];
+        return lines
+          .flat()
+          .filter((point) => Array.isArray(point) && point.length >= 2)
+          .map((point) => ({ lon: Number(point[0]), lat: Number(point[1]) }))
+          .filter((point) => Number.isFinite(point.lon) && Number.isFinite(point.lat));
+      };
+
+      const geojsonPolygonRings = (feature) => {
+        const geometry = feature?.geometry;
+        if (!geometry) return [];
+        const polygons = geometry.type === "Polygon"
+          ? [geometry.coordinates]
+          : geometry.type === "MultiPolygon"
+            ? geometry.coordinates
+            : [];
+        return polygons
+          .flat()
+          .map((ring) => ring
+            .filter((point) => Array.isArray(point) && point.length >= 2)
+            .map((point) => ({ lon: Number(point[0]), lat: Number(point[1]) }))
+            .filter((point) => Number.isFinite(point.lon) && Number.isFinite(point.lat)))
+          .filter((ring) => ring.length > 2);
+      };
+
+      const addOverviewRiverLayer = (riverGeojson) => {
+        const viewer = getViewer();
+        if (!viewer) {
+          window.setTimeout(() => addOverviewRiverLayer(riverGeojson), 500);
+          return;
+        }
+        if (overviewRiverEntities.length) return;
+        const features = riverGeojson?.features || [];
+        features.forEach((feature) => {
+          const rings = geojsonPolygonRings(feature);
+          if (rings.length) {
+            rings.forEach((ring, index) => {
+              overviewRiverEntities.push(viewer.entities.add({
+                name: `${feature.properties?.NAME || feature.properties?.name || "荖濃溪"}河道邊界 ${index + 1}`,
+                polyline: {
+                  positions: Cesium.Cartesian3.fromDegreesArray(ring.flatMap((point) => [point.lon, point.lat])),
+                  width: index === 0 ? 8.2 : 5.4,
+                  material: new Cesium.PolylineGlowMaterialProperty({
+                    glowPower: 0.08,
+                    color: Cesium.Color.fromCssColorString("#67e8f9").withAlpha(index === 0 ? 0.5 : 0.24)
+                  }),
+                  clampToGround: true
+                }
+              }));
+            });
+            return;
+          }
+          const points = geojsonLinePoints(feature);
+          if (points.length < 2) return;
+          overviewRiverEntities.push(viewer.entities.add({
+            name: feature.properties?.NAME || feature.properties?.name || "荖濃溪主河道",
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(points.flatMap((point) => [point.lon, point.lat])),
+              width: 4.6,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.12,
+                color: Cesium.Color.fromCssColorString("#38bdf8").withAlpha(0.58)
+              }),
+              clampToGround: true
+            }
+          }));
+        });
+        applyDebrisMode(currentMode);
+        viewer.scene.requestRender();
+      };
+
+      const addImpactAreaLayer = (items) => {
+        const viewer = getViewer();
+        if (!viewer) {
+          window.setTimeout(() => addImpactAreaLayer(items), 500);
+          return;
+        }
+        if (impactAreaEntities.length) return;
+        const itemById = new Map(items.map((item) => [item.id, item]));
+        impactAreaFeatures.forEach((feature) => {
+          const id = feature.properties?.Debrisno;
+          const matched = itemById.get(id) || {};
+          const level = matched.alertLevel || "n";
+          const rings = geojsonPolygonRings(feature);
+          const outer = rings[0] || [];
+          if (outer.length < 3) return;
+          const color = level === "y" ? "#facc15" : level === "r" ? "#fb7185" : "#64748b";
+          const positions = outer.flatMap((point) => [point.lon, point.lat]);
+          impactAreaEntities.push(viewer.entities.add({
+            name: `${id} 影響範圍`,
+            properties: { torrentId: id, alertLevel: level },
+            polygon: {
+              hierarchy: Cesium.Cartesian3.fromDegreesArray(positions),
+              material: Cesium.Color.fromCssColorString(color).withAlpha(level === "n" ? 0.035 : 0.085),
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+            }
+          }));
+          impactAreaEntities.push(viewer.entities.add({
+            name: `${id} 影響範圍外框`,
+            properties: { torrentId: id, alertLevel: level },
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(positions),
+              width: 1.2,
+              material: Cesium.Color.fromCssColorString(color).withAlpha(0.22),
+              clampToGround: true
+            }
+          }));
+        });
+        applyDebrisMode(currentMode);
+        viewer.scene.requestRender();
+      };
+
+      const addBaseTorrentLayer = (items) => {
+        const viewer = getViewer();
+        if (!viewer || baseTorrentEntities.length) return;
+        const itemById = new Map(items.map((item) => [item.id, item]));
+        const sourceItems = allPotentialFeatures.length
+          ? allPotentialFeatures.map((feature) => {
+            const id = feature.properties?.Debrisno || feature.properties?.id || feature.properties?.ID;
+            const matched = itemById.get(id) || {};
+            return {
+              ...matched,
+              id,
+              alertLevel: matched.alertLevel || "n",
+              points: geojsonLinePoints(feature)
+            };
+          })
+          : items.map((item) => ({
+            ...item,
+            points: (item.flowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y))
+          }));
+        sourceItems.forEach((item) => {
+          const points = item.points || [];
+          if (points.length < 2) return;
+          const isYellow = item.alertLevel === "y";
+          const isNormal = item.alertLevel === "n";
+          const color = isNormal ? Cesium.Color.fromCssColorString("#64748b").withAlpha(0.34) : isYellow ? Cesium.Color.fromCssColorString("#facc15").withAlpha(0.54) : Cesium.Color.fromCssColorString("#f97316").withAlpha(0.58);
+          baseTorrentEntities.push(viewer.entities.add({
+            name: item.id,
+            properties: { torrentId: item.id, alertLevel: item.alertLevel },
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(points.flatMap((point) => [point.lon, point.lat])),
+              width: isNormal ? 2.4 : isYellow ? 3.8 : 4.4,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: isYellow ? 0.04 : 0.06,
+                color
+              }),
+              clampToGround: true
+            }
+          }));
+          const center = item.centroidTwd97 ? twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]) : points[Math.floor(points.length / 2)];
+          baseTorrentEntities.push(viewer.entities.add({
+            properties: { torrentId: item.id, alertLevel: item.alertLevel },
+            position: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 20),
+            point: {
+              pixelSize: isYellow ? 8 : 10,
+              color,
+              outlineColor: Cesium.Color.WHITE.withAlpha(0.72),
+              outlineWidth: 1.5,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+              text: item.id,
+              font: "900 13px Microsoft JhengHei, sans-serif",
+              fillColor: Cesium.Color.fromCssColorString("#e0f2fe"),
+              outlineColor: Cesium.Color.BLACK.withAlpha(0.74),
+              outlineWidth: 3,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              pixelOffset: new Cesium.Cartesian2(0, -24),
+              showBackground: true,
+              backgroundColor: Cesium.Color.fromCssColorString("#020617").withAlpha(0.56),
+              backgroundPadding: new Cesium.Cartesian2(6, 4),
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              show: false
+            }
+          }));
+        });
+        applyDebrisMode(currentMode);
+        viewer.scene.requestRender();
+      };
+
+      const updateRainStationEmphasis = (primaryId) => {
+        rainStationEntities.forEach((entity) => {
+          const isPrimary = entity.properties?.stationId?.getValue?.() === primaryId;
+          entity.properties.isPrimary = isPrimary;
+          if (entity.point) {
+            entity.point.pixelSize = new Cesium.CallbackProperty((time) => {
+              const seconds = Cesium.JulianDate.secondsDifference(time, Cesium.JulianDate.fromDate(new Date(2026, 0, 1)));
+              const pulse = (Math.sin(seconds * (isPrimary ? 2.6 : 1.7)) + 1) / 2;
+              return (isPrimary ? 17 : 12) + pulse * (isPrimary ? 6 : 3);
+            }, false);
+            entity.point.color = Cesium.Color.fromCssColorString(isPrimary ? "#67e8f9" : "#38bdf8").withAlpha(isPrimary ? 0.96 : 0.52);
+            entity.point.outlineWidth = isPrimary ? 2.4 : 1.2;
+          }
+          if (entity.billboard) {
+            const station = rainStations.find((entry) => entry.id === entity.properties?.stationId?.getValue?.());
+            entity.billboard.image = rainStationBillboard(station || {}, isPrimary);
+            entity.billboard.scale = isPrimary ? 0.82 : 0.62;
+          }
+          if (entity.label) {
+            const station = rainStations.find((entry) => entry.id === entity.properties?.stationId?.getValue?.());
+            entity.label.show = isPrimary || !station?.reference;
+          }
+        });
+      };
+
+      const addRainStationLayer = () => {
+        const viewer = getViewer();
+        if (!viewer) {
+          window.setTimeout(addRainStationLayer, 500);
+          return;
+        }
+        if (rainStationEntities.length) return;
+        if (!rainStationAnimationStarted) {
+          rainStationAnimationStarted = true;
+          viewer.clock.shouldAnimate = true;
+          viewer.clock.onTick.addEventListener(() => {
+            viewer.scene.requestRender();
+          });
+        }
+        rainStations.forEach((station) => {
+          const entity = viewer.entities.add({
+            name: `${station.name}雨量站`,
+            properties: { stationId: station.id, isPrimary: false },
+            position: Cesium.Cartesian3.fromDegrees(station.lon, station.lat, 320),
+            billboard: {
+              image: rainStationBillboard(station),
+              scale: new Cesium.CallbackProperty((time) => {
+                const seconds = Cesium.JulianDate.secondsDifference(time, Cesium.JulianDate.fromDate(new Date(2026, 0, 1)));
+                const pulse = (Math.sin(seconds * 1.2) + 1) / 2;
+                return (station.reference ? 0.5 : 0.58) + pulse * 0.08;
+              }, false),
+              verticalOrigin: Cesium.VerticalOrigin.CENTER,
+              heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            point: {
+              pixelSize: new Cesium.CallbackProperty((time) => {
+                const seconds = Cesium.JulianDate.secondsDifference(time, Cesium.JulianDate.fromDate(new Date(2026, 0, 1)));
+                const pulse = (Math.sin(seconds * 1.7) + 1) / 2;
+                return (station.reference ? 11 : 14) + pulse * 4;
+              }, false),
+              color: Cesium.Color.fromCssColorString(station.reference ? "#94a3b8" : "#22d3ee").withAlpha(station.reference ? 0.76 : 1),
+              outlineColor: Cesium.Color.WHITE.withAlpha(0.9),
+              outlineWidth: 2.4,
+              heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            },
+            label: {
+              text: `${station.name}｜${station.h24}mm`,
+              font: "900 15px Microsoft JhengHei, sans-serif",
+              fillColor: Cesium.Color.fromCssColorString("#e0f2fe"),
+              outlineColor: Cesium.Color.BLACK.withAlpha(0.74),
+              outlineWidth: 3,
+              style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+              pixelOffset: new Cesium.Cartesian2(0, -38),
+              showBackground: true,
+              backgroundColor: Cesium.Color.fromCssColorString(station.reference ? "#0f172a" : "#083344").withAlpha(station.reference ? 0.72 : 0.84),
+              backgroundPadding: new Cesium.Cartesian2(8, 5),
+              heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+              show: !station.reference
+            }
+          });
+          rainStationEntities.push(entity);
+        });
+        if (selectedItem) {
+          const primary = nearestRainStations(selectedItem, 1)[0];
+          updateRainStationEmphasis(primary?.id);
+        }
+        console.info(`Laonong rain stations added: ${rainStationEntities.length}`);
+        applyDebrisMode(currentMode);
+        viewer.scene.requestRender();
+      };
+
+      const renderMiniMap = (items) => {
+        if (!els.miniMap || !items.length) return;
+        const allPoints = items.flatMap((item) => item.flowlineTwd97 || []);
+        const xs = allPoints.map((point) => point.x);
+        const ys = allPoints.map((point) => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const pad = 18;
+        const width = 280;
+        const height = 150;
+        const sx = (x) => pad + ((x - minX) / Math.max(maxX - minX, 1)) * (width - pad * 2);
+        const sy = (y) => height - pad - ((y - minY) / Math.max(maxY - minY, 1)) * (height - pad * 2);
+        const paths = items.map((item) => {
+          const d = (item.flowlineTwd97 || []).map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)} ${sy(point.y).toFixed(1)}`).join(" ");
+          const color = item.alertLevel === "y" ? "#facc15" : "#fb7185";
+          return `<path data-map-id="${escapeHtml(item.id)}" d="${d}" fill="none" stroke="${color}" stroke-width="${item.alertLevel === "y" ? 2.2 : 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>`;
+        }).join("");
+        const dots = items.map((item) => {
+          const center = item.centroidTwd97 || [item.flowlineTwd97?.[0]?.x, item.flowlineTwd97?.[0]?.y];
+          const color = item.alertLevel === "y" ? "#facc15" : "#fb7185";
+          return `<circle data-map-id="${escapeHtml(item.id)}" cx="${sx(center[0]).toFixed(1)}" cy="${sy(center[1]).toFixed(1)}" r="4.2" fill="${color}" stroke="#f8fafc" stroke-width="1.2"/>`;
+        }).join("");
+        els.miniMap.innerHTML = `
+          <rect x="0" y="0" width="280" height="150" rx="8" fill="rgba(15,23,42,0.2)"/>
+          <g id="debris-mini-rotor" transform-origin="${width / 2}px ${height / 2}px">
+            <path d="M${pad} ${height - pad} C${width * 0.32} ${height * 0.54} ${width * 0.48} ${height * 0.42} ${width - pad} ${pad}" fill="none" stroke="#38bdf8" stroke-width="3.4" stroke-linecap="round" opacity="0.28"/>
+            ${paths}
+            ${dots}
+          </g>
+          <text x="18" y="28" fill="#bae6fd" font-size="11" font-weight="900">實際相對位置</text>
+          <text x="184" y="136" fill="#94a3b8" font-size="10" font-weight="800">TWD97 縮放</text>
+          <g id="debris-mini-north" transform="translate(248 22)">
+            <path d="M0 -10 L5 8 L0 5 L-5 8 Z" fill="#e0f2fe" opacity="0.94"/>
+            <text x="0" y="22" text-anchor="middle" fill="#e0f2fe" font-size="10" font-weight="900">N</text>
+          </g>
+          <g id="debris-mini-view-bearing" transform="translate(34 122)">
+            <circle cx="0" cy="0" r="14" fill="rgba(8,47,73,0.78)" stroke="#67e8f9" stroke-width="1.2"/>
+            <path d="M0 -10 L4 2 L0 0 L-4 2 Z" fill="#67e8f9"/>
+          </g>
+        `;
+        syncMiniMapHeading();
+      };
+
+      const updateMiniMapHeading = () => {
+        const viewer = getViewer();
+        const rotor = document.querySelector("#debris-mini-rotor");
+        const north = document.querySelector("#debris-mini-north");
+        const bearing = document.querySelector("#debris-mini-view-bearing");
+        if (!viewer || !rotor) return;
+        const headingDeg = Cesium.Math.toDegrees(viewer.camera.heading || 0);
+        rotor.setAttribute("transform", `rotate(${-headingDeg} 140 75)`);
+        if (north) north.setAttribute("transform", `translate(248 22) rotate(${-headingDeg})`);
+        if (bearing) bearing.setAttribute("transform", `translate(34 122) rotate(${headingDeg})`);
+      };
+
+      const syncMiniMapHeading = () => {
+        const viewer = getViewer();
+        if (!viewer) {
+          window.setTimeout(syncMiniMapHeading, 500);
+          return;
+        }
+        if (miniMapHeadingSyncStarted) {
+          updateMiniMapHeading();
+          return;
+        }
+        miniMapHeadingSyncStarted = true;
+        viewer.camera.percentageChanged = 0.001;
+        viewer.camera.changed.addEventListener(updateMiniMapHeading);
+        viewer.clock.onTick.addEventListener(updateMiniMapHeading);
+        updateMiniMapHeading();
+      };
+
+      const focusTorrentOnMap = (item) => {
+        const viewer = getViewer();
+        if (!item) return;
+        if (!viewer) {
+          window.setTimeout(() => focusTorrentOnMap(item), 450);
+          return;
+        }
+        clearSelectedEntities();
+        const whiteboxPoints = (item.flowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y));
+        const officialPoints = (item.officialFlowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y));
+        const center = item.centroidTwd97 ? twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]) : whiteboxPoints[Math.floor(whiteboxPoints.length / 2)];
+        const impactFeature = impactAreaFeatures.find((feature) => feature.properties?.Debrisno === item.id);
+        const impactPoints = geojsonPolygonRings(impactFeature).flat();
+        const focusPoints = [...officialPoints, ...whiteboxPoints, ...impactPoints];
+        const isYellow = item.alertLevel === "y";
+        const color = isYellow ? Cesium.Color.fromCssColorString("#facc15") : Cesium.Color.fromCssColorString("#fb7185");
+        if (officialPoints.length > 1) {
+          selectedEntities.push(viewer.entities.add({
+            name: `${item.id} 官方潛勢溪流`,
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(officialPoints.flatMap((point) => [point.lon, point.lat])),
+              width: isYellow ? 5.8 : 7,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: 0.06,
+                color: Cesium.Color.fromCssColorString(isYellow ? "#facc15" : "#f97316").withAlpha(0.72)
+              }),
+              clampToGround: true
+            }
+          }));
+        }
+        if (whiteboxPoints.length > 1) {
+          selectedEntities.push(viewer.entities.add({
+            name: `${item.id} 20m DEM 推估流路`,
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(whiteboxPoints.flatMap((point) => [point.lon, point.lat])),
+              width: isYellow ? 6.4 : 8,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: isYellow ? 0.22 : 0.3,
+                color: Cesium.Color.fromCssColorString(isYellow ? "#67e8f9" : "#22d3ee").withAlpha(0.96)
+              }),
+              clampToGround: true
+            }
+          }));
+          addSimulationFlowAnimation(item, whiteboxPoints);
+        }
+        selectedEntities.push(viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 30),
+          point: {
+            pixelSize: new Cesium.CallbackProperty((time) => {
+              const seconds = Cesium.JulianDate.secondsDifference(time, Cesium.JulianDate.fromDate(new Date(2026, 0, 1)));
+              const pulse = currentMode === "simulate" || currentMode === "experience"
+                ? (Math.sin(seconds * 3.4) + 1) / 2
+                : 0;
+              return (isYellow ? 14 : 18) + pulse * 7;
+            }, false),
+            color,
+            outlineColor: Cesium.Color.WHITE.withAlpha(0.86),
+            outlineWidth: 2,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          label: {
+            text: item.id,
+            font: "700 15px Microsoft JhengHei",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK.withAlpha(0.65),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -28),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          }
+        }));
+        const boundingPositions = focusPoints.length
+          ? focusPoints.map((point) => Cesium.Cartesian3.fromDegrees(point.lon, point.lat, 0))
+          : [Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 0)];
+        const sphere = Cesium.BoundingSphere.fromPoints(boundingPositions);
+        viewer.camera.flyToBoundingSphere(sphere, {
+          duration: 1.15,
+          offset: new Cesium.HeadingPitchRange(
+            Cesium.Math.toRadians(35),
+            Cesium.Math.toRadians(-42),
+            Math.max(sphere.radius * 4.6, 2600)
+          )
+        });
+        viewer.scene.requestRender();
+        updateMiniMapHeading();
+      };
+
+      const selectTorrent = (item) => {
+        if (!item) return;
+        selectedItem = item;
+        els.analysisPanel?.classList.remove("is-collapsed");
+        if (els.rightToggle) els.rightToggle.textContent = "›";
+        els.rightToggle?.setAttribute("aria-expanded", "true");
+        document.body.classList.remove("is-right-panel-collapsed");
+        document.querySelectorAll("#debris-torrent-list li").forEach((li) => {
+          li.classList.toggle("is-selected", li.dataset.torrentId === item.id);
+        });
+        els.miniMap?.classList.add("has-selection");
+        els.miniMap?.querySelectorAll("[data-map-id]").forEach((node) => {
+          node.classList.toggle("is-selected", node.dataset.mapId === item.id);
+        });
+        let selectedMiniCard = null;
+        document.querySelectorAll(".debris-mini-card").forEach((card) => {
+          const isSelected = card.dataset.torrentId === item.id;
+          card.classList.toggle("is-selected", isSelected);
+          if (isSelected) selectedMiniCard = card;
+        });
+        selectedMiniCard?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        updateBaseTorrentEmphasis(item.id);
+        renderSelectedSummary(item);
+        focusTorrentOnMap(item);
+        applyDebrisMode(currentMode);
+        if (currentMode === "simulate") {
+          updateSimulationEngine();
+        }
+      };
+
+      const renderRainStationList = (item) => {
+        if (!els.rainStationList) return;
+        const stations = nearestRainStations(item, 3);
+        const primary = stations[0];
+        if (els.rainStationCount) els.rainStationCount.textContent = `流域內 6 / 鄰近 2`;
+        els.rainStationList.innerHTML = stations.map((station, index) => `
+          <li class="${index === 0 ? "is-primary" : ""}">
+            <span><b>${escapeHtml(station.name)}</b><br>${escapeHtml(station.town)}${station.distance ? `・距約 ${station.distance.toFixed(1)} km` : ""}</span>
+            <strong>${station.h24} mm<br><small>24hr</small></strong>
+          </li>
+        `).join("");
+        updateRainStationEmphasis(primary?.id);
+      };
+
+      const renderSelectedSummary = (item) => {
+        if (!item) return;
+        const isYellow = item.alertLevel === "y";
+        const isRed = item.alertLevel === "r";
+        const profile = rainProfile(item);
+        if (els.selectedCard) els.selectedCard.classList.toggle("is-yellow", isYellow);
+        if (els.alertCode) els.alertCode.textContent = item.id;
+        if (els.alertName) els.alertName.textContent = item.mark || item.name || "土石流潛勢溪流";
+        if (els.experienceTitle) els.experienceTitle.textContent = `${item.id} 物理場景`;
+        if (els.experienceBasinCode) els.experienceBasinCode.textContent = item.id;
+        if (els.alertStatus) {
+          els.alertStatus.textContent = alertLabel(item);
+          els.alertStatus.classList.toggle("is-yellow", isYellow);
+        }
+        if (els.simSandboxCode) els.simSandboxCode.textContent = item.id;
+        const alertMode = item.alertLevel === "y" ? "yellow" : item.alertLevel === "r" ? "red" : "normal";
+        if (els.simSandboxFrame) {
+          const nextSrc = `../df064-terrain-sandbox-mini.html?id=${encodeURIComponent(item.id)}&alert=${alertMode}&mode=simulate`;
+          if (!els.simSandboxFrame.src.endsWith(nextSrc.replace("../", ""))) {
+            els.simSandboxFrame.src = nextSrc;
+          }
+          els.simSandboxFrame.title = `${item.id} 20m DEM 地形沙盤`;
+        }
+        if (els.rainAccum) els.rainAccum.textContent = `${profile.accum} mm`;
+        if (els.rainThreshold) els.rainThreshold.textContent = `${profile.threshold} mm`;
+        if (els.rainRate) els.rainRate.textContent = `${profile.rate}%`;
+        if (els.rainUpdated) els.rainUpdated.textContent = profile.updated;
+        if (els.rainProgress) els.rainProgress.style.setProperty("--progress", `${Math.min(profile.rate, 120)}%`);
+        if (els.stateAlert) {
+          els.stateAlert.textContent = isRed ? "🔴 紅色警戒" : isYellow ? "🟡 黃色警戒" : "○ 未達警戒";
+          els.stateAlert.classList.toggle("is-alert", isRed);
+        }
+        renderRainChart(profile, item);
+        renderRainStationList(item);
+        renderSelectedFlowSvg(item);
+      };
+
+      const renderRainChart = (profile, item) => {
+        if (!els.rainChart) return;
+        const width = 320;
+        const height = currentMode === "simulate" ? 190 : 150;
+        els.selectedSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        const pad = 28;
+        const maxValue = Math.max(profile.threshold * 1.2, ...profile.series) || 1;
+        const sx = (index) => pad + index * ((width - pad * 2) / Math.max(profile.series.length - 1, 1));
+        const sy = (value) => height - pad - (value / maxValue) * (height - pad * 2);
+        const d = profile.series.map((value, index) => `${index ? "L" : "M"}${sx(index).toFixed(1)} ${sy(value).toFixed(1)}`).join(" ");
+        const thresholdY = sy(profile.threshold);
+        const color = item.alertLevel === "y" ? "#facc15" : item.alertLevel === "r" ? "#fb7185" : "#94a3b8";
+        els.rainChart.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" rx="8" fill="rgba(2,6,23,0.12)"/>
+          <line x1="${pad}" y1="${thresholdY.toFixed(1)}" x2="${width - pad}" y2="${thresholdY.toFixed(1)}" stroke="#facc15" stroke-width="1.6" stroke-dasharray="7 5"/>
+          <text x="${width - pad}" y="${Math.max(12, thresholdY - 6).toFixed(1)}" fill="#fde68a" font-size="10" text-anchor="end" font-weight="900">警戒基準 ${profile.threshold}mm</text>
+          <path d="${d}" fill="none" stroke="${color}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+          ${profile.series.map((value, index) => `<circle cx="${sx(index).toFixed(1)}" cy="${sy(value).toFixed(1)}" r="${index === profile.series.length - 1 ? 4.6 : 2.8}" fill="${color}" stroke="#f8fafc" stroke-width="1"/>`).join("")}
+          <text x="${pad}" y="134" fill="#94a3b8" font-size="10" font-weight="800">06</text>
+          <text x="${width / 2}" y="134" fill="#94a3b8" font-size="10" font-weight="800" text-anchor="middle">12</text>
+          <text x="${width - pad}" y="134" fill="#94a3b8" font-size="10" font-weight="800" text-anchor="end">18</text>
+        `;
+      };
+
+      const renderSelectedFlowSvg = (item) => {
+        if (!els.selectedSvg) return;
+        const official = item.officialFlowlineTwd97 || [];
+        const whitebox = item.flowlineTwd97 || [];
+        const allPoints = [...official, ...whitebox];
+        if (allPoints.length < 2) {
+          els.selectedSvg.innerHTML = "";
+          return;
+        }
+        const xs = allPoints.map((point) => point.x);
+        const ys = allPoints.map((point) => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const pad = 18;
+        const width = 320;
+        const height = 150;
+        const sx = (x) => pad + ((x - minX) / Math.max(maxX - minX, 1)) * (width - pad * 2);
+        const sy = (y) => height - pad - ((y - minY) / Math.max(maxY - minY, 1)) * (height - pad * 2);
+        const linePath = (points) => points.map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)} ${sy(point.y).toFixed(1)}`).join(" ");
+        const accent = item.alertLevel === "y" ? "#67e8f9" : "#22d3ee";
+        const start = whitebox[0];
+        const end = whitebox[whitebox.length - 1];
+        els.selectedSvg.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" rx="8" fill="rgba(2,6,23,0.16)"/>
+          ${official.length > 1 ? `<path d="${linePath(official)}" fill="none" stroke="#f97316" stroke-width="${currentMode === "simulate" ? 4.2 : 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.42"/>` : ""}
+          ${whitebox.length > 1 ? `<path d="${linePath(whitebox)}" fill="none" stroke="${accent}" stroke-width="${currentMode === "simulate" ? 5.8 : 4}" stroke-linecap="round" stroke-linejoin="round" opacity="0.98"/>` : ""}
+          ${start ? `<circle cx="${sx(start.x).toFixed(1)}" cy="${sy(start.y).toFixed(1)}" r="5" fill="#e0f2fe" stroke="${accent}" stroke-width="2"/>` : ""}
+          ${end ? `<circle cx="${sx(end.x).toFixed(1)}" cy="${sy(end.y).toFixed(1)}" r="4" fill="${accent}" stroke="#f8fafc" stroke-width="1.4"/>` : ""}
+          <text x="14" y="22" fill="#e0f2fe" font-size="11" font-weight="900">20m DEM 推估流路</text>
+          <text x="14" y="138" fill="#94a3b8" font-size="10" font-weight="800">橘線：官方潛勢溪流｜青線：DEM 推導流路</text>
+          <text x="${start ? sx(start.x).toFixed(1) : 0}" y="${start ? Math.max(14, sy(start.y) - 8).toFixed(1) : 0}" fill="#e0f2fe" font-size="10" font-weight="900" text-anchor="middle">起點</text>
+          <text x="${end ? sx(end.x).toFixed(1) : 0}" y="${end ? Math.min(142, sy(end.y) + 17).toFixed(1) : 0}" fill="${accent}" font-size="10" font-weight="900" text-anchor="middle">下游</text>
+        `;
+      };
+
+      const render = (payload) => {
+        const items = (payload.items || []).map((item) => ({ alertLevel: item.alertLevel || "n", ...item })).sort((a, b) => alertRank(a) - alertRank(b) || a.id.localeCompare(b.id, "zh-Hant"));
+        allItems = items;
+        const active = items.filter((item) => item.alertLevel === "r" || item.alertLevel === "y");
+        const red = active.filter((item) => item.alertLevel === "r");
+        const yellow = active.filter((item) => item.alertLevel === "y");
+        const normal = items.filter((item) => item.alertLevel === "n");
+        if (els.note) {
+          const potentialCount = allPotentialFeatures.length || items.length;
+          els.note.textContent = `官方 114 年潛勢溪流圖 Sub_basin=荖濃 ${potentialCount} 條；警戒資料 ${payload.lastUpdate || "待確認"}。`;
+        }
+        if (els.flowCount) els.flowCount.textContent = `紅 ${red.length} / 黃 ${yellow.length}`;
+        if (els.sandboxCount) els.sandboxCount.textContent = `紅 ${red.length} / 黃 ${yellow.length}`;
+        if (els.total) els.total.textContent = active.length;
+        if (els.red) els.red.textContent = red.length;
+        if (els.yellow) els.yellow.textContent = yellow.length;
+        if (els.topRed) els.topRed.textContent = red.length;
+        if (els.topYellow) els.topYellow.textContent = yellow.length;
+        if (els.topNormal) els.topNormal.textContent = normal.length;
+        if (els.torrentList) {
+          const visibleItems = items.filter((item) => currentFilter === "all" || item.alertLevel === currentFilter);
+          els.torrentList.innerHTML = visibleItems.map((item) => `
+            <li class="${item.alertLevel === "y" ? "is-yellow" : item.alertLevel === "r" ? "is-red" : "is-normal"}" data-torrent-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="定位 ${escapeHtml(item.id)}">
+              <i></i>
+              <span><b>${escapeHtml(item.id)}</b>${escapeHtml(item.town)}${escapeHtml(item.village)}・${escapeHtml(item.mark || item.name)}</span>
+              <em>${levelText(item.alertLevel)}</em>
+            </li>
+          `).join("");
+          els.torrentList.querySelectorAll("li").forEach((li) => {
+            const item = items.find((entry) => entry.id === li.dataset.torrentId);
+            li.addEventListener("click", () => selectTorrent(item));
+            li.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                selectTorrent(item);
+              }
+            });
+          });
+        }
+        renderMiniMap(items);
+        window.setTimeout(() => addImpactAreaLayer(items), 700);
+        window.setTimeout(() => addBaseTorrentLayer(items), 800);
+        window.setTimeout(() => addRainStationLayer(), 900);
+        if (els.bottomNote) {
+          const readyCount = items.filter((item) => item.terrainStatus === "ready").length;
+          els.bottomNote.textContent = `${items.length} 條沙盤 / 地形 ${readyCount} 條`;
+        }
+        if (els.sandboxStrip) {
+          els.sandboxStrip.innerHTML = items.map((item) => {
+            const level = levelText(item.alertLevel);
+            return `
+              <article class="debris-mini-card ${item.alertLevel === "y" ? "is-yellow" : item.alertLevel === "r" ? "is-red" : "is-normal"}" data-torrent-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="切換 ${escapeHtml(item.id)} 沙盤">
+                <header>
+                  <b>${escapeHtml(item.id)}</b>
+                  <span>${level}・真實 DEM</span>
+                </header>
+                <iframe src="../df064-terrain-sandbox-mini.html?id=${encodeURIComponent(item.id)}&alert=${item.alertLevel === "y" ? "yellow" : "red"}&mode=alert" title="${escapeHtml(item.id)} 3D 地形沙盤"></iframe>
+              </article>
+            `;
+          }).join("");
+          els.sandboxStrip.querySelectorAll(".debris-mini-card").forEach((card) => {
+            const item = items.find((entry) => entry.id === card.dataset.torrentId);
+            card.addEventListener("click", () => selectTorrent(item));
+            card.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                selectTorrent(item);
+              }
+            });
+          });
+        }
+        if (!selectedItem && items[0]) {
+          window.setTimeout(() => selectTorrent(items[0]), 950);
+        } else if (selectedItem) {
+          renderRainStationList(selectedItem);
+        }
+      };
+
+      els.filterTabs?.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentFilter = button.dataset.filter || "all";
+          els.filterTabs.querySelectorAll("button").forEach((tab) => tab.classList.toggle("is-active", tab === button));
+          render({ items: allItems, lastUpdate: "2026-08-24 12:10" });
+        });
+      });
+
+      setupPanelControls();
+      updateLiveClock();
+      window.setInterval(updateLiveClock, 30000);
+      applyDebrisMode(currentMode);
+
+      Promise.all([
+        fetch(dataUrl).then((response) => response.json()),
+        fetch(allPotentialUrl).then((response) => response.ok ? response.json() : null).catch(() => null),
+        fetch(basinBoundaryUrl).then((response) => response.ok ? response.json() : null).catch(() => null),
+        fetch(impactAreaUrl).then((response) => response.ok ? response.json() : null).catch(() => null),
+        fetch(riverFlowlineUrl).then((response) => response.ok ? response.json() : null).catch(() => null)
+      ])
+        .then(([payload, potential, basinBoundary, impactAreas, riverFlowline]) => {
+          allPotentialFeatures = potential?.features || [];
+          basinBoundaryFeature = basinBoundary?.features?.[0] || null;
+          impactAreaFeatures = impactAreas?.features || [];
+          render(payload);
+          window.setTimeout(() => addOverviewRiverLayer(riverFlowline), 850);
+        })
+        .catch(() => {
+          if (els.note) els.note.textContent = "荖濃溪潛勢溪流資料讀取失敗，請確認本機資料路徑。";
+        });
+    })();
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260805-impact-cards"></script>
+</body>
+</html>

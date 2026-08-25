@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Disaster Oliver Laonong River debris-flow forecast 3D Cesium visualization.">
+  <title>荖濃溪土石流預報 v1 | Disaster Oliver</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <link rel="stylesheet" href="../../css/style.css?v=20260731-laonong-command-view">
+  <link rel="stylesheet" href="../../css/laonong-command.css?v=20260805-hide-legend-impact">
+  <style>
+    .debris-terrain-panel .fuxing-impact-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .debris-torrent-panel {
+      position: fixed;
+      left: 18px;
+      top: 188px;
+      z-index: 900;
+      width: 312px;
+      max-height: calc(100vh - 270px);
+      overflow: auto;
+      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      border-radius: 8px;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.42);
+      backdrop-filter: blur(12px);
+      padding: 12px;
+    }
+
+    .debris-torrent-panel h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .debris-torrent-panel p {
+      margin: 6px 0 10px;
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .debris-torrent-map {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 6px 0 10px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.72);
+    }
+
+    .debris-torrent-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .debris-torrent-list li {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.7);
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .debris-torrent-list li:hover,
+    .debris-torrent-list li.is-selected {
+      border-color: rgba(56, 189, 248, 0.48);
+      background: rgba(8, 47, 73, 0.72);
+      transform: translateX(2px);
+    }
+
+    .debris-torrent-list i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f97316;
+      box-shadow: 0 0 14px rgba(249, 115, 22, 0.72);
+    }
+
+    .debris-torrent-list b {
+      display: block;
+      color: #f8fafc;
+      font-size: 12px;
+    }
+
+    .debris-torrent-list span {
+      color: #94a3b8;
+    }
+
+    .debris-torrent-list em {
+      color: #fecaca;
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .debris-torrent-list .is-yellow em {
+      color: #fde68a;
+    }
+
+    .debris-torrent-list .is-yellow i {
+      background: #facc15;
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.72);
+    }
+
+    .debris-torrent-list .is-selected em {
+      color: #67e8f9;
+    }
+
+    .debris-twin-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .debris-sandbox-card {
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.74);
+    }
+
+    .debris-sandbox-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .debris-sandbox-head b {
+      color: #f8fafc;
+      font-size: 13px;
+    }
+
+    .debris-sandbox-head .red {
+      color: #fecaca;
+    }
+
+    .debris-sandbox-head .yellow {
+      color: #fde68a;
+    }
+
+    .debris-terrain-frame {
+      width: 100%;
+      height: 210px;
+      overflow: hidden;
+      background: #020617;
+    }
+
+    .debris-selected-card {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.62);
+    }
+
+    .debris-terrain-panel {
+      transition: transform 0.24s ease, opacity 0.24s ease;
+    }
+
+    .debris-terrain-panel.is-collapsed {
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(calc(100% + 28px));
+    }
+
+    .debris-analysis-close {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      border-radius: 50%;
+      color: #e2e8f0;
+      background: rgba(15, 23, 42, 0.72);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .debris-selected-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.64);
+    }
+
+    .debris-selected-svg text {
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    .debris-terrain-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .debris-layer-strip {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 10px;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .debris-layer-strip span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .debris-layer-strip i {
+      width: 16px;
+      height: 4px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .debris-layer-strip .source { background: #ef4444; }
+    .debris-layer-strip .torrent { background: #f97316; }
+    .debris-layer-strip .road { background: #e5e7eb; }
+    .debris-layer-strip .rain { width: 8px; height: 8px; background: #a78bfa; }
+    .debris-layer-strip .sediment { background: #facc15; }
+
+    .debris-alert-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .debris-alert-summary span {
+      padding: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 7px;
+      background: rgba(15, 23, 42, 0.66);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .debris-alert-summary b {
+      display: block;
+      margin-top: 3px;
+      color: #f8fafc;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .debris-alert-summary .is-red b {
+      color: #fb7185;
+    }
+
+    .debris-alert-summary .is-yellow b {
+      color: #fde047;
+    }
+
+    .fuxing-bottom-timeline {
+      display: none;
+    }
+
+    .debris-bottom-sandboxes {
+      position: fixed;
+      left: 360px;
+      right: 430px;
+      bottom: 18px;
+      z-index: 880;
+      color: #e2e8f0;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.42);
+      backdrop-filter: blur(12px);
+      padding: 10px;
+    }
+
+    .debris-bottom-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .debris-bottom-head b {
+      color: #f8fafc;
+      font-size: 13px;
+    }
+
+    .debris-bottom-head span {
+      color: #94a3b8;
+    }
+
+    .debris-sandbox-strip {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(170px, 1fr);
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .debris-mini-card {
+      min-width: 170px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 7px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.72);
+      cursor: pointer;
+      transition: border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .debris-mini-card:hover,
+    .debris-mini-card.is-selected {
+      border-color: rgba(56, 189, 248, 0.54);
+      transform: translateY(-2px);
+    }
+
+    .debris-mini-card.is-red {
+      border-color: rgba(251, 113, 133, 0.34);
+      box-shadow: inset 0 0 0 1px rgba(127, 29, 29, 0.18);
+    }
+
+    .debris-mini-card.is-yellow {
+      border-color: rgba(250, 204, 21, 0.36);
+      box-shadow: inset 0 0 0 1px rgba(113, 63, 18, 0.18);
+    }
+
+    .debris-mini-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      color: #f8fafc;
+      font-size: 11px;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .debris-mini-card header span {
+      color: #fb7185;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .debris-mini-card.is-yellow header span {
+      color: #fde68a;
+    }
+
+    .debris-mini-card iframe {
+      display: block;
+      width: 100%;
+      height: 120px;
+      border: 0;
+      background: #020617;
+    }
+
+    @media (max-width: 960px) {
+      .debris-torrent-panel {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        top: auto;
+        bottom: 86px;
+        width: auto;
+        max-height: 32vh;
+      }
+
+      .debris-bottom-sandboxes {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body class="laonong-command-page fuxing-model-page" data-page="fuxing-model-test">
+  <main class="cesium-page">
+    <section class="cesium-stage laonong-command-stage" aria-label="荖濃溪土石流預報 3D 場景">
+      <div id="cesium-container" class="cesium-container"></div>
+
+      <section class="laonong-title-panel fuxing-showcase-title" aria-label="系統標題">
+        <div class="laonong-logo-mark"></div>
+        <div>
+          <p>土石流警戒・坡地風險推演</p>
+          <h1>荖濃溪土石流預報</h1>
+        </div>
+      </section>
+
+      <div class="fuxing-mobile-dock" aria-label="手機面板控制">
+        <button type="button" data-fuxing-panel="info">資訊</button>
+        <button type="button" data-fuxing-panel="controls">控制</button>
+        <button type="button" data-fuxing-panel="legend">圖例</button>
+        <button type="button" data-fuxing-panel="typhoon">颱風</button>
+        <button type="button" data-fuxing-panel="impact">沙盤</button>
+      </div>
+
+      <nav class="fuxing-showcase-tabs" aria-label="展示模式">
+        <button type="button">流域總覽</button>
+        <button type="button">災害監測</button>
+        <button type="button">事件推演</button>
+        <button class="is-active" type="button">數位孿生島</button>
+      </nav>
+
+      <section class="fuxing-island-card" data-fuxing-panel-target="info" aria-label="數位孿生島資訊">
+        <button type="button" aria-label="關閉">×</button>
+        <p>荖濃溪上游聚落・數位孿生島</p>
+        <h2>梅山至寶山聚落範圍</h2>
+        <div>
+          <span>UAV 傾斜攝影模型</span>
+          <span>更新時間・2025/08/02</span>
+        </div>
+      </section>
+
+      <aside class="fuxing-flow-panel" aria-label="流域資訊">
+        <strong>流域資訊</strong>
+        <span>累積雨量 <b>598 mm</b></span>
+        <span>河川水位 <b>5.28 m</b></span>
+        <span>土石流警戒 <b id="debris-flow-alert-count">讀取中</b></span>
+        <span>淹水警戒 <b>8 處</b></span>
+      </aside>
+
+      <aside class="debris-torrent-panel" aria-label="荖濃溪土石流潛勢溪流位置">
+        <h2>荖濃溪土石流潛勢溪流</h2>
+        <p id="debris-data-note">官方 114 年潛勢溪流圖 Sub_basin=荖濃；目前警戒資料時間讀取中。</p>
+        <svg class="debris-torrent-map" id="debris-torrent-map" viewBox="0 0 280 150" role="img" aria-label="荖濃溪土石流潛勢溪流實際相對位置"></svg>
+        <ul class="debris-torrent-list" id="debris-torrent-list"></ul>
+      </aside>
+
+      <aside class="cesium-control-panel fuxing-control-panel is-panel-collapsed" data-fuxing-panel-target="controls" aria-label="荖濃溪土石流預報控制">
+        <button class="fuxing-panel-toggle" type="button" aria-expanded="false">圖層</button>
+        <div class="cesium-panel-content">
+          <p class="eyebrow">CesiumJS</p>
+          <h1>圖層開關</h1>
+          <label class="fuxing-select-field">
+            <span>底圖</span>
+            <select id="basemap-select">
+              <option value="google-hybrid" selected>Google 混合衛星</option>
+              <option value="google-satellite">Google 純衛星</option>
+              <option value="arcgis-imagery">ArcGIS 影像</option>
+              <option value="osm">OpenStreetMap</option>
+            </select>
+          </label>
+          <label class="fuxing-select-field">
+            <span>視角模式</span>
+            <select id="scene-mode-select">
+              <option value="3d" selected>3D 地形</option>
+              <option value="2d">2D 平面</option>
+            </select>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="model-toggle" type="checkbox">
+            <span>顯示真實 UAV 模型</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="terrain-toggle" type="checkbox" checked>
+            <span>地形高度感</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="radar-toggle" type="checkbox" checked>
+            <span>展示雷達回波 / 建物發光</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="basin-toggle" type="checkbox" checked>
+            <span>荖濃溪流域外框</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="building-toggle" type="checkbox" checked>
+            <span>真實建物</span>
+          </label>
+          <label class="check-field cesium-toggle">
+            <input id="settlement-toggle" type="checkbox" checked>
+            <span>聚落雙圈範圍</span>
+          </label>
+          <input id="water-toggle" type="checkbox" hidden>
+          <input id="sky-island-toggle" type="checkbox" checked hidden>
+        </div>
+      </aside>
+
+      <div class="cesium-legend" data-fuxing-panel-target="legend" aria-label="復興模型圖例">
+        <strong>Digital Twin 圖層</strong>
+        <span><i class="cesium-radar"></i>河網：藍色</span>
+        <span><i class="cesium-typhoon"></i>崩塌源：紅 / 橘色</span>
+        <span><i class="cesium-real-river"></i>土石流潛勢溪流：橘色</span>
+        <span><i class="cesium-real-building"></i>聚落 / 建物：立體建物</span>
+        <span><i class="cesium-real-river"></i>道路：線</span>
+        <span><i class="cesium-radar"></i>雨量站：點位</span>
+        <span><i class="cesium-typhoon"></i>模擬土砂：動態粒子 / 流體</span>
+      </div>
+
+      <section class="fuxing-typhoon-card" data-fuxing-panel-target="typhoon" aria-label="颱風路徑縮圖">
+        <div class="fuxing-typhoon-head">
+          <span>颱風路徑預報</span>
+          <strong>+24hr</strong>
+        </div>
+        <svg viewBox="0 0 420 150" role="img" aria-label="颱風路徑示意圖">
+          <defs>
+            <radialGradient id="typhoon-core" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#fef2f2" stop-opacity="0.95" />
+              <stop offset="0.42" stop-color="#fb7185" stop-opacity="0.92" />
+              <stop offset="1" stop-color="#38bdf8" stop-opacity="0" />
+            </radialGradient>
+            <filter id="typhoon-glow">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <path class="typhoon-sea-grid" d="M14 126 H408 M22 94 H402 M34 62 H390 M54 30 H368" />
+          <path class="typhoon-taiwan-shape" d="M160.0 99.9 L162.1 105.7 L161.3 106.0 L162.3 106.3 L164.0 110.6 L164.7 110.2 L164.5 111.2 L163.8 110.7 L164.3 111.3 L163.7 112.4 L165.7 116.3 L166.3 116.3 L165.6 116.5 L177.2 123.7 L179.2 126.1 L182.1 133.9 L180.9 137.0 L182.0 138.8 L181.9 140.6 L183.0 141.2 L184.0 139.6 L187.9 142.0 L187.0 139.7 L187.1 138.5 L189.4 136.7 L189.4 133.9 L188.7 132.8 L189.1 125.1 L192.3 116.2 L193.6 114.8 L194.6 111.7 L200.1 108.2 L201.2 106.7 L200.7 104.6 L203.1 103.1 L205.7 99.3 L207.5 94.9 L210.0 93.6 L209.0 93.5 L208.9 90.6 L209.8 89.7 L210.2 87.4 L211.6 85.9 L213.5 79.5 L213.0 78.1 L214.9 70.5 L217.0 64.0 L217.1 60.9 L218.7 58.9 L217.6 55.9 L219.4 53.9 L219.4 51.5 L222.5 49.0 L223.6 47.2 L224.8 42.1 L227.2 40.3 L226.3 39.1 L227.7 38.2 L227.9 35.9 L227.5 36.5 L227.1 35.5 L228.2 35.6 L226.7 34.1 L225.6 29.7 L226.0 25.2 L229.7 21.0 L232.9 19.5 L230.0 18.5 L229.2 16.3 L229.6 14.7 L225.6 15.1 L225.8 14.5 L223.5 13.8 L224.0 13.6 L221.1 13.3 L220.2 12.3 L220.9 11.3 L219.7 11.9 L217.5 8.9 L214.4 8.0 L211.0 10.0 L208.5 14.1 L204.6 15.2 L202.7 15.0 L194.4 19.1 L190.7 25.9 L189.8 25.6 L190.3 25.7 L189.1 27.9 L189.3 29.3 L187.7 31.6 L186.4 32.9 L184.1 33.4 L183.8 35.1 L182.4 35.3 L180.5 39.7 L175.1 46.5 L175.5 47.2 L173.3 47.5 L173.9 48.1 L172.0 50.7 L173.3 50.8 L173.0 51.5 L168.8 55.5 L171.0 54.4 L171.0 55.7 L168.7 56.2 L168.7 56.9 L169.9 57.0 L168.7 57.4 L167.6 59.6 L166.9 59.7 L165.2 64.2 L162.5 65.5 L162.2 66.2 L163.0 66.4 L161.7 66.2 L160.0 67.7 L161.2 67.1 L160.6 68.3 L160.2 67.9 L160.6 68.9 L161.9 67.9 L160.1 70.3 L161.2 71.0 L159.1 74.2 L159.6 78.2 L158.5 78.3 L158.8 79.4 L160.5 79.2 L159.1 80.8 L159.8 80.7 L159.7 82.6 L160.4 83.1 L159.3 83.5 L160.0 83.8 L158.8 84.5 L157.6 87.1 L155.1 95.7 L160.0 99.9 Z" />
+          <path class="typhoon-taiwan-ridge" d="M207 18 C213 42 214 65 209 87 C204 109 195 126 186 140" />
+          <path class="typhoon-basin-shape" d="M168 106 C176 98 191 99 201 108 C196 120 184 127 172 123 C164 118 163 111 168 106Z" />
+          <circle class="typhoon-basin-pulse" cx="184" cy="113" r="18" />
+          <path id="typhoon-motion-path" class="typhoon-grid" d="M402 124 C358 110 322 96 286 84 C238 62 192 56 144 52 C112 48 92 40 76 34" />
+          <path class="typhoon-track-past" d="M402 124 C358 110 322 96 286 84" />
+          <path class="typhoon-track-forecast" d="M286 84 C238 62 192 56 144 52 C112 48 92 40 76 34" />
+          <g class="typhoon-moving-eye">
+            <circle class="typhoon-swirl" cx="0" cy="0" r="34" />
+            <circle class="typhoon-core" cx="0" cy="0" r="17" />
+            <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
+              <mpath href="#typhoon-motion-path" />
+            </animateMotion>
+          </g>
+          <g class="typhoon-points">
+            <circle cx="402" cy="124" r="4" />
+            <circle cx="358" cy="110" r="4" />
+            <circle cx="286" cy="84" r="6" />
+            <circle cx="226" cy="64" r="4" />
+            <circle cx="170" cy="54" r="4" />
+            <circle cx="116" cy="44" r="4" />
+            <circle cx="76" cy="34" r="4" />
+          </g>
+          <text x="262" y="54">現在</text>
+          <text class="typhoon-basin-label" x="126" y="132">荖濃溪</text>
+          <text x="186" y="48">+12hr</text>
+          <text x="50" y="24">+24hr</text>
+        </svg>
+        <div class="fuxing-typhoon-meta">
+          <span>中心氣壓 <b>965 hPa</b></span>
+          <span>最大風速 <b>35 m/s</b></span>
+          <span>移動 <b>20 km/h</b></span>
+        </div>
+      </section>
+
+      <section class="fuxing-impact-panel debris-terrain-panel is-collapsed" id="debris-analysis-panel" data-fuxing-panel-target="impact" aria-label="流域 Digital Twin 沙盤">
+        <div class="fuxing-impact-head">
+          <span>流域 Digital Twin 沙盤</span>
+          <strong id="debris-sandbox-count">讀取中</strong>
+          <button class="debris-analysis-close" id="debris-analysis-close" type="button" aria-label="關閉分析圖">×</button>
+        </div>
+        <div class="fuxing-impact-grid">
+          <div class="debris-twin-stack">
+            <div class="debris-alert-summary" aria-label="警戒摘要">
+              <span>目前警戒<b id="debris-summary-total">0</b></span>
+              <span class="is-red">紅色警戒<b id="debris-summary-red">0</b></span>
+              <span class="is-yellow">黃色警戒<b id="debris-summary-yellow">0</b></span>
+            </div>
+            <article class="debris-selected-card" id="debris-selected-card" aria-label="選取溪流摘要">
+              <svg class="debris-selected-svg" id="debris-selected-svg" viewBox="0 0 320 150" role="img" aria-label="選取溪流 WhiteboxTools 流路示意"></svg>
+            </article>
+            <div class="debris-layer-strip" aria-label="沙盤圖層構想">
+              <span><i></i>河網</span>
+              <span><i class="source"></i>崩塌源</span>
+              <span><i class="torrent"></i>潛勢溪流</span>
+              <span><i class="road"></i>道路</span>
+              <span><i class="rain"></i>雨量站</span>
+              <span><i class="sediment"></i>模擬土砂</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="fuxing-bottom-timeline" data-fuxing-panel-target="timeline" aria-label="事件時間軸">
+        <button type="button">▶</button>
+        <div>
+          <span class="is-active">現在<br>預報開始</span>
+          <span class="is-active">+1hr<br>雨帶接近</span>
+          <span class="is-current">+3hr<br>水位上升</span>
+          <span>+6hr<br>聚落警戒</span>
+          <span>+12hr<br>影響擴大</span>
+          <span>+24hr<br>持續監測</span>
+        </div>
+      </section>
+
+      <section class="debris-bottom-sandboxes" aria-label="荖濃溪土石流沙盤切割成果">
+        <div class="debris-bottom-head">
+          <b>荖濃溪土石流沙盤切割</b>
+          <span id="debris-bottom-note">讀取中</span>
+        </div>
+        <div class="debris-sandbox-strip" id="debris-sandbox-strip"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    window.CESIUM_BASE_URL = "https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/";
+  </script>
+  <script>
+    (() => {
+      const dataUrl = "../../data/laonong-debris-flow/laonong-alert-torrents.json?v=20260824-laonong-cut";
+      const els = {
+        note: document.querySelector("#debris-data-note"),
+        flowCount: document.querySelector("#debris-flow-alert-count"),
+        sandboxCount: document.querySelector("#debris-sandbox-count"),
+        total: document.querySelector("#debris-summary-total"),
+        red: document.querySelector("#debris-summary-red"),
+        yellow: document.querySelector("#debris-summary-yellow"),
+        torrentList: document.querySelector("#debris-torrent-list"),
+        analysisPanel: document.querySelector("#debris-analysis-panel"),
+        analysisClose: document.querySelector("#debris-analysis-close"),
+        selectedCard: document.querySelector("#debris-selected-card"),
+        selectedSvg: document.querySelector("#debris-selected-svg"),
+        bottomNote: document.querySelector("#debris-bottom-note"),
+        sandboxStrip: document.querySelector("#debris-sandbox-strip"),
+        miniMap: document.querySelector("#debris-torrent-map")
+      };
+      const levelText = (level) => level === "r" ? "紅" : level === "y" ? "黃" : "無";
+      const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+      let selectedItem = null;
+      let selectedEntities = [];
+      let baseTorrentEntities = [];
+      let miniMapHeadingSyncStarted = false;
+
+      els.analysisClose?.addEventListener("click", () => {
+        els.analysisPanel?.classList.add("is-collapsed");
+      });
+
+      const twd97ToLonLat = (x, y) => {
+        const a = 6378137;
+        const b = 6356752.314245;
+        const lng0 = 121 * Math.PI / 180;
+        const k0 = 0.9999;
+        const dx = x - 250000;
+        const e = Math.sqrt(1 - (b * b) / (a * a));
+        const e1sq = e * e / (1 - e * e);
+        const m = y / k0;
+        const mu = m / (a * (1 - e * e / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256));
+        const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+        const j1 = 3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32;
+        const j2 = 21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32;
+        const j3 = 151 * Math.pow(e1, 3) / 96;
+        const j4 = 1097 * Math.pow(e1, 4) / 512;
+        const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+        const sinfp = Math.sin(fp);
+        const cosfp = Math.cos(fp);
+        const tanfp = Math.tan(fp);
+        const c1 = e1sq * cosfp * cosfp;
+        const t1 = tanfp * tanfp;
+        const r1 = a * (1 - e * e) / Math.pow(1 - e * e * sinfp * sinfp, 1.5);
+        const n1 = a / Math.sqrt(1 - e * e * sinfp * sinfp);
+        const d = dx / (n1 * k0);
+        const q1 = n1 * tanfp / r1;
+        const q2 = d * d / 2;
+        const q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e1sq) * Math.pow(d, 4) / 24;
+        const q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e1sq - 3 * c1 * c1) * Math.pow(d, 6) / 720;
+        const lat = fp - q1 * (q2 - q3 + q4);
+        const q5 = d;
+        const q6 = (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6;
+        const q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e1sq + 24 * t1 * t1) * Math.pow(d, 5) / 120;
+        const lon = lng0 + (q5 - q6 + q7) / cosfp;
+        return { lon: lon * 180 / Math.PI, lat: lat * 180 / Math.PI };
+      };
+
+      const getViewer = () => window.laonongCesiumViewer && window.Cesium ? window.laonongCesiumViewer : null;
+
+      const clearSelectedEntities = () => {
+        const viewer = getViewer();
+        if (!viewer) return;
+        selectedEntities.forEach((entity) => viewer.entities.remove(entity));
+        selectedEntities = [];
+      };
+
+      const clearBaseTorrentEntities = () => {
+        const viewer = getViewer();
+        if (!viewer) return;
+        baseTorrentEntities.forEach((entity) => viewer.entities.remove(entity));
+        baseTorrentEntities = [];
+      };
+
+      const addBaseTorrentLayer = (items) => {
+        const viewer = getViewer();
+        if (!viewer || baseTorrentEntities.length) return;
+        items.forEach((item) => {
+          const points = (item.flowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y));
+          if (points.length < 2) return;
+          const isYellow = item.alertLevel === "y";
+          const color = isYellow ? Cesium.Color.fromCssColorString("#facc15").withAlpha(0.72) : Cesium.Color.fromCssColorString("#fb7185").withAlpha(0.72);
+          baseTorrentEntities.push(viewer.entities.add({
+            name: item.id,
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(points.flatMap((point) => [point.lon, point.lat])),
+              width: isYellow ? 2.8 : 3.6,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: isYellow ? 0.08 : 0.12,
+                color
+              }),
+              clampToGround: true
+            }
+          }));
+          const center = item.centroidTwd97 ? twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]) : points[Math.floor(points.length / 2)];
+          baseTorrentEntities.push(viewer.entities.add({
+            position: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 20),
+            point: {
+              pixelSize: isYellow ? 8 : 10,
+              color,
+              outlineColor: Cesium.Color.WHITE.withAlpha(0.72),
+              outlineWidth: 1.5,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY
+            }
+          }));
+        });
+        viewer.scene.requestRender();
+      };
+
+      const renderMiniMap = (items) => {
+        if (!els.miniMap || !items.length) return;
+        const allPoints = items.flatMap((item) => item.flowlineTwd97 || []);
+        const xs = allPoints.map((point) => point.x);
+        const ys = allPoints.map((point) => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const pad = 18;
+        const width = 280;
+        const height = 150;
+        const sx = (x) => pad + ((x - minX) / Math.max(maxX - minX, 1)) * (width - pad * 2);
+        const sy = (y) => height - pad - ((y - minY) / Math.max(maxY - minY, 1)) * (height - pad * 2);
+        const paths = items.map((item) => {
+          const d = (item.flowlineTwd97 || []).map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)} ${sy(point.y).toFixed(1)}`).join(" ");
+          const color = item.alertLevel === "y" ? "#facc15" : "#fb7185";
+          return `<path data-map-id="${escapeHtml(item.id)}" d="${d}" fill="none" stroke="${color}" stroke-width="${item.alertLevel === "y" ? 2.2 : 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.82"/>`;
+        }).join("");
+        const dots = items.map((item) => {
+          const center = item.centroidTwd97 || [item.flowlineTwd97?.[0]?.x, item.flowlineTwd97?.[0]?.y];
+          const color = item.alertLevel === "y" ? "#facc15" : "#fb7185";
+          return `<circle data-map-id="${escapeHtml(item.id)}" cx="${sx(center[0]).toFixed(1)}" cy="${sy(center[1]).toFixed(1)}" r="4.2" fill="${color}" stroke="#f8fafc" stroke-width="1.2"/>`;
+        }).join("");
+        els.miniMap.innerHTML = `
+          <rect x="0" y="0" width="280" height="150" rx="8" fill="rgba(15,23,42,0.2)"/>
+          <g id="debris-mini-rotor" transform-origin="${width / 2}px ${height / 2}px">
+            <path d="M${pad} ${height - pad} C${width * 0.32} ${height * 0.54} ${width * 0.48} ${height * 0.42} ${width - pad} ${pad}" fill="none" stroke="#38bdf8" stroke-width="3.4" stroke-linecap="round" opacity="0.28"/>
+            ${paths}
+            ${dots}
+          </g>
+          <text x="18" y="28" fill="#bae6fd" font-size="11" font-weight="900">實際相對位置</text>
+          <text x="184" y="136" fill="#94a3b8" font-size="10" font-weight="800">TWD97 縮放</text>
+          <g id="debris-mini-north" transform="translate(248 22)">
+            <path d="M0 -10 L5 8 L0 5 L-5 8 Z" fill="#e0f2fe" opacity="0.94"/>
+            <text x="0" y="22" text-anchor="middle" fill="#e0f2fe" font-size="10" font-weight="900">N</text>
+          </g>
+        `;
+        syncMiniMapHeading();
+      };
+
+      const updateMiniMapHeading = () => {
+        const viewer = getViewer();
+        const rotor = document.querySelector("#debris-mini-rotor");
+        const north = document.querySelector("#debris-mini-north");
+        if (!viewer || !rotor) return;
+        const headingDeg = Cesium.Math.toDegrees(viewer.camera.heading || 0);
+        rotor.setAttribute("transform", `rotate(${-headingDeg} 140 75)`);
+        if (north) north.setAttribute("transform", `translate(248 22) rotate(${-headingDeg})`);
+      };
+
+      const syncMiniMapHeading = () => {
+        const viewer = getViewer();
+        if (!viewer || miniMapHeadingSyncStarted) {
+          updateMiniMapHeading();
+          return;
+        }
+        miniMapHeadingSyncStarted = true;
+        viewer.camera.changed.addEventListener(updateMiniMapHeading);
+        updateMiniMapHeading();
+      };
+
+      const focusTorrentOnMap = (item) => {
+        const viewer = getViewer();
+        if (!viewer || !item) return;
+        clearSelectedEntities();
+        const points = (item.flowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y));
+        const center = item.centroidTwd97 ? twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]) : points[Math.floor(points.length / 2)];
+        const isYellow = item.alertLevel === "y";
+        const color = isYellow ? Cesium.Color.fromCssColorString("#facc15") : Cesium.Color.fromCssColorString("#fb7185");
+        if (points.length > 1) {
+          selectedEntities.push(viewer.entities.add({
+            polyline: {
+              positions: Cesium.Cartesian3.fromDegreesArray(points.flatMap((point) => [point.lon, point.lat])),
+              width: isYellow ? 5 : 7,
+              material: new Cesium.PolylineGlowMaterialProperty({
+                glowPower: isYellow ? 0.18 : 0.28,
+                color
+              }),
+              clampToGround: true
+            }
+          }));
+        }
+        selectedEntities.push(viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 30),
+          point: {
+            pixelSize: isYellow ? 14 : 18,
+            color,
+            outlineColor: Cesium.Color.WHITE.withAlpha(0.86),
+            outlineWidth: 2,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          label: {
+            text: item.id,
+            font: "700 15px Microsoft JhengHei",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK.withAlpha(0.65),
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -28),
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          }
+        }));
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(center.lon, center.lat, 6200),
+          orientation: {
+            heading: Cesium.Math.toRadians(35),
+            pitch: Cesium.Math.toRadians(-42),
+            roll: 0
+          },
+          duration: 1.15
+        });
+        viewer.scene.requestRender();
+        updateMiniMapHeading();
+      };
+
+      const selectTorrent = (item) => {
+        selectedItem = item;
+        els.analysisPanel?.classList.remove("is-collapsed");
+        document.querySelectorAll("#debris-torrent-list li").forEach((li) => {
+          li.classList.toggle("is-selected", li.dataset.torrentId === item.id);
+        });
+        document.querySelectorAll(".debris-mini-card").forEach((card) => {
+          card.classList.toggle("is-selected", card.dataset.torrentId === item.id);
+        });
+        renderSelectedSummary(item);
+        focusTorrentOnMap(item);
+      };
+
+      const renderSelectedSummary = (item) => {
+        if (!item) return;
+        const isYellow = item.alertLevel === "y";
+        if (els.selectedCard) els.selectedCard.classList.toggle("is-yellow", isYellow);
+        renderSelectedFlowSvg(item);
+      };
+
+      const renderSelectedFlowSvg = (item) => {
+        if (!els.selectedSvg) return;
+        const official = item.officialFlowlineTwd97 || [];
+        const whitebox = item.flowlineTwd97 || [];
+        const allPoints = [...official, ...whitebox];
+        if (allPoints.length < 2) {
+          els.selectedSvg.innerHTML = "";
+          return;
+        }
+        const xs = allPoints.map((point) => point.x);
+        const ys = allPoints.map((point) => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const pad = 18;
+        const width = 320;
+        const height = 150;
+        const sx = (x) => pad + ((x - minX) / Math.max(maxX - minX, 1)) * (width - pad * 2);
+        const sy = (y) => height - pad - ((y - minY) / Math.max(maxY - minY, 1)) * (height - pad * 2);
+        const linePath = (points) => points.map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)} ${sy(point.y).toFixed(1)}`).join(" ");
+        const accent = item.alertLevel === "y" ? "#facc15" : "#fb7185";
+        const start = whitebox[0];
+        const end = whitebox[whitebox.length - 1];
+        els.selectedSvg.innerHTML = `
+          <rect x="0" y="0" width="${width}" height="${height}" rx="8" fill="rgba(2,6,23,0.16)"/>
+          ${official.length > 1 ? `<path d="${linePath(official)}" fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.32" stroke-dasharray="7 6"/>` : ""}
+          ${whitebox.length > 1 ? `<path d="${linePath(whitebox)}" fill="none" stroke="${accent}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.96"/>` : ""}
+          ${start ? `<circle cx="${sx(start.x).toFixed(1)}" cy="${sy(start.y).toFixed(1)}" r="5" fill="#e0f2fe" stroke="${accent}" stroke-width="2"/>` : ""}
+          ${end ? `<circle cx="${sx(end.x).toFixed(1)}" cy="${sy(end.y).toFixed(1)}" r="4" fill="${accent}" stroke="#f8fafc" stroke-width="1.4"/>` : ""}
+          <text x="14" y="22" fill="#e0f2fe" font-size="11" font-weight="900">WhiteboxTools 流路</text>
+          <text x="14" y="138" fill="#94a3b8" font-size="10" font-weight="800">虛線：官方潛勢溪流｜實線：DEM 推導流路</text>
+          <text x="${start ? sx(start.x).toFixed(1) : 0}" y="${start ? Math.max(14, sy(start.y) - 8).toFixed(1) : 0}" fill="#e0f2fe" font-size="10" font-weight="900" text-anchor="middle">起點</text>
+          <text x="${end ? sx(end.x).toFixed(1) : 0}" y="${end ? Math.min(142, sy(end.y) + 17).toFixed(1) : 0}" fill="${accent}" font-size="10" font-weight="900" text-anchor="middle">下游</text>
+        `;
+      };
+
+      const render = (payload) => {
+        const items = payload.items || [];
+        const active = items.filter((item) => item.alertLevel === "r" || item.alertLevel === "y");
+        const red = active.filter((item) => item.alertLevel === "r");
+        const yellow = active.filter((item) => item.alertLevel === "y");
+        if (els.note) {
+          els.note.textContent = `官方 114 年潛勢溪流圖 Sub_basin=荖濃；警戒資料 ${payload.lastUpdate || "待確認"}。`;
+        }
+        if (els.flowCount) els.flowCount.textContent = `紅 ${red.length} / 黃 ${yellow.length}`;
+        if (els.sandboxCount) els.sandboxCount.textContent = `紅 ${red.length} / 黃 ${yellow.length}`;
+        if (els.total) els.total.textContent = active.length;
+        if (els.red) els.red.textContent = red.length;
+        if (els.yellow) els.yellow.textContent = yellow.length;
+        if (els.torrentList) {
+          els.torrentList.innerHTML = items.map((item) => `
+            <li class="${item.alertLevel === "y" ? "is-yellow" : "is-red"}" data-torrent-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="定位 ${escapeHtml(item.id)}">
+              <i></i>
+              <span><b>${escapeHtml(item.id)}</b>${escapeHtml(item.town)}${escapeHtml(item.village)}・${escapeHtml(item.mark || item.name)}</span>
+              <em>${levelText(item.alertLevel)}</em>
+            </li>
+          `).join("");
+          els.torrentList.querySelectorAll("li").forEach((li) => {
+            const item = items.find((entry) => entry.id === li.dataset.torrentId);
+            li.addEventListener("click", () => selectTorrent(item));
+            li.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                selectTorrent(item);
+              }
+            });
+          });
+        }
+        renderMiniMap(items);
+        window.setTimeout(() => addBaseTorrentLayer(items), 800);
+        if (els.bottomNote) {
+          const readyCount = items.filter((item) => item.terrainStatus === "ready").length;
+          els.bottomNote.textContent = `${items.length} 條沙盤 / 地形 ${readyCount} 條`;
+        }
+        if (els.sandboxStrip) {
+          els.sandboxStrip.innerHTML = items.map((item) => {
+            const level = levelText(item.alertLevel);
+            const terrain = item.terrainStatus === "ready" ? "20m DTM" : "範圍示意";
+            return `
+              <article class="debris-mini-card ${item.alertLevel === "y" ? "is-yellow" : "is-red"}" data-torrent-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="切換 ${escapeHtml(item.id)} 沙盤">
+                <header>
+                  <b>${escapeHtml(item.id)}</b>
+                  <span>${level}・${terrain}</span>
+                </header>
+                <iframe src="../df064-terrain-sandbox-mini.html?id=${encodeURIComponent(item.id)}&alert=${item.alertLevel === "y" ? "yellow" : "red"}" title="${escapeHtml(item.id)} 3D 地形沙盤"></iframe>
+              </article>
+            `;
+          }).join("");
+          els.sandboxStrip.querySelectorAll(".debris-mini-card").forEach((card) => {
+            const item = items.find((entry) => entry.id === card.dataset.torrentId);
+            card.addEventListener("click", () => selectTorrent(item));
+            card.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                selectTorrent(item);
+              }
+            });
+          });
+        }
+      };
+
+      fetch(dataUrl)
+        .then((response) => response.json())
+        .then(render)
+        .catch(() => {
+          if (els.note) els.note.textContent = "荖濃溪潛勢溪流資料讀取失敗，請確認本機資料路徑。";
+        });
+    })();
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script src="../../js/laonong-fuxing-model-test.js?v=20260805-impact-cards"></script>
+</body>
+</html>

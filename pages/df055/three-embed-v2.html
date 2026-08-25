@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DF055 Physical Scene Engine</title>
+  <link rel="stylesheet" href="three-demo.css">
+  <style>
+    body {
+      background: #06111a;
+    }
+
+    .hud {
+      border-color: rgba(103, 232, 249, 0.16);
+      background: rgba(2, 6, 23, 0.52);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(103, 232, 249, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 232, 249, 0.025) 1px, transparent 1px);
+      background-size: 100% 28px, 28px 100%;
+      mix-blend-mode: screen;
+      opacity: 0.42;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      left: -30%;
+      right: -30%;
+      top: 30%;
+      z-index: 9;
+      height: 2px;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.75), transparent);
+      box-shadow: 0 0 18px rgba(103, 232, 249, 0.55);
+      animation: v2Scan 3.6s ease-in-out infinite;
+    }
+
+    @keyframes v2Scan {
+      0% { transform: translateY(-180px); opacity: 0; }
+      18% { opacity: 0.85; }
+      82% { opacity: 0.85; }
+      100% { transform: translateY(320px); opacity: 0; }
+    }
+
+    .title {
+      top: 12px;
+      left: 12px;
+      padding: 10px 12px 9px;
+      min-width: 210px;
+    }
+
+    .title h1 {
+      color: #f8fafc;
+      font-size: 15px;
+    }
+
+    .title p {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    #scene {
+      height: calc(100% - 42px);
+    }
+
+    .stats {
+      top: 12px;
+      right: 12px;
+      width: 156px;
+      padding: 10px;
+      background: rgba(2, 6, 23, 0.44);
+    }
+
+    .stats > div,
+    .stats dl {
+      font-size: 11px;
+    }
+
+    .controls {
+      left: 12px;
+      right: 12px;
+      bottom: 6px;
+      min-height: 34px;
+      grid-template-columns: minmax(150px, 1fr);
+      gap: 8px;
+      padding: 6px 8px;
+      background: rgba(7, 12, 18, 0.58);
+    }
+
+    .controls button,
+    .controls select {
+      height: 28px;
+      font-size: 12px;
+    }
+
+    #playBtn,
+    #pauseBtn,
+    #resetBtn {
+      display: none;
+    }
+
+    .controls label {
+      grid-template-columns: 36px minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .controls label:nth-of-type(2),
+    .controls label:nth-of-type(3) {
+      display: none;
+    }
+
+    .legend {
+      left: 12px;
+      bottom: 54px;
+      padding: 7px 9px;
+      gap: 8px;
+      font-size: 11px;
+      background: rgba(2, 6, 23, 0.5);
+    }
+
+    .depth-bar {
+      width: 110px;
+      height: 10px;
+    }
+
+    .disclaimer {
+      display: none;
+    }
+
+    .engine-tag {
+      position: fixed;
+      left: 12px;
+      bottom: 54px;
+      z-index: 10;
+      display: grid;
+      gap: 4px;
+      padding: 8px 10px;
+      border: 1px solid rgba(103, 232, 249, 0.22);
+      background: rgba(2, 6, 23, 0.56);
+      color: #e0f2fe;
+      font-size: 11px;
+      font-weight: 900;
+      backdrop-filter: blur(12px);
+    }
+
+    .engine-tag span {
+      color: #67e8f9;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+  <div id="scene"></div>
+  <header class="hud title">
+    <h1>PHYSICAL SCENE ENGINE</h1>
+    <p>FLOWPATH LOCKED / DF055</p>
+  </header>
+  <section class="hud controls">
+    <button id="playBtn" type="button">Play</button>
+    <button id="pauseBtn" type="button">Pause</button>
+    <button id="resetBtn" type="button">Reset</button>
+    <label>時間
+      <input id="timeSlider" type="range" min="0" max="60" step="1" value="0">
+    </label>
+    <label>地形高度
+      <input id="zScale" type="range" min="0.6" max="3.5" step="0.1" value="1.8">
+    </label>
+    <label>速度
+      <select id="speedSelect">
+        <option value="420">慢</option>
+        <option value="240" selected>中</option>
+        <option value="120">快</option>
+      </select>
+    </label>
+  </section>
+  <aside class="hud stats">
+    <div>時間 <strong id="timeLabel">0</strong> 秒</div>
+    <dl>
+      <dt>最大深度</dt><dd id="maxDepth">--</dd>
+      <dt>最大流速</dt><dd id="maxVelocity">--</dd>
+      <dt>影響面積</dt><dd id="affectedArea">--</dd>
+      <dt>流動面積</dt><dd id="movingArea">--</dd>
+    </dl>
+  </aside>
+  <div class="legend">
+    <span>Depth 0 m</span>
+    <div class="depth-bar"></div>
+    <span>5 m</span>
+  </div>
+  <div class="engine-tag">
+    <span>WHITEBOXTOOLS SOURCE</span>
+    Downslope Flowpath → Physical Preview
+  </div>
+  <script src="three-app-v2.js?v=physical-scene-v2-1&clean=1&v2=1"></script>
+</body>
+</html>

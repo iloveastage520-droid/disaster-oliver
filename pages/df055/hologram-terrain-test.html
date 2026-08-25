@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DF055 全息地形沙盤測試</title>
+  <link rel="stylesheet" href="three-demo.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      background: #020617;
+      color: #e0f2fe;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 34%, rgba(34, 211, 238, 0.18), transparent 28%),
+        radial-gradient(circle at 12% 18%, rgba(168, 85, 247, 0.14), transparent 24%),
+        linear-gradient(145deg, #020617 0%, #06131f 48%, #020617 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      z-index: 1;
+      background:
+        linear-gradient(rgba(103, 232, 249, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 232, 249, 0.025) 1px, transparent 1px);
+      background-size: 100% 32px, 32px 100%;
+      opacity: 0.5;
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      z-index: 2;
+      background:
+        linear-gradient(90deg, rgba(2, 6, 23, 0.78), transparent 18%, transparent 82%, rgba(2, 6, 23, 0.78)),
+        linear-gradient(0deg, rgba(2, 6, 23, 0.82), transparent 18%, transparent 78%, rgba(2, 6, 23, 0.54));
+    }
+
+    .holo-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+    }
+
+    .holo-table {
+      position: absolute;
+      inset: 0;
+      border: 0;
+      border-radius: 0;
+      background: rgba(8, 47, 73, 0.04);
+      box-shadow:
+        inset 0 0 0 1px rgba(103, 232, 249, 0.32),
+        inset 0 0 80px rgba(34, 211, 238, 0.08);
+    }
+
+    .holo-table::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border: 1px solid rgba(103, 232, 249, 0.34);
+      border-radius: 10px;
+      box-shadow: 0 0 42px rgba(34, 211, 238, 0.26), inset 0 0 34px rgba(34, 211, 238, 0.08);
+    }
+
+    .holo-table::after {
+      content: "";
+      position: absolute;
+      left: 6vw;
+      right: 6vw;
+      bottom: 26px;
+      height: 1px;
+      border: 0;
+      background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.9), transparent);
+      box-shadow: 0 0 26px rgba(34, 211, 238, 0.56);
+    }
+
+    #terrain-frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      filter: saturate(1.28) contrast(1.16);
+      background: #020617;
+    }
+
+    .holo-wire {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(125, 249, 255, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.13) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.22;
+      mix-blend-mode: screen;
+      mask-image: radial-gradient(ellipse at center, black 0 58%, transparent 78%);
+    }
+
+    .holo-scan {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      top: 42%;
+      z-index: 6;
+      height: 2px;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(125, 249, 255, 0.96), transparent);
+      box-shadow: 0 0 24px rgba(125, 249, 255, 0.8);
+      animation: holoScan 3.8s ease-in-out infinite;
+    }
+
+    @keyframes holoScan {
+      0% { translate: 0 -42vh; opacity: 0; }
+      18% { opacity: 1; }
+      82% { opacity: 1; }
+      100% { translate: 0 42vh; opacity: 0; }
+    }
+
+    .holo-title,
+    .holo-side,
+    .holo-hud,
+    .controls,
+    .stats,
+    .legend {
+      position: fixed;
+      z-index: 10;
+      border: 1px solid rgba(103, 232, 249, 0.24);
+      background: rgba(2, 6, 23, 0.58);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 0 24px rgba(34, 211, 238, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .holo-title {
+      left: 28px;
+      top: 24px;
+      padding: 12px 14px;
+    }
+
+    .holo-title span {
+      color: #67e8f9;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+    }
+
+    .holo-title h1 {
+      margin: 6px 0 0;
+      color: #f8fafc;
+      font-size: 24px;
+      line-height: 1.05;
+    }
+
+    .holo-side {
+      right: 28px;
+      top: 24px;
+      width: 218px;
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .holo-side b {
+      color: #67e8f9;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+
+    .holo-side span {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .holo-side strong {
+      color: #f8fafc;
+    }
+
+    .holo-side {
+      display: none;
+    }
+
+    .holo-hud {
+      top: 120px;
+      bottom: 34px;
+      width: min(320px, calc(100vw - 56px));
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background:
+        linear-gradient(150deg, rgba(6, 18, 33, 0.84), rgba(3, 7, 18, 0.62)),
+        radial-gradient(circle at 24% 0%, rgba(34, 211, 238, 0.18), transparent 34%);
+    }
+
+    .holo-hud.left {
+      left: 28px;
+    }
+
+    .holo-hud.right {
+      right: 28px;
+    }
+
+    .hud-kicker {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .holo-hud h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 22px;
+      line-height: 1.05;
+    }
+
+    .hud-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .hud-metric {
+      min-height: 58px;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(15, 23, 42, 0.52);
+    }
+
+    .hud-metric span {
+      display: block;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .hud-metric strong {
+      display: block;
+      margin-top: 5px;
+      color: #f8fafc;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .hud-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      overflow: auto;
+      min-height: 0;
+      scrollbar-color: rgba(103, 232, 249, 0.38) rgba(15, 23, 42, 0.2);
+    }
+
+    .stream-item,
+    .rain-item {
+      position: relative;
+      padding: 10px 10px 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(15, 23, 42, 0.46);
+      overflow: hidden;
+    }
+
+    .stream-item::before,
+    .rain-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--signal, #22d3ee);
+      box-shadow: 0 0 16px var(--signal, #22d3ee);
+    }
+
+    .stream-item.is-red { --signal: #fb7185; }
+    .stream-item.is-yellow { --signal: #facc15; }
+    .stream-item.is-normal { --signal: #64748b; }
+
+    .stream-main,
+    .rain-main,
+    .rain-values {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stream-main b,
+    .rain-main b {
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .stream-main strong,
+    .rain-main strong {
+      color: var(--signal, #67e8f9);
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .stream-sub,
+    .rain-sub {
+      margin-top: 5px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .rain-item {
+      --signal: #22d3ee;
+    }
+
+    .rain-item.is-heavy { --signal: #fb7185; }
+    .rain-item.is-mid { --signal: #f59e0b; }
+    .rain-item.is-watch { --signal: #facc15; }
+    .rain-item.is-low { --signal: #22d3ee; }
+
+    .rain-values {
+      margin-top: 8px;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .rain-bar {
+      position: relative;
+      height: 5px;
+      margin-top: 8px;
+      overflow: hidden;
+      background: rgba(30, 41, 59, 0.74);
+    }
+
+    .rain-bar i {
+      display: block;
+      width: var(--rain-width, 0%);
+      height: 100%;
+      background: linear-gradient(90deg, #22d3ee, #facc15, var(--signal, #fb7185));
+      box-shadow: 0 0 18px var(--signal, #22d3ee);
+    }
+
+    .hud-note {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1180px) {
+      .holo-hud {
+        width: 270px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .holo-title {
+        left: 16px;
+        top: 16px;
+      }
+
+      .holo-hud {
+        top: auto;
+        bottom: 18px;
+        max-height: 34vh;
+      }
+
+      .holo-hud.left {
+        left: 16px;
+        right: auto;
+      }
+
+      .holo-hud.right {
+        left: auto;
+        right: 16px;
+      }
+    }
+
+    .title,
+    .stats,
+    .controls,
+    .legend,
+    .disclaimer,
+    #resetBtn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="holo-stage" aria-hidden="true">
+    <div class="holo-table">
+      <iframe id="terrain-frame" src="../laonong-basin-continuous-dem-test.html?embed=1&v=continuous-river-valley" title="荖濃溪流域連續 DEM 測試"></iframe>
+      <div class="holo-wire"></div>
+      <div class="holo-scan"></div>
+    </div>
+  </div>
+
+  <section class="holo-title" aria-label="全息地形沙盤標題">
+    <span>LAONONG / PHYSICAL DIGITAL TWIN</span>
+    <h1>荖濃溪全息戰情桌</h1>
+  </section>
+
+  <aside class="holo-side" aria-label="模擬來源">
+    <b>SIMULATION SOURCE</b>
+    <span>Terrain <strong>Hologram DEM</strong></span>
+    <span>Flowpath <strong>WhiteboxTools</strong></span>
+    <span>Boundary <strong>Laonong Basin</strong></span>
+    <span>Mesh <strong>DF Terrain Zones</strong></span>
+  </aside>
+
+  <aside class="holo-hud left" aria-label="土石流潛勢溪流資訊">
+    <div class="hud-kicker">Debris Flow / Potential Streams</div>
+    <h2>土石流溪流資料</h2>
+    <div class="hud-summary" id="stream-summary">
+      <div class="hud-metric"><span>目前警戒</span><strong>--</strong></div>
+      <div class="hud-metric"><span>DEM 範圍</span><strong>10</strong></div>
+    </div>
+    <ul class="hud-list" id="stream-list"></ul>
+    <div class="hud-note">顯示荖濃流域內已切割的土石流潛勢溪流與 20m DEM 沙盤區域。</div>
+  </aside>
+
+  <aside class="holo-hud right" aria-label="附近雨量站資訊">
+    <div class="hud-kicker">Rainfall / Nearby Stations</div>
+    <h2>附近雨量站降雨</h2>
+    <div class="hud-summary" id="rain-summary">
+      <div class="hud-metric"><span>24hr 最大</span><strong>--</strong></div>
+      <div class="hud-metric"><span>站點數</span><strong>--</strong></div>
+    </div>
+    <ul class="hud-list" id="rain-list"></ul>
+    <div class="hud-note">目前先沿用荖濃溪預報頁內的雨量站測試資料，後續可接即時觀測 API。</div>
+  </aside>
+
+  <script>
+    const streamListEl = document.querySelector("#stream-list");
+    const streamSummaryEl = document.querySelector("#stream-summary");
+    const rainListEl = document.querySelector("#rain-list");
+    const rainSummaryEl = document.querySelector("#rain-summary");
+
+    const rainStations = [
+      { id: "JS", name: "建山國小", town: "桃源區", h1: 1.5, h6: 65, h24: 65, effective: 158.5 },
+      { id: "TY", name: "桃源區公所", town: "桃源區", h1: 5, h6: 27.5, h24: 178.5, effective: 335.5 },
+      { id: "MB", name: "明霸克露橋", town: "桃源區", h1: 4.5, h6: 33, h24: 162, effective: 310 },
+      { id: "BS", name: "寶山部落", town: "桃源區", h1: 2.5, h6: 24.5, h24: 219, effective: 465.5 },
+      { id: "XF", name: "新發國小", town: "六龜區", h1: 0.5, h6: 23.5, h24: 243.5, effective: 492 },
+      { id: "ZL", name: "竹林", town: "六龜區", h1: 2.5, h6: 19, h24: 152, effective: 303 },
+      { id: "NMX", name: "那瑪夏國中", town: "鄰近參考", h1: 2.5, h6: 20, h24: 149.5, effective: 282 },
+      { id: "ML", name: "茂林國小", town: "鄰近參考", h1: 0, h6: 19, h24: 252.5, effective: 540 }
+    ];
+
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char]));
+
+    const alertText = (level) => level === "r" ? "紅色警戒" : level === "y" ? "黃色警戒" : "未達警戒";
+    const alertClass = (level) => level === "r" ? "is-red" : level === "y" ? "is-yellow" : "is-normal";
+    const alertRank = (level) => ({ r: 0, y: 1, n: 2 }[level] ?? 3);
+
+    const rainClass = (h24) => {
+      if (h24 >= 200) return "is-heavy";
+      if (h24 >= 150) return "is-mid";
+      if (h24 >= 80) return "is-watch";
+      return "is-low";
+    };
+
+    function renderStreams(items) {
+      const redItems = items.filter((item) => item.alertLevel === "r");
+      const sorted = [...redItems].sort((a, b) => alertRank(a.alertLevel) - alertRank(b.alertLevel) || a.id.localeCompare(b.id));
+      const red = items.filter((item) => item.alertLevel === "r").length;
+      streamSummaryEl.innerHTML = `
+        <div class="hud-metric"><span>紅色警戒</span><strong>${red}</strong></div>
+        <div class="hud-metric"><span>顯示模式</span><strong>RED</strong></div>
+      `;
+      streamListEl.innerHTML = sorted.map((item) => `
+        <li class="stream-item ${alertClass(item.alertLevel)}">
+          <div class="stream-main">
+            <b>${escapeHtml(item.id)}</b>
+            <strong>${alertText(item.alertLevel)}</strong>
+          </div>
+          <div class="stream-sub">${escapeHtml(item.town || "--")}${item.village ? `・${escapeHtml(item.village)}` : ""}<br>${escapeHtml(item.mark || "潛勢溪流")} / ${escapeHtml(item.road || "道路待確認")}</div>
+        </li>
+      `).join("");
+    }
+
+    function renderRainStations() {
+      const maxRain = Math.max(...rainStations.map((station) => station.h24));
+      rainSummaryEl.innerHTML = `
+        <div class="hud-metric"><span>24hr 最大</span><strong>${maxRain} mm</strong></div>
+        <div class="hud-metric"><span>雨量站</span><strong>${rainStations.length}</strong></div>
+      `;
+      rainListEl.innerHTML = [...rainStations]
+        .sort((a, b) => b.h24 - a.h24)
+        .map((station) => {
+          const width = Math.max(6, Math.round((station.h24 / maxRain) * 100));
+          return `
+            <li class="rain-item ${rainClass(station.h24)}">
+              <div class="rain-main">
+                <b>${escapeHtml(station.name)}</b>
+                <strong>${escapeHtml(station.town)}</strong>
+              </div>
+              <div class="rain-values">
+                <span>1hr ${station.h1} mm</span>
+                <span>6hr ${station.h6} mm</span>
+                <span>24hr ${station.h24} mm</span>
+              </div>
+              <div class="rain-bar" style="--rain-width:${width}%"><i></i></div>
+            </li>
+          `;
+        }).join("");
+    }
+
+    fetch("../../data/laonong-debris-flow/laonong-alert-torrents.json")
+      .then((response) => response.json())
+      .then((payload) => renderStreams(payload.items || []))
+      .catch(() => {
+        streamSummaryEl.innerHTML = `<div class="hud-metric"><span>資料狀態</span><strong>未載入</strong></div>`;
+        streamListEl.innerHTML = `<li class="stream-item is-normal"><div class="stream-main"><b>資料讀取失敗</b><strong>CHECK</strong></div></li>`;
+      });
+
+    renderRainStations();
+  </script>
+</body>
+</html>

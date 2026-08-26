@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>荖濃溪 ArcGIS Terrain Base</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Widgets/widgets.min.css">
+  <style>
+    html, body, #cesium {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #020617;
+      font-family: "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    .cesium-viewer-bottom,
+    .cesium-viewer-toolbar,
+    .cesium-viewer-animationContainer,
+    .cesium-viewer-timelineContainer {
+      display: none !important;
+    }
+
+    .status {
+      position: fixed;
+      left: 26px;
+      bottom: 28px;
+      z-index: 10;
+      padding: 10px 13px;
+      border: 1px solid rgba(103, 232, 249, 0.34);
+      background: rgba(2, 6, 23, 0.68);
+      color: #bae6fd;
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesium"></div>
+  <div class="status" id="status">ArcGIS Terrain Loading</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
+  <script>
+    const CesiumLib = window.Cesium;
+    const statusEl = document.querySelector("#status");
+    const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
+    const basinUrl = "../../data/laonong-subbasin-boundary.geojson";
+    const riverRealUrl = "../../data/laonong-river-real.geojson";
+    const torrentsUrl = "../../data/laonong-debris-flow/laonong-alert-torrents.json";
+    const realBuildingsUrl = "../../data/laonong-upper-settlement-buildings.geojson";
+    const waterLayers = [
+      {
+        id: "fx",
+        label: "fx 復興",
+        frameBase: "../../assets/wbchen-water/fx",
+        bounds: { west: 120.798565, south: 23.205635, east: 120.809707, north: 23.228542 }
+      },
+      {
+        id: "qhrwl",
+        label: "qhrwl 上游",
+        frameBase: "../../assets/wbchen-water/qhrwl",
+        bounds: { west: 120.746121, south: 23.138360, east: 120.792648, north: 23.195253 }
+      },
+      {
+        id: "blrwl",
+        label: "blrwl 寶山",
+        frameBase: "../../assets/wbchen-water",
+        bounds: { west: 120.687049, south: 23.092029, east: 120.723166, north: 23.128971 }
+      }
+    ];
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    const basemapSettings = {
+      "dark-terrain": {
+        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}",
+        maximumLevel: 16,
+        credit: "Esri World Hillshade",
+        brightness: 0.46,
+        contrast: 1.72,
+        saturation: 0.18,
+        gamma: 0.78,
+        label: "Dark Terrain"
+      },
+      tactical: {
+        url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+        maximumLevel: 18,
+        credit: "Esri World Topographic",
+        brightness: 0.34,
+        contrast: 1.85,
+        saturation: 0.28,
+        gamma: 0.68,
+        label: "Tactical Map"
+      },
+      "real-hybrid": {
+        url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        maximumLevel: 19,
+        credit: "Google hybrid satellite",
+        brightness: 0.48,
+        contrast: 1.45,
+        saturation: 0.58,
+        gamma: 0.72,
+        label: "Real Hybrid"
+      }
+    };
+
+    let baseLayer;
+    const riverWaterEntities = [];
+    const debrisStreamEntities = [];
+    let riverWaterTimer = 0;
+    let riverWaterFrame = 1;
+    let riverWaterRevealStart = null;
+    let riverWaterActive = false;
+    let raisedRiverWaterReady = false;
+    let riverWaterCameraTarget = null;
+    let riverWaterCameraHeading = CesiumLib.Math.toRadians(24);
+    let riverWaterCameraOrbiting = false;
+    const riverWaterBuildingEntities = [];
+
+    function easeOutCubic(value) {
+      return 1 - Math.pow(1 - value, 3);
+    }
+
+    function riverWaterRevealProgress(time) {
+      if (!riverWaterActive || !riverWaterRevealStart) return 0;
+      const seconds = CesiumLib.JulianDate.secondsDifference(time, riverWaterRevealStart);
+      return easeOutCubic(Math.max(0, Math.min(1, seconds / 2.4)));
+    }
+
+    function riverWaterPhaseProgress(time, delay, duration) {
+      if (!riverWaterActive || !riverWaterRevealStart) return 0;
+      const seconds = CesiumLib.JulianDate.secondsDifference(time, riverWaterRevealStart);
+      return easeOutCubic(Math.max(0, Math.min(1, (seconds - delay) / duration)));
+    }
+
+    function raisedWaterHeight(time, baseHeight, lift = 1120) {
+      return baseHeight + riverWaterRevealProgress(time) * lift;
+    }
+
+    function setBasemap(viewer, mode = "dark-terrain") {
+      const config = basemapSettings[mode] || basemapSettings["dark-terrain"];
+      if (baseLayer) viewer.imageryLayers.remove(baseLayer, true);
+      baseLayer = viewer.imageryLayers.addImageryProvider(new CesiumLib.UrlTemplateImageryProvider({
+        url: config.url,
+        maximumLevel: config.maximumLevel,
+        credit: config.credit
+      }), 0);
+      baseLayer.brightness = config.brightness;
+      baseLayer.contrast = config.contrast;
+      baseLayer.saturation = config.saturation;
+      baseLayer.gamma = config.gamma;
+      baseLayer.alpha = riverWaterActive ? 0 : 1;
+      setStatus(`${config.label} / ArcGIS Terrain`);
+    }
+
+    function twd97ToLonLat(x, y) {
+      const a = 6378137.0;
+      const b = 6356752.314245;
+      const lng0 = 121 * Math.PI / 180;
+      const k0 = 0.9999;
+      const dx = 250000;
+      const dy = 0;
+      const e = Math.sqrt(1 - (b * b) / (a * a));
+      x -= dx;
+      y -= dy;
+      const m = y / k0;
+      const mu = m / (a * (1 - Math.pow(e, 2) / 4 - 3 * Math.pow(e, 4) / 64 - 5 * Math.pow(e, 6) / 256));
+      const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+      const j1 = 3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32;
+      const j2 = 21 * Math.pow(e1, 2) / 16 - 55 * Math.pow(e1, 4) / 32;
+      const j3 = 151 * Math.pow(e1, 3) / 96;
+      const j4 = 1097 * Math.pow(e1, 4) / 512;
+      const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+      const e2 = Math.pow(e * a / b, 2);
+      const c1 = e2 * Math.pow(Math.cos(fp), 2);
+      const t1 = Math.pow(Math.tan(fp), 2);
+      const r1 = a * (1 - e * e) / Math.pow(1 - e * e * Math.pow(Math.sin(fp), 2), 1.5);
+      const n1 = a / Math.sqrt(1 - e * e * Math.pow(Math.sin(fp), 2));
+      const d = x / (n1 * k0);
+      const q1 = n1 * Math.tan(fp) / r1;
+      const q2 = d * d / 2;
+      const q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e2) * Math.pow(d, 4) / 24;
+      const q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e2 - 3 * c1 * c1) * Math.pow(d, 6) / 720;
+      const lat = fp - q1 * (q2 - q3 + q4);
+      const q5 = d;
+      const q6 = (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6;
+      const q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e2 + 24 * t1 * t1) * Math.pow(d, 5) / 120;
+      const lon = lng0 + (q5 - q6 + q7) / Math.cos(fp);
+      return { lon: lon * 180 / Math.PI, lat: lat * 180 / Math.PI };
+    }
+
+    function flattenCoords(geometry) {
+      const out = [];
+      const walk = (node) => {
+        if (!Array.isArray(node)) return;
+        if (node.length >= 2 && typeof node[0] === "number" && typeof node[1] === "number") {
+          out.push([node[0], node[1]]);
+          return;
+        }
+        node.forEach(walk);
+      };
+      walk(geometry?.coordinates);
+      return out;
+    }
+
+    function extractRiverCenterlineFromSurface(riverReal) {
+      const feature = riverReal.features?.find((item) => item.properties?.NAME === "荖濃溪") || riverReal.features?.[0];
+      const coords = flattenCoords(feature?.geometry);
+      if (coords.length < 20) return coords;
+      const minLat = Math.min(...coords.map(([, lat]) => lat));
+      const maxLat = Math.max(...coords.map(([, lat]) => lat));
+      const bins = Array.from({ length: 72 }, () => []);
+      coords.forEach(([lon, lat]) => {
+        const index = Math.max(0, Math.min(bins.length - 1, Math.floor(((lat - minLat) / Math.max(maxLat - minLat, 0.000001)) * (bins.length - 1))));
+        bins[index].push([lon, lat]);
+      });
+      return bins
+        .map((points) => {
+          if (points.length < 2) return null;
+          const lons = points.map(([lon]) => lon).sort((a, b) => a - b);
+          const lats = points.map(([, lat]) => lat);
+          const lowLon = lons[Math.floor(lons.length * 0.25)];
+          const highLon = lons[Math.floor(lons.length * 0.75)];
+          return {
+            lon: (lowLon + highLon) / 2,
+            lat: lats.reduce((sum, lat) => sum + lat, 0) / lats.length
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.lat - b.lat);
+    }
+
+    function centroidOf(points) {
+      if (!points.length) return [0, 0];
+      const sums = points.reduce((acc, [lon, lat]) => [acc[0] + lon, acc[1] + lat], [0, 0]);
+      return [sums[0] / points.length, sums[1] / points.length];
+    }
+
+    function footprintFromFeature(feature) {
+      const coords = feature?.geometry?.coordinates;
+      if (feature?.geometry?.type === "Polygon") return coords?.[0] || [];
+      if (feature?.geometry?.type === "MultiPolygon") return coords?.[0]?.[0] || [];
+      return [];
+    }
+
+    function lineRingsFromGeoJson(data) {
+      const rings = [];
+      (data.features || []).forEach((feature) => {
+        const geometry = feature.geometry;
+        if (!geometry) return;
+        if (geometry.type === "LineString") {
+          rings.push(geometry.coordinates);
+        } else if (geometry.type === "MultiLineString") {
+          geometry.coordinates.forEach((line) => rings.push(line));
+        } else if (geometry.type === "Polygon") {
+          geometry.coordinates.forEach((ring) => rings.push(ring));
+        } else if (geometry.type === "MultiPolygon") {
+          geometry.coordinates.forEach((polygon) => polygon.forEach((ring) => rings.push(ring)));
+        }
+      });
+      return rings.filter((ring) => ring.length >= 2);
+    }
+
+    function buildingHeightAt(time, base, height) {
+      return base + Math.max(1.5, riverWaterPhaseProgress(time, 1.8, 2.2) * height);
+    }
+
+    function footprintBoundsMeters(footprint, lat) {
+      if (!footprint.length) return { width: 16, depth: 16 };
+      const lons = footprint.map(([lon]) => lon);
+      const lats = footprint.map(([, itemLat]) => itemLat);
+      const lonMeters = Math.max(7, (Math.max(...lons) - Math.min(...lons)) * 111320 * Math.cos(CesiumLib.Math.toRadians(lat)));
+      const latMeters = Math.max(7, (Math.max(...lats) - Math.min(...lats)) * 110540);
+      return {
+        width: Math.min(42, lonMeters),
+        depth: Math.min(42, latMeters)
+      };
+    }
+
+    function riverWaterPlatformHeight(time) {
+      return raisedWaterHeight(time, 12, 1120);
+    }
+
+    function centerOfBounds(bounds) {
+      return {
+        lon: (bounds.west + bounds.east) / 2,
+        lat: (bounds.south + bounds.north) / 2
+      };
+    }
+
+    function splitLineByDistance(points, maxDistance = 0.018) {
+      const segments = [];
+      let current = [];
+      points.forEach((point) => {
+        const previous = current[current.length - 1];
+        const distance = previous ? Math.hypot(point.lon - previous.lon, point.lat - previous.lat) : 0;
+        if (previous && distance > maxDistance) {
+          if (current.length >= 2) segments.push(current);
+          current = [];
+        }
+        current.push(point);
+      });
+      if (current.length >= 2) segments.push(current);
+      return segments;
+    }
+
+    function updateRiverWaterCamera(viewer) {
+      if (!riverWaterActive || !riverWaterCameraOrbiting || !riverWaterCameraTarget) return;
+      riverWaterCameraHeading += 0.00105;
+      viewer.camera.lookAt(
+        riverWaterCameraTarget,
+        new CesiumLib.HeadingPitchRange(
+          riverWaterCameraHeading,
+          CesiumLib.Math.toRadians(-48),
+          14200
+        )
+      );
+    }
+
+    function stopRiverWaterOrbit(viewer) {
+      if (!riverWaterCameraOrbiting) return;
+      riverWaterCameraOrbiting = false;
+      viewer.camera.lookAtTransform(CesiumLib.Matrix4.IDENTITY);
+    }
+
+    function bindManualCameraOverride(viewer) {
+      const handler = new CesiumLib.ScreenSpaceEventHandler(viewer.scene.canvas);
+      [
+        CesiumLib.ScreenSpaceEventType.LEFT_DOWN,
+        CesiumLib.ScreenSpaceEventType.RIGHT_DOWN,
+        CesiumLib.ScreenSpaceEventType.MIDDLE_DOWN,
+        CesiumLib.ScreenSpaceEventType.WHEEL,
+        CesiumLib.ScreenSpaceEventType.PINCH_START
+      ].forEach((type) => {
+        handler.setInputAction(() => stopRiverWaterOrbit(viewer), type);
+      });
+    }
+
+    function addRaisedOutline(viewer, name, ring, options) {
+      const entity = viewer.entities.add({
+        name,
+        polyline: {
+          positions: new CesiumLib.CallbackProperty((time) => {
+            const height = riverWaterPlatformHeight(time) + options.offset;
+            return CesiumLib.Cartesian3.fromDegreesArrayHeights(ring.flatMap(([lon, lat]) => [lon, lat, height]));
+          }, false),
+          width: new CesiumLib.CallbackProperty((time) => options.width + riverWaterPhaseProgress(time, 0.2, 2.2) * options.widthGrow, false),
+          material: new CesiumLib.PolylineGlowMaterialProperty({
+            glowPower: options.glow,
+            taperPower: 0.72,
+            color: new CesiumLib.CallbackProperty((time) => {
+              const pulse = 0.62 + 0.38 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, riverWaterRevealStart || time) * options.pulse);
+              const alpha = riverWaterPhaseProgress(time, options.delay, 1.8) * (options.alpha + pulse * options.pulseAlpha);
+              return CesiumLib.Color.fromCssColorString(options.color).withAlpha(alpha);
+            }, false)
+          })
+        },
+        show: false
+      });
+      riverWaterEntities.push(entity);
+      return entity;
+    }
+
+    function addRiverWaterOutlines(viewer, basin) {
+      const basinRing = basin.features?.[0]?.geometry?.coordinates?.[0] || [];
+      if (basinRing.length >= 4) {
+        addRaisedOutline(viewer, "荖濃溪流域浮升外框", basinRing, {
+          offset: 8,
+          width: 4.4,
+          widthGrow: 2.8,
+          glow: 0.34,
+          color: "#22d3ee",
+          alpha: 0.72,
+          pulseAlpha: 0.22,
+          pulse: 1.1,
+          delay: 0.45
+        });
+      }
+    }
+
+    function addPolyline(viewer, name, coords, color, width = 4) {
+      return viewer.entities.add({
+        name,
+        polyline: {
+          positions: CesiumLib.Cartesian3.fromDegreesArray(coords.flatMap((point) => [point.lon, point.lat])),
+          width,
+          clampToGround: true,
+          material: new CesiumLib.PolylineGlowMaterialProperty({
+            glowPower: 0.26,
+            taperPower: 0.7,
+            color
+          })
+        }
+      });
+    }
+
+    function addRiverSurface(viewer, riverReal) {
+      const feature = riverReal.features?.find((item) => item.properties?.NAME === "荖濃溪") || riverReal.features?.[0];
+      const polygons = feature?.geometry?.coordinates || [];
+      const shimmerStart = CesiumLib.JulianDate.now();
+      polygons.slice(0, 28).forEach((polygon, index) => {
+        const outer = polygon?.[0] || [];
+        if (outer.length < 4) return;
+        const positions = outer.flatMap(([lon, lat]) => [lon, lat]);
+        viewer.entities.add({
+          name: `荖濃溪河床 ${index + 1}`,
+          polygon: {
+            hierarchy: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            material: CesiumLib.Color.fromCssColorString("#082f49").withAlpha(0.42),
+            outline: true,
+            outlineColor: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.34),
+            heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND
+          }
+        });
+        viewer.entities.add({
+          name: `荖濃溪水面光澤 ${index + 1}`,
+          polygon: {
+            hierarchy: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
+              const seconds = CesiumLib.JulianDate.secondsDifference(time, shimmerStart);
+              const wave = 0.5 + 0.5 * Math.sin(seconds * 0.85 + index * 0.55);
+              return CesiumLib.Color.fromCssColorString("#22d3ee").withAlpha(0.08 + wave * 0.11);
+            }, false)),
+            outline: false,
+            heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND
+          }
+        });
+        viewer.entities.add({
+          name: `荖濃溪河岸光邊 ${index + 1}`,
+          polyline: {
+            positions: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            width: 2.8,
+            clampToGround: true,
+            material: new CesiumLib.PolylineGlowMaterialProperty({
+              glowPower: 0.22,
+              taperPower: 0.7,
+              color: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.72)
+            })
+          }
+        });
+      });
+    }
+
+    function addRaisedRiverWaterLayer(viewer, riverReal) {
+      if (raisedRiverWaterReady) return;
+      raisedRiverWaterReady = true;
+      const feature = riverReal.features?.find((item) => item.properties?.NAME === "荖濃溪") || riverReal.features?.[0];
+      const polygons = feature?.geometry?.coordinates || [];
+      const centerline = extractRiverCenterlineFromSurface(riverReal);
+      const start = CesiumLib.JulianDate.now();
+      polygons.slice(0, 1).forEach((polygon) => {
+        const outer = polygon?.[0] || [];
+        if (outer.length < 4) return;
+        const positions = outer.flatMap(([lon, lat]) => [lon, lat]);
+        riverWaterEntities.push(viewer.entities.add({
+          name: "升起真實荖濃溪河道水面",
+          polygon: {
+            hierarchy: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            height: new CesiumLib.CallbackProperty((time) => raisedWaterHeight(time, 12, 1120), false),
+            material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
+              const seconds = CesiumLib.JulianDate.secondsDifference(time, start);
+              const wave = 0.5 + 0.5 * Math.sin(seconds * 1.2);
+              const reveal = riverWaterPhaseProgress(time, 0.35, 2.4);
+              return CesiumLib.Color.fromCssColorString("#06b6d4").withAlpha(reveal * (0.3 + wave * 0.18));
+            }, false)),
+            outline: true,
+            outlineColor: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.38)
+          },
+          show: false
+        }));
+        riverWaterEntities.push(viewer.entities.add({
+          name: "真實河道資訊光邊",
+          polyline: {
+            positions: new CesiumLib.CallbackProperty((time) => {
+              const height = raisedWaterHeight(time, 16, 1155);
+              return CesiumLib.Cartesian3.fromDegreesArrayHeights(outer.flatMap(([lon, lat]) => [lon, lat, height]));
+            }, false),
+            width: new CesiumLib.CallbackProperty((time) => 2.2 + riverWaterPhaseProgress(time, 0.25, 2.2) * 9, false),
+            material: new CesiumLib.PolylineGlowMaterialProperty({
+              glowPower: 0.18,
+              taperPower: 0.68,
+              color: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.46)
+            })
+          },
+          show: false
+        }));
+        riverWaterEntities.push(viewer.entities.add({
+          name: "真實河道外層霓虹水道",
+          polyline: {
+            positions: new CesiumLib.CallbackProperty((time) => {
+              const height = raisedWaterHeight(time, 14, 1138);
+              return CesiumLib.Cartesian3.fromDegreesArrayHeights(outer.flatMap(([lon, lat]) => [lon, lat, height]));
+            }, false),
+            width: new CesiumLib.CallbackProperty((time) => 5 + riverWaterPhaseProgress(time, 0.15, 2.4) * 18, false),
+            material: new CesiumLib.PolylineGlowMaterialProperty({
+              glowPower: 0.1,
+              taperPower: 0.72,
+              color: CesiumLib.Color.fromCssColorString("#0891b2").withAlpha(0.24)
+            })
+          },
+          show: false
+        }));
+      });
+
+      if (centerline.length > 4) {
+        splitLineByDistance(centerline).forEach((segment, segmentIndex) => {
+          riverWaterEntities.push(viewer.entities.add({
+          name: `真實河道生長掃描光帶 ${segmentIndex + 1}`,
+          polyline: {
+            positions: new CesiumLib.CallbackProperty((time) => {
+              const reveal = riverWaterPhaseProgress(time, 0, 2.8);
+              const count = Math.max(2, Math.floor(segment.length * reveal));
+              const visibleLine = segment.slice(0, count);
+              const height = raisedWaterHeight(time, 42, 1190);
+              return CesiumLib.Cartesian3.fromDegreesArrayHeights(visibleLine.flatMap(({ lon, lat }) => [lon, lat, height]));
+            }, false),
+            width: 4.5,
+            material: new CesiumLib.PolylineGlowMaterialProperty({
+              glowPower: 0.24,
+              taperPower: 0.72,
+              color: new CesiumLib.CallbackProperty((time) => {
+                const pulse = 0.58 + 0.42 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 2.1);
+                return CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(riverWaterPhaseProgress(time, 0, 2.8) * (0.24 + pulse * 0.2));
+              }, false)
+            })
+          },
+          show: false
+          }));
+        });
+      }
+
+      waterLayers.forEach((layer, index) => {
+        riverWaterEntities.push(viewer.entities.add({
+          name: `${layer.label} wbchen 水資料`,
+          rectangle: {
+            coordinates: CesiumLib.Rectangle.fromDegrees(layer.bounds.west, layer.bounds.south, layer.bounds.east, layer.bounds.north),
+            height: new CesiumLib.CallbackProperty((time) => raisedWaterHeight(time, 24 + index * 3, 1180 + index * 22), false),
+            material: new CesiumLib.ImageMaterialProperty({
+              image: `${layer.frameBase}/Frame_1.png`,
+              transparent: true,
+              color: new CesiumLib.CallbackProperty((time) => CesiumLib.Color.WHITE.withAlpha(riverWaterPhaseProgress(time, 1.0 + index * 0.18, 1.8) * 0.66), false)
+            }),
+            outline: false
+          },
+          label: {
+            text: layer.label,
+            font: "900 18px 'Noto Sans TC', sans-serif",
+            fillColor: CesiumLib.Color.WHITE,
+            outlineColor: CesiumLib.Color.BLACK.withAlpha(0.75),
+            outlineWidth: 4,
+            pixelOffset: new CesiumLib.Cartesian2(0, -32),
+            showBackground: true,
+            backgroundColor: CesiumLib.Color.fromCssColorString("#083344").withAlpha(0.74),
+            backgroundPadding: new CesiumLib.Cartesian2(9, 6),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          position: CesiumLib.Cartesian3.fromDegrees(
+            (layer.bounds.west + layer.bounds.east) / 2,
+            (layer.bounds.south + layer.bounds.north) / 2,
+            1220 + index * 22
+          ),
+          show: false
+        }));
+      });
+    }
+
+    async function addRiverWaterBuildings(viewer, buildingData) {
+      if (riverWaterBuildingEntities.length) return;
+      const hiddenSettlements = new Set(["拉芙蘭", "勤和", "桃源"]);
+      const features = (buildingData.features || [])
+        .map((feature) => {
+          const footprint = footprintFromFeature(feature);
+          const [lon, lat] = centroidOf(footprint);
+          const size = footprintBoundsMeters(footprint, lat);
+          return {
+            footprint,
+            lon,
+            lat,
+            width: size.width,
+            depth: size.depth,
+            height: Math.min(52, Math.max(10, Number(feature.properties?.height) || 18)),
+            settlement: feature.properties?.settlement || "聚落",
+            risk: feature.properties?.risk || "normal"
+          };
+        })
+        .filter((building) => building.footprint.length >= 4 && !hiddenSettlements.has(building.settlement));
+      features.forEach((building, index) => {
+        const orientation = CesiumLib.Transforms.headingPitchRollQuaternion(
+          CesiumLib.Cartesian3.fromDegrees(building.lon, building.lat, 0),
+          new CesiumLib.HeadingPitchRoll(0, 0, 0)
+        );
+        const entity = viewer.entities.add({
+          name: `${building.settlement}低模建物`,
+          position: new CesiumLib.CallbackProperty((time) => {
+            const height = buildingHeightAt(time, riverWaterPlatformHeight(time), building.height);
+            return CesiumLib.Cartesian3.fromDegrees(building.lon, building.lat, riverWaterPlatformHeight(time) + height / 2);
+          }, false),
+          orientation,
+          box: {
+            dimensions: new CesiumLib.CallbackProperty((time) => {
+              const height = Math.max(2, riverWaterPhaseProgress(time, 1.7, 2.3) * building.height);
+              return new CesiumLib.Cartesian3(building.width, building.depth, height);
+            }, false),
+            material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
+              const alpha = riverWaterPhaseProgress(time, 1.7, 2.3) * 0.72;
+              return CesiumLib.Color.WHITE.withAlpha(alpha);
+            }, false)),
+            outline: true,
+            outlineColor: CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.46)
+          },
+          label: {
+            text: index % 96 === 0 ? building.settlement : "",
+            font: "900 14px 'Noto Sans TC', sans-serif",
+            fillColor: CesiumLib.Color.WHITE,
+            outlineColor: CesiumLib.Color.BLACK.withAlpha(0.76),
+            outlineWidth: 4,
+            pixelOffset: new CesiumLib.Cartesian2(0, -20),
+            showBackground: true,
+            backgroundColor: CesiumLib.Color.fromCssColorString("#082f49").withAlpha(0.64),
+            backgroundPadding: new CesiumLib.Cartesian2(8, 5),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          show: false
+        });
+        riverWaterBuildingEntities.push(entity);
+        riverWaterEntities.push(entity);
+      });
+    }
+
+    function setRaisedRiverWaterVisible(viewer, active) {
+      riverWaterActive = active;
+      riverWaterRevealStart = active ? CesiumLib.JulianDate.now() : null;
+      riverWaterCameraOrbiting = false;
+      viewer.scene.globe.show = !active;
+      if (baseLayer) baseLayer.alpha = active ? 0 : 1;
+      riverWaterEntities.forEach((entity) => {
+        entity.show = active;
+      });
+      debrisStreamEntities.forEach((entity) => {
+        entity.show = !active;
+      });
+      window.clearInterval(riverWaterTimer);
+      if (!active) {
+        viewer.camera.lookAtTransform(CesiumLib.Matrix4.IDENTITY);
+        return;
+      }
+      riverWaterFrame = 1;
+      riverWaterTimer = window.setInterval(() => {
+        riverWaterFrame = riverWaterFrame >= 24 ? 1 : riverWaterFrame + 1;
+        riverWaterEntities.forEach((entity) => {
+          const match = waterLayers.find((layer) => entity.name?.startsWith(layer.label));
+          if (!match || !entity.rectangle?.material) return;
+          entity.rectangle.material.image = `${match.frameBase}/Frame_${riverWaterFrame}.png`;
+        });
+      }, 620);
+      const fxCenter = centerOfBounds(waterLayers[0].bounds);
+      riverWaterCameraTarget = CesiumLib.Cartesian3.fromDegrees(fxCenter.lon, fxCenter.lat, 1180);
+      riverWaterCameraHeading = CesiumLib.Math.toRadians(24);
+      viewer.camera.flyTo({
+        destination: CesiumLib.Cartesian3.fromDegrees(fxCenter.lon - 0.045, fxCenter.lat - 0.036, 13200),
+        orientation: {
+          heading: riverWaterCameraHeading,
+          pitch: CesiumLib.Math.toRadians(-48),
+          roll: 0
+        },
+        duration: 1.4,
+        complete: () => {
+          riverWaterCameraOrbiting = true;
+        },
+        cancel: () => {
+          riverWaterCameraOrbiting = true;
+        }
+      });
+    }
+
+    function setOverviewCamera(viewer, duration = 0) {
+      const view = {
+        destination: CesiumLib.Cartesian3.fromDegrees(120.755, 23.155, 18500),
+        orientation: {
+          heading: CesiumLib.Math.toRadians(35),
+          pitch: CesiumLib.Math.toRadians(-38),
+          roll: 0
+        },
+        duration
+      };
+      if (duration > 0) viewer.camera.flyTo(view);
+      else viewer.camera.setView(view);
+    }
+
+    function enterAnalysisCamera(viewer) {
+      viewer.camera.flyTo({
+        destination: CesiumLib.Cartesian3.fromDegrees(120.686, 23.109, 7800),
+        orientation: {
+          heading: CesiumLib.Math.toRadians(32),
+          pitch: CesiumLib.Math.toRadians(-42),
+          roll: 0
+        },
+        duration: 1.35
+      });
+    }
+
+    async function init() {
+      if (!CesiumLib) throw new Error("Cesium is unavailable");
+      CesiumLib.Ion.defaultAccessToken = "";
+      const viewer = new CesiumLib.Viewer("cesium", {
+        animation: false,
+        baseLayer: false,
+        baseLayerPicker: false,
+        fullscreenButton: false,
+        geocoder: false,
+        homeButton: false,
+        infoBox: false,
+        sceneModePicker: false,
+        selectionIndicator: false,
+        timeline: false,
+        navigationHelpButton: false,
+        shouldAnimate: true,
+        terrainProvider: new CesiumLib.EllipsoidTerrainProvider()
+      });
+      viewer.imageryLayers.removeAll();
+      setBasemap(viewer, "dark-terrain");
+      viewer.scene.backgroundColor = CesiumLib.Color.fromCssColorString("#020617");
+      viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString("#030712");
+      viewer.scene.globe.depthTestAgainstTerrain = false;
+      viewer.scene.globe.enableLighting = true;
+      viewer.scene.postProcessStages.fxaa.enabled = true;
+      viewer.clock.onTick.addEventListener(() => updateRiverWaterCamera(viewer));
+      bindManualCameraOverride(viewer);
+      setOverviewCamera(viewer);
+
+      if (CesiumLib.ArcGISTiledElevationTerrainProvider) {
+        viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
+      }
+
+      const [basin, riverReal, torrents, buildings] = await Promise.all([
+        fetch(basinUrl).then((r) => r.json()),
+        fetch(riverRealUrl).then((r) => r.json()),
+        fetch(torrentsUrl).then((r) => r.json()),
+        fetch(realBuildingsUrl).then((r) => r.json())
+      ]);
+
+      const basinRing = basin.features?.[0]?.geometry?.coordinates?.[0] || [];
+      viewer.entities.add({
+        name: "荖濃溪流域邊界",
+        polygon: {
+          hierarchy: CesiumLib.Cartesian3.fromDegreesArray(basinRing.flatMap(([lon, lat]) => [lon, lat])),
+          material: CesiumLib.Color.fromCssColorString("#38bdf8").withAlpha(0.045),
+          outline: true,
+          outlineColor: CesiumLib.Color.fromCssColorString("#e0f2fe").withAlpha(0.95),
+          heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND
+        }
+      });
+      addRiverSurface(viewer, riverReal);
+      addRiverWaterOutlines(viewer, basin);
+      addRaisedRiverWaterLayer(viewer, riverReal);
+      await addRiverWaterBuildings(viewer, buildings);
+
+      const streamEntities = new Map();
+      (torrents.items || []).forEach((item) => {
+        const points = (item.flowlineTwd97 || []).map((point) => twd97ToLonLat(point.x, point.y));
+        if (points.length < 2) return;
+        const isRed = item.alertLevel === "r";
+        const isYellow = item.alertLevel === "y";
+        const color = CesiumLib.Color.fromCssColorString(isRed ? "#fb7185" : isYellow ? "#facc15" : "#64748b").withAlpha(isRed ? 0.94 : isYellow ? 0.78 : 0.32);
+        const entity = addPolyline(viewer, item.id, points, color, isRed ? 6 : isYellow ? 5 : 3);
+        const center = item.centroidTwd97 ? twd97ToLonLat(item.centroidTwd97[0], item.centroidTwd97[1]) : points[Math.floor(points.length / 2)];
+        const marker = viewer.entities.add({
+          name: item.id,
+          position: CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, 36),
+          point: {
+            pixelSize: isRed ? 14 : isYellow ? 11 : 7,
+            color: CesiumLib.Color.fromCssColorString(isRed ? "#fb7185" : isYellow ? "#facc15" : "#64748b").withAlpha(0.92),
+            outlineWidth: 2,
+            outlineColor: CesiumLib.Color.WHITE.withAlpha(0.82),
+            heightReference: CesiumLib.HeightReference.RELATIVE_TO_GROUND
+          },
+          label: {
+            text: item.id,
+            font: "900 18px 'Noto Sans TC', sans-serif",
+            fillColor: CesiumLib.Color.WHITE,
+            outlineColor: CesiumLib.Color.BLACK.withAlpha(0.78),
+            outlineWidth: 4,
+            style: CesiumLib.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new CesiumLib.Cartesian2(0, -28),
+            heightReference: CesiumLib.HeightReference.RELATIVE_TO_GROUND
+          }
+        });
+        debrisStreamEntities.push(entity, marker);
+        streamEntities.set(item.id, { item, entity, marker, center });
+      });
+
+      addEventListener("message", (event) => {
+        if (event.data?.type === "laonong:enter-analysis") {
+          enterAnalysisCamera(viewer);
+          return;
+        }
+        if (event.data?.type === "laonong:exit-analysis") {
+          setOverviewCamera(viewer, 1.1);
+          return;
+        }
+        if (event.data?.type === "laonong:set-basemap") {
+          setBasemap(viewer, event.data.basemap);
+          return;
+        }
+        if (event.data?.type === "laonong:toggle-river-water") {
+          setRaisedRiverWaterVisible(viewer, Boolean(event.data.active));
+          return;
+        }
+        if (event.data?.type !== "laonong:select-stream") return;
+        const target = streamEntities.get(event.data.id);
+        if (!target) return;
+        streamEntities.forEach(({ entity, marker }, id) => {
+          const selected = id === event.data.id;
+          entity.polyline.width = selected ? 10 : 3;
+          marker.point.pixelSize = selected ? 20 : 8;
+        });
+        viewer.camera.flyTo({
+          destination: CesiumLib.Cartesian3.fromDegrees(target.center.lon, target.center.lat, 6200),
+          orientation: {
+            heading: CesiumLib.Math.toRadians(42),
+            pitch: CesiumLib.Math.toRadians(-36),
+            roll: 0
+          },
+          duration: 1.2
+        });
+      });
+
+      setStatus("CesiumJS + ArcGIS Terrain");
+    }
+
+    init().catch((error) => {
+      console.error(error);
+      setStatus("Terrain Failed");
+    });
+  </script>
+</body>
+</html>

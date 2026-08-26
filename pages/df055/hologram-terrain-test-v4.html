@@ -1,0 +1,2133 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>全息沙盤測試_V4</title>
+  <link rel="stylesheet" href="three-demo.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      background: #020617;
+      color: #e0f2fe;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 34%, rgba(34, 211, 238, 0.18), transparent 28%),
+        radial-gradient(circle at 12% 18%, rgba(168, 85, 247, 0.14), transparent 24%),
+        linear-gradient(145deg, #020617 0%, #06131f 48%, #020617 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      z-index: 1;
+      background:
+        linear-gradient(rgba(103, 232, 249, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 232, 249, 0.025) 1px, transparent 1px);
+      background-size: 100% 32px, 32px 100%;
+      opacity: 0.5;
+      mix-blend-mode: screen;
+    }
+
+    body::after {
+      z-index: 2;
+      background:
+        linear-gradient(90deg, rgba(2, 6, 23, 0.78), transparent 18%, transparent 82%, rgba(2, 6, 23, 0.78)),
+        linear-gradient(0deg, rgba(2, 6, 23, 0.82), transparent 18%, transparent 78%, rgba(2, 6, 23, 0.54));
+    }
+
+    .holo-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+    }
+
+    .holo-table {
+      position: absolute;
+      inset: 0;
+      border: 0;
+      border-radius: 0;
+      background: rgba(8, 47, 73, 0.04);
+      box-shadow:
+        inset 0 0 0 1px rgba(103, 232, 249, 0.32),
+        inset 0 0 80px rgba(34, 211, 238, 0.08);
+    }
+
+    .holo-table::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border: 1px solid rgba(103, 232, 249, 0.34);
+      border-radius: 10px;
+      box-shadow: 0 0 42px rgba(34, 211, 238, 0.26), inset 0 0 34px rgba(34, 211, 238, 0.08);
+    }
+
+    .holo-table::after {
+      content: "";
+      position: absolute;
+      left: 6vw;
+      right: 6vw;
+      bottom: 26px;
+      height: 1px;
+      border: 0;
+      background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.9), transparent);
+      box-shadow: 0 0 26px rgba(34, 211, 238, 0.56);
+    }
+
+    .terrain-layer-frame {
+      display: block;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border: 0;
+      border-radius: 0;
+      background: #020617;
+      transition: opacity 900ms ease, filter 900ms ease, transform 900ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    #arcgis-frame {
+      z-index: 1;
+      opacity: 1;
+      filter: saturate(0.95) contrast(1.08) brightness(1.12);
+    }
+
+    #terrain-frame {
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+      filter: saturate(1.28) contrast(1.16);
+      transform: scale(1.015);
+    }
+
+    body.is-analysis-terrain #arcgis-frame,
+    body.is-river-water-mode #arcgis-frame {
+      opacity: 0.16;
+      filter: saturate(0.2) contrast(1.35) brightness(0.36);
+    }
+
+    body.is-river-water-mode #arcgis-frame {
+      opacity: 1;
+      filter: saturate(0.72) contrast(1.45) brightness(0.58);
+    }
+
+    body.is-analysis-terrain #terrain-frame {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .terrain-extract-label {
+      position: absolute;
+      left: 50%;
+      top: 18%;
+      z-index: 7;
+      padding: 10px 16px;
+      border: 1px solid rgba(103, 232, 249, 0.54);
+      background: rgba(2, 6, 23, 0.76);
+      box-shadow: 0 0 30px rgba(34, 211, 238, 0.18);
+      color: #67e8f9;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translate(-50%, -12px);
+      transition: opacity 420ms ease, transform 620ms ease;
+      pointer-events: none;
+    }
+
+    body.is-analysis-terrain .terrain-extract-label,
+    body.is-river-water-mode .terrain-extract-label {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .holo-wire {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(125, 249, 255, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.13) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.22;
+      mix-blend-mode: screen;
+      mask-image: radial-gradient(ellipse at center, black 0 58%, transparent 78%);
+    }
+
+    .holo-scan {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      top: 42%;
+      z-index: 6;
+      height: 2px;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(125, 249, 255, 0.96), transparent);
+      box-shadow: 0 0 24px rgba(125, 249, 255, 0.8);
+      animation: holoScan 3.8s ease-in-out infinite;
+    }
+
+    @keyframes holoScan {
+      0% { translate: 0 -42vh; opacity: 0; }
+      18% { opacity: 1; }
+      82% { opacity: 1; }
+      100% { translate: 0 42vh; opacity: 0; }
+    }
+
+    .holo-title,
+    .holo-side,
+    .holo-action,
+    .holo-hud,
+    .controls,
+    .stats,
+    .legend {
+      position: fixed;
+      z-index: 10;
+      border: 1px solid rgba(103, 232, 249, 0.24);
+      background: rgba(2, 6, 23, 0.58);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 0 24px rgba(34, 211, 238, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .holo-title {
+      left: 28px;
+      top: 24px;
+      padding: 12px 14px;
+    }
+
+    .holo-title span {
+      color: #67e8f9;
+      font-size: 14px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+    }
+
+    .holo-title h1 {
+      margin: 6px 0 0;
+      color: #f8fafc;
+      font-size: 34px;
+      line-height: 1.05;
+    }
+
+    .holo-side {
+      right: 28px;
+      top: 24px;
+      width: 218px;
+      padding: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .holo-side b {
+      color: #67e8f9;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+
+    .holo-side span {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .holo-side strong {
+      color: #f8fafc;
+    }
+
+    .holo-side {
+      display: none;
+    }
+
+    .holo-action {
+      right: 28px;
+      top: 118px;
+      width: 300px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .holo-action span {
+      color: #67e8f9;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .holo-action button {
+      width: 100%;
+      min-height: 112px;
+      border: 1px solid rgba(103, 232, 249, 0.58);
+      border-radius: 4px;
+      color: #f8fafc;
+      background:
+        linear-gradient(135deg, rgba(8, 145, 178, 0.54), rgba(14, 165, 233, 0.2)),
+        rgba(2, 6, 23, 0.7);
+      box-shadow: 0 0 28px rgba(34, 211, 238, 0.16), inset 0 0 20px rgba(34, 211, 238, 0.08);
+      font: 950 14px/1.15 "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 8px;
+      align-items: stretch;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .holo-action .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .holo-action button .thumb {
+      position: relative;
+      overflow: hidden;
+      min-height: 66px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 3px;
+      background-color: rgba(2, 6, 23, 0.58);
+      background-position: center;
+      background-size: cover;
+      filter: saturate(1.08) contrast(1.06);
+    }
+
+    .holo-action button .thumb::before,
+    .holo-action button .thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+
+    .holo-action button .label {
+      display: block;
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+
+    .holo-action button .terrain-thumb::before {
+      background:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.06), rgba(2, 6, 23, 0.56)),
+        radial-gradient(circle at 62% 28%, rgba(255, 255, 255, 0.22), transparent 18%);
+    }
+
+    .holo-action button .terrain-thumb::after {
+      inset: 12% 9%;
+      border: 1px solid rgba(103, 232, 249, 0.38);
+      background:
+        linear-gradient(128deg, transparent 0 39%, rgba(103, 232, 249, 0.82) 40% 42%, transparent 43%),
+        linear-gradient(18deg, transparent 0 54%, rgba(244, 114, 182, 0.76) 55% 57%, transparent 58%);
+      box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.12);
+    }
+
+    .holo-action button .terrain-thumb {
+      background-image:
+        linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(2, 6, 23, 0.24)),
+        url("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3602/6846");
+    }
+
+    .holo-action button .rain-thumb::before {
+      background:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.04), rgba(2, 6, 23, 0.68)),
+        radial-gradient(circle at 72% 32%, rgba(251, 113, 133, 0.34), transparent 17%),
+        radial-gradient(circle at 47% 52%, rgba(250, 204, 21, 0.26), transparent 24%);
+    }
+
+    .holo-action button .rain-thumb::after {
+      inset: 12% 10%;
+      background: linear-gradient(110deg, transparent 0 42%, rgba(255, 255, 255, 0.5) 45% 47%, transparent 50%);
+      animation: thumbScan 2.4s ease-in-out infinite;
+    }
+
+    .holo-action button .rain-thumb {
+      background-image:
+        linear-gradient(rgba(2, 6, 23, 0.14), rgba(2, 6, 23, 0.48)),
+        url("../../assets/wbchen-water/Frame_12.png");
+      background-size: 180% auto;
+      background-position: 66% 44%;
+    }
+
+    .holo-action button .river-water-thumb {
+      background-image:
+        linear-gradient(130deg, rgba(2, 6, 23, 0.14), rgba(8, 47, 73, 0.58)),
+        url("../../assets/wbchen-water/qhrwl/Frame_18.png");
+      background-size: 190% auto;
+      background-position: 54% 48%;
+    }
+
+    .holo-action button .river-terrain-thumb {
+      background-image:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.62)),
+        url("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/3602/6846");
+      background-size: 168% auto;
+      background-position: 50% 48%;
+    }
+
+    .holo-action button .river-terrain-thumb::after {
+      inset: 11% 10%;
+      background:
+        linear-gradient(90deg, transparent 0 46%, rgba(34, 211, 238, 0.82) 47% 51%, transparent 52%),
+        linear-gradient(180deg, transparent 0 56%, rgba(14, 165, 233, 0.42) 57% 63%, transparent 64%);
+      box-shadow: inset 0 -16px 24px rgba(14, 165, 233, 0.18);
+    }
+
+    .holo-action button .river-water-thumb::before {
+      background:
+        linear-gradient(180deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.62)),
+        radial-gradient(circle at 44% 44%, rgba(34, 211, 238, 0.52), transparent 20%);
+    }
+
+    .holo-action button .river-water-thumb::after {
+      inset: 10% 8%;
+      background:
+        linear-gradient(135deg, transparent 0 42%, rgba(103, 232, 249, 0.95) 43% 46%, transparent 47%),
+        linear-gradient(18deg, transparent 0 57%, rgba(45, 212, 191, 0.7) 58% 61%, transparent 62%);
+      animation: thumbScan 2.7s ease-in-out infinite;
+    }
+
+    .holo-action button .camera-thumb::before {
+      background:
+        linear-gradient(150deg, rgba(15, 23, 42, 0.08), rgba(244, 114, 182, 0.18)),
+        repeating-linear-gradient(0deg, rgba(148, 163, 184, 0.18) 0 1px, transparent 1px 6px);
+    }
+
+    .holo-action button .camera-thumb::after {
+      left: 13%;
+      top: 13%;
+      right: 13%;
+      bottom: 13%;
+      border: 2px solid rgba(244, 114, 182, 0.82);
+      box-shadow: inset 0 0 18px rgba(244, 114, 182, 0.2), 0 0 18px rgba(244, 114, 182, 0.28);
+    }
+
+    .holo-action button .camera-thumb {
+      background-image:
+        linear-gradient(rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.32)),
+        url("https://c01.twipcam.com/cam/snapshot/wra-002724.jpg");
+    }
+
+    .holo-action button .radar-thumb::before {
+      background:
+        linear-gradient(rgba(2, 6, 23, 0.12), rgba(2, 6, 23, 0.5)),
+        linear-gradient(rgba(125, 249, 255, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.1) 1px, transparent 1px);
+      background-size: 14px 14px, 14px 14px, auto, auto, auto;
+    }
+
+    .holo-action button .radar-thumb::after {
+      background: conic-gradient(from 210deg at 50% 50%, transparent 0deg, rgba(125, 249, 255, 0.55) 22deg, transparent 46deg);
+      animation: radarSweep 3s linear infinite;
+    }
+
+    .holo-action button .radar-thumb {
+      background-image:
+        linear-gradient(rgba(2, 6, 23, 0.06), rgba(2, 6, 23, 0.34)),
+        url("../../assets/wbchen-water/fx/Frame_18.png");
+      background-size: 180% auto;
+      background-position: 58% 48%;
+    }
+
+    .holo-action button .physical-thumb {
+      background-image:
+        linear-gradient(rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.44)),
+        url("../../assets/kanako-depth-png/frames/depth_0540.png");
+      background-size: cover;
+      background-position: center;
+    }
+
+    .holo-action button .physical-thumb::before {
+      background:
+        linear-gradient(145deg, rgba(248, 113, 113, 0.28), transparent 44%),
+        radial-gradient(circle at 64% 42%, rgba(34, 211, 238, 0.36), transparent 24%);
+    }
+
+    .holo-action button .physical-thumb::after {
+      inset: 12% 10%;
+      border: 1px solid rgba(248, 113, 113, 0.6);
+      background:
+        linear-gradient(0deg, transparent 0 46%, rgba(248, 113, 113, 0.86) 47% 50%, transparent 51%),
+        linear-gradient(118deg, transparent 0 37%, rgba(34, 211, 238, 0.78) 38% 41%, transparent 42%);
+      box-shadow: 0 0 18px rgba(248, 113, 113, 0.24), inset 0 0 18px rgba(34, 211, 238, 0.12);
+      animation: thumbScan 2.9s ease-in-out infinite;
+    }
+
+    @keyframes thumbScan {
+      0%, 100% { translate: -42% 0; opacity: 0.2; }
+      50% { translate: 42% 0; opacity: 0.85; }
+    }
+
+    .holo-action button:hover {
+      border-color: rgba(125, 249, 255, 0.92);
+      box-shadow: 0 0 34px rgba(34, 211, 238, 0.3), inset 0 0 22px rgba(34, 211, 238, 0.14);
+    }
+
+    .holo-action button.is-active {
+      color: #ffffff;
+      border-color: rgba(125, 249, 255, 0.96);
+      box-shadow: 0 0 38px rgba(34, 211, 238, 0.38), inset 0 0 26px rgba(34, 211, 238, 0.16);
+    }
+
+    .holo-action button.secondary {
+      border-color: rgba(250, 204, 21, 0.58);
+      background:
+        linear-gradient(135deg, rgba(202, 138, 4, 0.5), rgba(251, 113, 133, 0.16)),
+        rgba(2, 6, 23, 0.7);
+      box-shadow: 0 0 28px rgba(250, 204, 21, 0.12), inset 0 0 20px rgba(250, 204, 21, 0.07);
+    }
+
+    .holo-action button.secondary:hover {
+      border-color: rgba(254, 240, 138, 0.92);
+      box-shadow: 0 0 34px rgba(250, 204, 21, 0.28), inset 0 0 22px rgba(250, 204, 21, 0.12);
+    }
+
+    .holo-action button.river-water {
+      border-color: rgba(45, 212, 191, 0.64);
+      background:
+        linear-gradient(135deg, rgba(8, 145, 178, 0.46), rgba(2, 6, 23, 0.22)),
+        rgba(2, 6, 23, 0.72);
+      box-shadow: 0 0 28px rgba(45, 212, 191, 0.13), inset 0 0 20px rgba(45, 212, 191, 0.08);
+    }
+
+    .holo-action button.river-water:hover,
+    .holo-action button.river-water.is-active {
+      border-color: rgba(153, 246, 228, 0.94);
+      box-shadow: 0 0 36px rgba(45, 212, 191, 0.34), inset 0 0 24px rgba(45, 212, 191, 0.14);
+    }
+
+    .holo-action button.camera {
+      border-color: rgba(244, 114, 182, 0.62);
+      background:
+        linear-gradient(135deg, rgba(157, 23, 77, 0.5), rgba(34, 211, 238, 0.16)),
+        rgba(2, 6, 23, 0.72);
+      box-shadow: 0 0 28px rgba(244, 114, 182, 0.13), inset 0 0 20px rgba(244, 114, 182, 0.08);
+    }
+
+    .holo-action button.camera:hover,
+    .holo-action button.camera.is-active {
+      border-color: rgba(251, 207, 232, 0.94);
+      box-shadow: 0 0 36px rgba(244, 114, 182, 0.3), inset 0 0 22px rgba(244, 114, 182, 0.13);
+    }
+
+    .holo-action button.radar {
+      border-color: rgba(56, 189, 248, 0.62);
+      background:
+        linear-gradient(135deg, rgba(14, 116, 144, 0.5), rgba(132, 204, 22, 0.16)),
+        rgba(2, 6, 23, 0.72);
+      box-shadow: 0 0 28px rgba(56, 189, 248, 0.13), inset 0 0 20px rgba(132, 204, 22, 0.08);
+    }
+
+    .holo-action button.radar:hover,
+    .holo-action button.radar.is-active {
+      border-color: rgba(186, 230, 253, 0.94);
+      box-shadow: 0 0 36px rgba(56, 189, 248, 0.3), inset 0 0 22px rgba(132, 204, 22, 0.13);
+    }
+
+    .holo-action button.physical {
+      border-color: rgba(248, 113, 113, 0.66);
+      background:
+        linear-gradient(135deg, rgba(127, 29, 29, 0.58), rgba(34, 211, 238, 0.13)),
+        rgba(2, 6, 23, 0.74);
+      box-shadow: 0 0 28px rgba(248, 113, 113, 0.13), inset 0 0 20px rgba(34, 211, 238, 0.08);
+    }
+
+    .holo-action button.physical:hover,
+    .holo-action button.physical.is-active {
+      border-color: rgba(254, 202, 202, 0.94);
+      box-shadow: 0 0 38px rgba(248, 113, 113, 0.3), inset 0 0 24px rgba(34, 211, 238, 0.13);
+    }
+
+    .basemap-control {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .basemap-control b {
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .basemap-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .holo-action .basemap-options button {
+      min-height: 34px;
+      padding: 0 6px;
+      border-color: rgba(148, 163, 184, 0.25);
+      background: rgba(15, 23, 42, 0.58);
+      box-shadow: none;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+    }
+
+    .holo-action .basemap-options button.is-active {
+      border-color: rgba(103, 232, 249, 0.86);
+      background: rgba(8, 145, 178, 0.24);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.18);
+    }
+
+    .holo-action > p {
+      display: none !important;
+    }
+
+    .map-video-anchor {
+      position: absolute;
+      z-index: 8;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(248, 250, 252, 0.88);
+      border-radius: 999px;
+      background: #f472b6;
+      box-shadow: 0 0 18px rgba(244, 114, 182, 0.95), 0 0 42px rgba(34, 211, 238, 0.34);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0.4);
+      transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .map-video-anchor::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 46px;
+      height: 46px;
+      border: 1px solid rgba(244, 114, 182, 0.62);
+      border-radius: 999px;
+      transform: translate(-50%, -50%);
+      animation: anchorPulse 1.9s ease-out infinite;
+    }
+
+    .map-video-anchor.is-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .map-video-anchor.high-tree {
+      left: 56%;
+      top: 43%;
+    }
+
+    .map-video-anchor.baolai {
+      left: 46%;
+      top: 54%;
+    }
+
+    .radar-echo-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      opacity: 0;
+      pointer-events: none;
+      overflow: hidden;
+      transition: opacity 420ms ease;
+      mix-blend-mode: screen;
+      perspective: 900px;
+      transform-style: preserve-3d;
+    }
+
+    .radar-echo-layer.is-visible {
+      opacity: 0.88;
+    }
+
+    .radar-echo-plane {
+      position: absolute;
+      left: 50%;
+      top: 56%;
+      width: 78%;
+      height: 62%;
+      transform: translate(-50%, -50%) rotateX(58deg) rotateZ(-7deg);
+      transform-origin: center;
+      transform-style: preserve-3d;
+      border: 1px solid rgba(125, 249, 255, 0.18);
+      background:
+        linear-gradient(rgba(125, 249, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.045) 1px, transparent 1px);
+      background-size: 42px 42px;
+      box-shadow: inset 0 0 36px rgba(34, 211, 238, 0.08), 0 0 32px rgba(34, 211, 238, 0.12);
+    }
+
+    .radar-echo-grid,
+    .radar-echo-plane::after {
+      content: "";
+      position: absolute;
+      inset: 6% 5%;
+    }
+
+    .radar-echo-grid {
+      display: grid;
+      grid-template-columns: repeat(28, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+      gap: 3px;
+      transform: translateX(-8%);
+      animation: radarGridDrift 8.5s ease-in-out infinite alternate;
+      filter: saturate(1.25);
+    }
+
+    .radar-cell {
+      min-width: 0;
+      min-height: 0;
+      border-radius: 2px;
+      opacity: 0;
+      background: rgba(56, 189, 248, 0.28);
+      box-shadow: 0 0 9px currentColor;
+      animation: radarCellPulse 2.8s ease-in-out infinite;
+    }
+
+    .radar-cell.l1 {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.22);
+      opacity: 0.28;
+    }
+
+    .radar-cell.l2 {
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.28);
+      opacity: 0.38;
+    }
+
+    .radar-cell.l3 {
+      color: #facc15;
+      background: rgba(250, 204, 21, 0.36);
+      opacity: 0.48;
+    }
+
+    .radar-cell.l4 {
+      color: #fb7185;
+      background: rgba(251, 113, 133, 0.42);
+      opacity: 0.56;
+    }
+
+    .radar-echo-plane::after {
+      inset: 0;
+      background:
+        repeating-radial-gradient(circle at 50% 48%, transparent 0 36px, rgba(125, 249, 255, 0.08) 37px 39px, transparent 40px 78px),
+        conic-gradient(from 220deg at 50% 48%, transparent 0deg, rgba(125, 249, 255, 0.28) 18deg, transparent 42deg, transparent 360deg);
+      filter: blur(0);
+      opacity: 0.62;
+      animation: radarSweep 4.8s linear infinite;
+    }
+
+    .radar-echo-label {
+      position: absolute;
+      left: 8%;
+      top: 7%;
+      z-index: 7;
+      padding: 8px 12px;
+      border: 1px solid rgba(125, 249, 255, 0.42);
+      background: rgba(2, 6, 23, 0.66);
+      color: #e0f2fe;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(-8px);
+      transition: opacity 260ms ease, transform 360ms ease;
+    }
+
+    .radar-echo-layer.is-visible .radar-echo-label {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .rainfall-chart-panel {
+      position: absolute;
+      left: 8%;
+      bottom: 10%;
+      z-index: 8;
+      width: min(360px, 28vw);
+      min-width: 270px;
+      padding: 12px;
+      border: 1px solid rgba(250, 204, 21, 0.58);
+      background:
+        linear-gradient(150deg, rgba(2, 6, 23, 0.84), rgba(6, 18, 33, 0.66)),
+        radial-gradient(circle at 18% 0%, rgba(250, 204, 21, 0.17), transparent 38%);
+      box-shadow: 0 0 32px rgba(250, 204, 21, 0.12), 0 18px 46px rgba(0, 0, 0, 0.34);
+      opacity: 0;
+      transform: translateY(18px) scale(0.96);
+      pointer-events: none;
+      transition: opacity 320ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .rainfall-chart-panel.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .rainfall-chart-panel b {
+      display: block;
+      color: #fde047;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .rainfall-chart-panel h2 {
+      margin: 6px 0 8px;
+      color: #f8fafc;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .rainfall-chart {
+      width: 100%;
+      height: 154px;
+      display: block;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background:
+        linear-gradient(rgba(125, 249, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.045) 1px, transparent 1px),
+        rgba(2, 6, 23, 0.54);
+      background-size: 38px 30px;
+    }
+
+    .rainfall-chart .threshold {
+      stroke: rgba(250, 204, 21, 0.76);
+      stroke-width: 2;
+      stroke-dasharray: 7 8;
+    }
+
+    .rainfall-chart .rain-area {
+      fill: url(#rainfallAreaGradient);
+      opacity: 0;
+      transition: opacity 280ms ease;
+    }
+
+    .rainfall-chart-panel.is-visible .rain-area {
+      opacity: 0.45;
+    }
+
+    .rainfall-chart .rain-line {
+      fill: none;
+      stroke: #f472b6;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.8));
+      stroke-dasharray: 520;
+      stroke-dashoffset: 520;
+    }
+
+    .rainfall-chart-panel.is-visible .rain-line {
+      animation: drawRainfallLine 7.2s ease-out forwards;
+    }
+
+    .rainfall-chart text {
+      fill: #cbd5e1;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .rainfall-chart .threshold-label {
+      fill: #fde047;
+      font-size: 12px;
+    }
+
+    .rainfall-chart-panel p {
+      margin: 8px 0 0;
+      color: #bae6fd;
+      font-size: 13px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .river-water-panel {
+      position: absolute;
+      left: 5%;
+      bottom: 8%;
+      z-index: 9;
+      width: min(480px, 32vw);
+      min-width: 360px;
+      padding: 14px;
+      border: 1px solid rgba(45, 212, 191, 0.58);
+      background:
+        linear-gradient(150deg, rgba(2, 6, 23, 0.9), rgba(8, 47, 73, 0.74)),
+        radial-gradient(circle at 14% 4%, rgba(45, 212, 191, 0.17), transparent 42%);
+      box-shadow: 0 0 38px rgba(45, 212, 191, 0.14), 0 22px 50px rgba(0, 0, 0, 0.42);
+      opacity: 0;
+      transform: translateY(18px) scale(0.96);
+      pointer-events: none;
+      transition: opacity 340ms ease, transform 560ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .river-water-panel.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .river-water-panel b {
+      display: block;
+      color: #67e8f9;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .river-water-panel h2 {
+      margin: 6px 0 12px;
+      color: #f8fafc;
+      font-size: 23px;
+      line-height: 1.12;
+    }
+
+    .water-frame-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .water-frame-card,
+    .settlement-scan-card {
+      border: 1px solid rgba(125, 249, 255, 0.2);
+      background: rgba(2, 6, 23, 0.5);
+      overflow: hidden;
+    }
+
+    .water-frame-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1.42;
+      object-fit: cover;
+      filter: saturate(1.22) contrast(1.1);
+    }
+
+    .water-frame-card span,
+    .settlement-scan-card span {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 8px;
+      color: #dbeafe;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .water-frame-card em {
+      color: #67e8f9;
+      font-style: normal;
+      font-weight: 950;
+    }
+
+    .settlement-scan-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .settlement-scan-card svg {
+      display: block;
+      width: 100%;
+      height: 86px;
+      background:
+        linear-gradient(rgba(125, 249, 255, 0.075) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 249, 255, 0.06) 1px, transparent 1px),
+        rgba(2, 6, 23, 0.54);
+      background-size: 18px 18px;
+    }
+
+    .settlement-scan-card path {
+      fill: rgba(45, 212, 191, 0.18);
+      stroke: rgba(103, 232, 249, 0.78);
+      stroke-width: 1.4;
+    }
+
+    .settlement-scan-card .impact {
+      fill: rgba(251, 113, 133, 0.5);
+      stroke: rgba(254, 202, 202, 0.88);
+    }
+
+    .river-water-panel p {
+      margin: 10px 0 0;
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 780;
+      line-height: 1.5;
+    }
+
+    .physical-alert {
+      position: absolute;
+      left: 45%;
+      top: 34%;
+      z-index: 14;
+      width: min(300px, 24vw);
+      padding: 12px 14px;
+      border: 1px solid rgba(248, 113, 113, 0.76);
+      background:
+        linear-gradient(145deg, rgba(69, 10, 10, 0.86), rgba(2, 6, 23, 0.78)),
+        radial-gradient(circle at 20% 0%, rgba(248, 113, 113, 0.28), transparent 42%);
+      box-shadow: 0 0 30px rgba(248, 113, 113, 0.2), 0 18px 46px rgba(0, 0, 0, 0.42);
+      opacity: 0;
+      transform: translate(-50%, -50%) perspective(760px) rotateY(-10deg) rotateX(4deg) scale(0.84);
+      pointer-events: none;
+      transition: opacity 260ms ease, transform 460ms cubic-bezier(.2,.9,.2,1);
+      text-align: left;
+    }
+
+    .physical-alert::before {
+      content: "";
+      position: absolute;
+      left: -52px;
+      top: 50%;
+      width: 42px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(248, 113, 113, 0.88));
+      box-shadow: 0 0 16px rgba(248, 113, 113, 0.52);
+    }
+
+    .physical-alert.is-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) perspective(760px) rotateY(-10deg) rotateX(4deg) scale(1);
+    }
+
+    .physical-alert b {
+      color: #67e8f9;
+      font-size: 14px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .physical-alert h2 {
+      margin: 6px 0 7px;
+      color: #fef2f2;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .physical-alert p {
+      margin: 0;
+      color: #fecaca;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.55;
+    }
+
+    .physical-stream-list {
+      position: absolute;
+      left: 3.2%;
+      top: 22%;
+      z-index: 16;
+      width: min(300px, 24vw);
+      padding: 10px;
+      border: 1px solid rgba(248, 113, 113, 0.46);
+      background:
+        linear-gradient(150deg, rgba(2, 6, 23, 0.9), rgba(6, 18, 33, 0.72)),
+        radial-gradient(circle at 10% 0%, rgba(248, 113, 113, 0.17), transparent 40%);
+      box-shadow: 0 0 34px rgba(248, 113, 113, 0.12), 0 18px 46px rgba(0, 0, 0, 0.42);
+      opacity: 0;
+      transform: translateX(-18px) scale(0.96);
+      pointer-events: none;
+      transition: opacity 320ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .physical-stream-list.is-visible {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .physical-stream-list b {
+      display: block;
+      color: #67e8f9;
+      font-size: 13px;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .physical-stream-list ul {
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .physical-stream-list button {
+      width: 100%;
+      min-height: 48px;
+      padding: 8px 10px 8px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-left: 3px solid rgba(248, 113, 113, 0.86);
+      background: rgba(15, 23, 42, 0.58);
+      color: #f8fafc;
+      cursor: pointer;
+      text-align: left;
+      display: grid;
+      gap: 3px;
+      box-shadow: inset 0 0 16px rgba(248, 113, 113, 0.04);
+    }
+
+    .physical-stream-list button:hover,
+    .physical-stream-list button.is-selected {
+      border-color: rgba(248, 113, 113, 0.82);
+      border-left-color: #fb7185;
+      background: linear-gradient(90deg, rgba(127, 29, 29, 0.52), rgba(15, 23, 42, 0.58));
+      box-shadow: 0 0 24px rgba(248, 113, 113, 0.18), inset 0 0 20px rgba(248, 113, 113, 0.08);
+    }
+
+    .physical-stream-list button strong {
+      font-size: 15px;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+
+    .physical-stream-list button span {
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.25;
+    }
+
+    .physical-sim-panel {
+      position: absolute;
+      left: 50%;
+      bottom: 1.6%;
+      z-index: 13;
+      width: min(1080px, calc(100vw - 420px));
+      min-width: 720px;
+      padding: 14px;
+      border: 1px solid rgba(103, 232, 249, 0.58);
+      background:
+        linear-gradient(145deg, rgba(2, 6, 23, 0.92), rgba(6, 18, 33, 0.76)),
+        radial-gradient(circle at 16% 0%, rgba(34, 211, 238, 0.16), transparent 42%),
+        radial-gradient(circle at 84% 100%, rgba(248, 113, 113, 0.14), transparent 38%);
+      box-shadow: 0 0 46px rgba(34, 211, 238, 0.16), 0 28px 76px rgba(0, 0, 0, 0.48);
+      opacity: 0;
+      transform: translate(-50%, 24px) scale(0.96);
+      pointer-events: none;
+      transition: opacity 320ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .physical-sim-panel.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+      pointer-events: auto;
+    }
+
+    .physical-sim-panel.is-visible:not(.show-analysis) {
+      transform: translate(-50%, 12px) scale(0.98);
+      opacity: 1;
+      pointer-events: none;
+    }
+
+    .physical-sim-panel.is-visible:not(.show-analysis) .physical-sim-head,
+    .physical-sim-panel.is-visible:not(.show-analysis) .physical-sim-grid {
+      opacity: 0;
+      transform: translateY(16px);
+      pointer-events: none;
+    }
+
+    .physical-sim-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 10px;
+      color: #e0f2fe;
+      font-weight: 950;
+    }
+
+    .physical-sim-head span {
+      color: #67e8f9;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .physical-sim-head b {
+      color: #fecaca;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+    }
+
+    .physical-sim-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .physical-sim-head,
+    .physical-sim-grid {
+      transition: opacity 360ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .physical-sim-card {
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      background: rgba(2, 6, 23, 0.54);
+    }
+
+    .physical-sim-grid > .physical-sim-card {
+      opacity: 0;
+      transform: translateY(18px) scale(0.98);
+      transition: opacity 360ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+    }
+
+    .physical-sim-panel.show-analysis .physical-sim-card.is-analysis {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .physical-sim-panel.show-video .physical-sim-card.is-video {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .physical-sim-card header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 11px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      background: rgba(15, 23, 42, 0.64);
+    }
+
+    .physical-sim-card header b {
+      color: #f8fafc;
+      font-size: 13px;
+      font-weight: 950;
+    }
+
+    .physical-sim-card header span {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .physical-sim-card iframe,
+    .physical-sim-card video {
+      display: block;
+      width: 100%;
+      height: 230px;
+      border: 0;
+      background: #020617;
+    }
+
+    .physical-sim-card.is-dem-callout {
+      position: fixed;
+      left: calc(45% + 180px);
+      top: calc(34% - 130px);
+      z-index: 12;
+      width: min(430px, 30vw);
+      opacity: 0;
+      transform: scale(0.78);
+      transform-origin: left top;
+      pointer-events: none;
+      transition: opacity 320ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+      box-shadow: 0 0 34px rgba(34, 211, 238, 0.16), 0 18px 48px rgba(0, 0, 0, 0.42);
+    }
+
+    .physical-sim-card.is-dem-callout.is-visible {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    .physical-sim-card.is-dem-callout iframe {
+      height: 215px;
+    }
+
+    .physical-sim-card video {
+      object-fit: cover;
+      filter: contrast(1.08) saturate(1.04);
+    }
+
+    .map-video-anchor.t20-78 {
+      left: 50%;
+      top: 48%;
+    }
+
+    .map-video-anchor.t20-82 {
+      left: 52%;
+      top: 57%;
+    }
+
+    .observation-stack {
+      position: absolute;
+      z-index: 8;
+      width: min(250px, 20vw);
+      min-width: 190px;
+      padding: 10px;
+      border: 1px solid rgba(244, 114, 182, 0.72);
+      background:
+        linear-gradient(150deg, rgba(2, 6, 23, 0.84), rgba(6, 18, 33, 0.66)),
+        radial-gradient(circle at 20% 0%, rgba(244, 114, 182, 0.2), transparent 42%);
+      box-shadow: 0 0 32px rgba(244, 114, 182, 0.18), 0 18px 46px rgba(0, 0, 0, 0.34);
+      opacity: 0;
+      transform: translate(-50%, -50%) perspective(680px) rotateY(-13deg) rotateX(4deg) scale(0.76);
+      transform-origin: center;
+      pointer-events: none;
+      transition: opacity 320ms ease, transform 520ms cubic-bezier(.2,.9,.2,1);
+      display: grid;
+      gap: 7px;
+    }
+
+    .observation-stack.high-tree {
+      left: 60%;
+      top: 35%;
+    }
+
+    .observation-stack.baolai {
+      left: 42%;
+      top: 61%;
+      transform: translate(-50%, -50%) perspective(680px) rotateY(14deg) rotateX(4deg) scale(0.76);
+    }
+
+    .observation-stack.t20-78 {
+      left: 66%;
+      top: 56%;
+      transform: translate(-50%, -50%) perspective(680px) rotateY(-12deg) rotateX(4deg) scale(0.76);
+    }
+
+    .observation-stack.t20-82 {
+      left: 31%;
+      top: 40%;
+      transform: translate(-50%, -50%) perspective(680px) rotateY(12deg) rotateX(4deg) scale(0.76);
+    }
+
+    .observation-stack.is-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) perspective(680px) rotateY(-13deg) rotateX(4deg) scale(1);
+      pointer-events: auto;
+    }
+
+    .observation-stack.baolai.is-visible {
+      transform: translate(-50%, -50%) perspective(680px) rotateY(14deg) rotateX(4deg) scale(1);
+    }
+
+    .observation-stack.t20-78.is-visible {
+      transform: translate(-50%, -50%) perspective(680px) rotateY(-12deg) rotateX(4deg) scale(1);
+    }
+
+    .observation-stack.t20-82.is-visible {
+      transform: translate(-50%, -50%) perspective(680px) rotateY(12deg) rotateX(4deg) scale(1);
+    }
+
+    .observation-stack::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -54px;
+      width: 1px;
+      height: 54px;
+      background: linear-gradient(180deg, rgba(244, 114, 182, 0.86), transparent);
+      box-shadow: 0 0 14px rgba(244, 114, 182, 0.6);
+    }
+
+    .observation-stack b {
+      display: block;
+      color: #f9a8d4;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .observation-feed {
+      display: grid;
+      gap: 7px;
+    }
+
+    .observation-feed img {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: block;
+      object-fit: cover;
+      border: 1px solid rgba(103, 232, 249, 0.28);
+      background: #020617;
+      filter: contrast(1.08) saturate(1.02);
+    }
+
+    .observation-feed span {
+      display: block;
+      color: #e0f2fe;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    @keyframes anchorPulse {
+      0% { opacity: 0.58; scale: 0.45; }
+      100% { opacity: 0; scale: 1.28; }
+    }
+
+    @keyframes radarGridDrift {
+      from { transform: translate(-13%, -2%) scale(1); }
+      to { transform: translate(10%, 4%) scale(1.08); }
+    }
+
+    @keyframes radarCellPulse {
+      0%, 100% { filter: brightness(0.92); }
+      50% { filter: brightness(1.45); }
+    }
+
+    @keyframes drawRainfallLine {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes radarSweep {
+      to { rotate: 360deg; }
+    }
+
+    .holo-hud {
+      top: 120px;
+      bottom: 34px;
+      width: min(320px, calc(100vw - 56px));
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background:
+        linear-gradient(150deg, rgba(6, 18, 33, 0.84), rgba(3, 7, 18, 0.62)),
+        radial-gradient(circle at 24% 0%, rgba(34, 211, 238, 0.18), transparent 34%);
+    }
+
+    .holo-hud.left {
+      left: 28px;
+    }
+
+    .holo-hud.right {
+      right: 28px;
+    }
+
+    .hud-kicker {
+      color: #67e8f9;
+      font-size: 11px;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .holo-hud h2 {
+      margin: 0;
+      color: #f8fafc;
+      font-size: 22px;
+      line-height: 1.05;
+    }
+
+    .hud-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .hud-metric {
+      min-height: 58px;
+      padding: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(15, 23, 42, 0.52);
+    }
+
+    .hud-metric span {
+      display: block;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .hud-metric strong {
+      display: block;
+      margin-top: 5px;
+      color: #f8fafc;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .hud-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      overflow: auto;
+      min-height: 0;
+      scrollbar-color: rgba(103, 232, 249, 0.38) rgba(15, 23, 42, 0.2);
+    }
+
+    .stream-item,
+    .rain-item {
+      position: relative;
+      padding: 10px 10px 10px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(15, 23, 42, 0.46);
+      overflow: hidden;
+    }
+
+    .stream-item::before,
+    .rain-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--signal, #22d3ee);
+      box-shadow: 0 0 16px var(--signal, #22d3ee);
+    }
+
+    .stream-item.is-red { --signal: #fb7185; }
+    .stream-item.is-yellow { --signal: #facc15; }
+    .stream-item.is-normal { --signal: #64748b; }
+
+    .stream-main,
+    .rain-main,
+    .rain-values {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stream-main b,
+    .rain-main b {
+      color: #f8fafc;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .stream-main strong,
+    .rain-main strong {
+      color: var(--signal, #67e8f9);
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .stream-sub,
+    .rain-sub {
+      margin-top: 5px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .rain-item {
+      --signal: #22d3ee;
+    }
+
+    .rain-item.is-heavy { --signal: #fb7185; }
+    .rain-item.is-mid { --signal: #f59e0b; }
+    .rain-item.is-watch { --signal: #facc15; }
+    .rain-item.is-low { --signal: #22d3ee; }
+
+    .rain-values {
+      margin-top: 8px;
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .rain-bar {
+      position: relative;
+      height: 5px;
+      margin-top: 8px;
+      overflow: hidden;
+      background: rgba(30, 41, 59, 0.74);
+    }
+
+    .rain-bar i {
+      display: block;
+      width: var(--rain-width, 0%);
+      height: 100%;
+      background: linear-gradient(90deg, #22d3ee, #facc15, var(--signal, #fb7185));
+      box-shadow: 0 0 18px var(--signal, #22d3ee);
+    }
+
+    .hud-note {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      color: #bae6fd;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1180px) {
+      .holo-hud {
+        width: 270px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .holo-title {
+        left: 16px;
+        top: 16px;
+      }
+
+      .station-video-panel {
+        left: 16px;
+        right: 16px;
+        top: 176px;
+        width: auto;
+      }
+
+      .holo-hud {
+        top: auto;
+        bottom: 18px;
+        max-height: 34vh;
+      }
+
+      .holo-hud.left {
+        left: 16px;
+        right: auto;
+      }
+
+      .holo-hud.right {
+        left: auto;
+        right: 16px;
+      }
+    }
+
+    .title,
+    .stats,
+    .controls,
+    .legend,
+    .disclaimer,
+    #resetBtn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="holo-stage" aria-hidden="true">
+    <div class="holo-table">
+      <iframe class="terrain-layer-frame" id="arcgis-frame" src="laonong-arcgis-terrain-base.html?v=v4-arcgis-terrain" title="荖濃溪 Cesium ArcGIS 真實地形"></iframe>
+      <iframe class="terrain-layer-frame" id="terrain-frame" src="../laonong-basin-continuous-dem-test-v4.html?embed=1&amp;taiwan=1&amp;collapsed=1&amp;v=stable-flowline-sandbox" title="荖濃溪 20m DTM 分析沙盤 V4"></iframe>
+      <div class="terrain-extract-label">Real Terrain → Extract 20m DTM Analysis Layer</div>
+      <div class="holo-wire"></div>
+      <div class="holo-scan"></div>
+      <div class="radar-echo-layer" id="radar-echo-layer" aria-hidden="true">
+        <div class="radar-echo-plane">
+          <div class="radar-echo-grid" id="radar-echo-grid"></div>
+          <span class="radar-echo-label">RADAR ECHO / GRID MODE</span>
+        </div>
+      </div>
+      <div class="rainfall-chart-panel" id="rainfall-chart-panel" aria-hidden="true">
+        <b>Accumulated Rainfall</b>
+        <h2>48hr 累積雨量</h2>
+        <svg class="rainfall-chart" viewBox="0 0 360 154" role="img" aria-label="累積雨量曲線圖">
+          <defs>
+            <linearGradient id="rainfallAreaGradient" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#fb7185" stop-opacity="0.64"/>
+              <stop offset="70%" stop-color="#facc15" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="threshold" x1="34" y1="58" x2="334" y2="58"></line>
+          <text class="threshold-label" x="238" y="50">警戒基準 500 mm</text>
+          <path class="rain-area" d="M34 118 C78 108, 103 100, 128 92 C158 81, 188 73, 216 64 C250 53, 286 47, 334 42 L334 128 L34 128 Z"></path>
+          <path class="rain-line" id="rainfall-chart-line" d="M34 118 C78 108, 103 100, 128 92 C158 81, 188 73, 216 64 C250 53, 286 47, 334 42"></path>
+          <text x="30" y="144">D-2</text>
+          <text x="160" y="144">D-1</text>
+          <text x="304" y="144">NOW</text>
+          <text x="38" y="28">570 mm</text>
+        </svg>
+        <p>48 小時累積曲線推進時，同步將雨量映射到全息地形上。</p>
+      </div>
+      <div class="physical-alert" id="physical-alert" aria-hidden="true">
+        <b>Red Warning / DF055</b>
+        <h2><span id="physical-alert-code">DF055</span> 土石流紅色警戒</h2>
+        <p>累積雨量達警戒基準，進入物理模擬參考模式。</p>
+      </div>
+      <aside class="physical-stream-list" id="physical-stream-list" aria-hidden="true">
+        <b>Red Warning Streams</b>
+        <ul id="physical-stream-items"></ul>
+      </aside>
+      <article class="physical-sim-card is-dem-callout" id="physical-dem-callout">
+        <header>
+          <b>20m DEM SANDBOX</b>
+          <span id="physical-dem-code">DF055</span>
+        </header>
+        <iframe id="physical-dem-frame" src="../df064-terrain-sandbox-mini.html?id=DF055&amp;alert=red&amp;mode=simulate" title="DF055 20m DEM 沙盤"></iframe>
+      </article>
+      <section class="physical-sim-panel" id="physical-sim-panel" aria-hidden="true">
+        <div class="physical-sim-head">
+          <span>Physical Simulation</span>
+          <b>DF055 / 高市DF047</b>
+        </div>
+        <div class="physical-sim-grid">
+          <article class="physical-sim-card is-analysis">
+            <header>
+              <b>DF055 立體地形模擬</b>
+              <span>three-embed</span>
+            </header>
+            <iframe src="three-embed.html?clean=1" title="DF055 立體地形模擬"></iframe>
+          </article>
+          <article class="physical-sim-card is-video">
+            <header>
+              <b>高市DF047 物理場景影片</b>
+              <span>mp4</span>
+            </header>
+            <video id="physical-scene-video" muted loop playsinline preload="auto">
+              <source src="../../assets/videos/laonong-debris-flow-forecast/physical-scene-df047.mp4" type="video/mp4">
+            </video>
+          </article>
+        </div>
+      </section>
+      <div class="map-video-anchor high-tree" id="map-video-anchor-high-tree" aria-hidden="true"></div>
+      <div class="map-video-anchor baolai" id="map-video-anchor-baolai" aria-hidden="true"></div>
+      <div class="map-video-anchor t20-78" id="map-video-anchor-t20-78" aria-hidden="true"></div>
+      <div class="map-video-anchor t20-82" id="map-video-anchor-t20-82" aria-hidden="true"></div>
+      <div class="observation-stack high-tree" id="observation-stack-high-tree" aria-hidden="true">
+        <b>Observation Camera</b>
+        <div class="observation-feed">
+          <img
+            id="map-station-video"
+            src="https://fmg.wra.gov.tw/109wraweb/getImage.aspx?mode=getNewImageS&amp;CCTV_SN=0x0200000024E4FDC49835328F10014206C2212DB89EA6C144AE9F391D65D7C9E2CC51F8E6EBB55BC50A92223B77FC84692342876E"
+            alt="水利署高樹大津橋荖濃溪即時水情影像"
+          >
+          <span>高樹大津橋｜水利署水情影像</span>
+        </div>
+      </div>
+      <div class="observation-stack baolai" id="observation-stack-baolai" aria-hidden="true">
+        <b>Observation Camera</b>
+        <div class="observation-feed">
+          <img
+            id="map-station-video-baolai"
+            src="https://c01.twipcam.com/cam/snapshot/wra-002724.jpg"
+            alt="水利署寶來一號橋即時水情影像"
+          >
+          <span>寶來一號橋｜水利署水情影像</span>
+        </div>
+      </div>
+      <div class="observation-stack t20-78" id="observation-stack-t20-78" aria-hidden="true">
+        <b>Observation Camera</b>
+        <div class="observation-feed">
+          <img
+            id="map-station-video-t20-78"
+            src="https://c01.twipcam.com/cam/snapshot/t20-78k-200.jpg"
+            alt="台20線78K+200即時影像"
+          >
+          <span>台20線 78K+200｜即時影像</span>
+        </div>
+      </div>
+      <div class="observation-stack t20-82" id="observation-stack-t20-82" aria-hidden="true">
+        <b>Observation Camera</b>
+        <div class="observation-feed">
+          <img
+            id="map-station-video-t20-82"
+            src="https://c01.twipcam.com/cam/snapshot/t20-82k-850.jpg"
+            alt="台20線82K+850即時影像"
+          >
+          <span>台20線 82K+850｜即時影像</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="holo-title" aria-label="全息地形沙盤標題">
+    <span>LAONONG / PHYSICAL DIGITAL TWIN</span>
+    <h1>全息沙盤測試_V4</h1>
+  </section>
+
+  <aside class="holo-side" aria-label="模擬來源">
+    <b>SIMULATION SOURCE</b>
+    <span>Terrain <strong>ArcGIS WorldElevation3D</strong></span>
+    <span>Flowpath <strong>WhiteboxTools</strong></span>
+    <span>Boundary <strong>Laonong Basin</strong></span>
+    <span>Mesh <strong>DF Terrain Zones</strong></span>
+  </aside>
+
+  <aside class="holo-action" aria-label="全息沙盤控制">
+    <span>Hologram Control</span>
+    <div class="button-grid">
+      <button type="button" id="raise-terrain-btn">
+        <i class="thumb terrain-thumb" aria-hidden="true"></i>
+        <span class="label">RAISE TERRAIN</span>
+      </button>
+      <button class="secondary" type="button" id="rainfall-field-btn">
+        <i class="thumb rain-thumb" aria-hidden="true"></i>
+        <span class="label">RAINFALL FIELD</span>
+      </button>
+      <button class="river-water" type="button" id="river-water-btn">
+        <i class="thumb river-water-thumb" aria-hidden="true"></i>
+        <span class="label">RIVER WATER</span>
+      </button>
+      <button class="river-terrain" type="button" id="river-terrain-btn">
+        <i class="thumb river-terrain-thumb" aria-hidden="true"></i>
+        <span class="label">RIVER TERRAIN</span>
+      </button>
+      <button class="camera" type="button" id="station-video-btn">
+        <i class="thumb camera-thumb" aria-hidden="true"></i>
+        <span class="label">OBS VIDEO</span>
+      </button>
+      <button class="radar" type="button" id="radar-echo-btn">
+        <i class="thumb radar-thumb" aria-hidden="true"></i>
+        <span class="label">RADAR ECHO</span>
+      </button>
+      <button class="physical" type="button" id="physical-sim-btn">
+        <i class="thumb physical-thumb" aria-hidden="true"></i>
+        <span class="label">PHYSICAL SIM</span>
+      </button>
+    </div>
+    <div class="basemap-control" aria-label="真實地形底圖切換">
+      <b>Terrain Basemap</b>
+      <div class="basemap-options">
+        <button class="is-active" type="button" data-basemap="dark-terrain">DARK</button>
+        <button type="button" data-basemap="tactical">TACTICAL</button>
+        <button type="button" data-basemap="real-hybrid">REAL</button>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    const stationVideoButton = document.querySelector("#station-video-btn");
+    const raiseTerrainButton = document.querySelector("#raise-terrain-btn");
+    const rainfallFieldButton = document.querySelector("#rainfall-field-btn");
+    const riverWaterButton = document.querySelector("#river-water-btn");
+    const riverTerrainButton = document.querySelector("#river-terrain-btn");
+    const radarEchoButton = document.querySelector("#radar-echo-btn");
+    const physicalSimButton = document.querySelector("#physical-sim-btn");
+    const basemapButtons = document.querySelectorAll("[data-basemap]");
+    const terrainExtractLabel = document.querySelector(".terrain-extract-label");
+    const radarEchoLayer = document.querySelector("#radar-echo-layer");
+    const radarEchoGrid = document.querySelector("#radar-echo-grid");
+    const rainfallChartPanel = document.querySelector("#rainfall-chart-panel");
+    const physicalAlert = document.querySelector("#physical-alert");
+    const physicalSimPanel = document.querySelector("#physical-sim-panel");
+    const physicalStreamList = document.querySelector("#physical-stream-list");
+    const physicalStreamItems = document.querySelector("#physical-stream-items");
+    const physicalAlertCode = document.querySelector("#physical-alert-code");
+    const physicalDemCallout = document.querySelector("#physical-dem-callout");
+    const physicalDemCode = document.querySelector("#physical-dem-code");
+    const physicalDemFrame = document.querySelector("#physical-dem-frame");
+    const physicalSceneVideo = document.querySelector("#physical-scene-video");
+    const mapStationVideo = document.querySelector("#map-station-video");
+    const baolaiStationVideo = document.querySelector("#map-station-video-baolai");
+    const t2078StationVideo = document.querySelector("#map-station-video-t20-78");
+    const t2082StationVideo = document.querySelector("#map-station-video-t20-82");
+    const observationOverlays = [
+      document.querySelector("#observation-stack-high-tree"),
+      document.querySelector("#observation-stack-baolai"),
+      document.querySelector("#observation-stack-t20-78"),
+      document.querySelector("#observation-stack-t20-82"),
+      document.querySelector("#map-video-anchor-high-tree"),
+      document.querySelector("#map-video-anchor-baolai"),
+      document.querySelector("#map-video-anchor-t20-78"),
+      document.querySelector("#map-video-anchor-t20-82")
+    ];
+    const wraImageUrl = "https://fmg.wra.gov.tw/109wraweb/getImage.aspx?mode=getNewImageS&CCTV_SN=0x0200000024E4FDC49835328F10014206C2212DB89EA6C144AE9F391D65D7C9E2CC51F8E6EBB55BC50A92223B77FC84692342876E";
+    const baolaiImageUrl = "https://c01.twipcam.com/cam/snapshot/wra-002724.jpg";
+    const t2078ImageUrl = "https://c01.twipcam.com/cam/snapshot/t20-78k-200.jpg";
+    const t2082ImageUrl = "https://c01.twipcam.com/cam/snapshot/t20-82k-850.jpg";
+    let stationRefreshTimer;
+    let physicalSimTimers = [];
+    let activePhysicalStreamId = null;
+    const physicalStreams = [
+      { id: "高市DF047", name: "六龜區寶來里｜寶來一橋" },
+      { id: "高市DF055", name: "六龜區新發里｜紅水仙橋" },
+      { id: "高市DF064", name: "桃源區建山里｜建山二橋" },
+      { id: "高市DF073", name: "六龜區寶來里｜建山一橋" },
+      { id: "高市DF077", name: "六龜區新發里｜新開橋" },
+      { id: "高市DF113", name: "六龜區新發里｜樟園渡假山莊" }
+    ];
+
+    const renderPhysicalStreamList = () => {
+      if (!physicalStreamItems || physicalStreamItems.children.length) return;
+      physicalStreamItems.innerHTML = physicalStreams.map((item, index) => `
+        <li>
+          <button type="button" data-physical-stream="${item.id}" class="${index === 0 ? "is-selected" : ""}">
+            <strong>${item.id}</strong>
+            <span>${item.name}</span>
+          </button>
+        </li>
+      `).join("");
+      physicalStreamItems.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          const item = physicalStreams.find((stream) => stream.id === button.dataset.physicalStream);
+          selectPhysicalStream(item);
+        });
+      });
+    };
+
+    const selectPhysicalStream = (item = physicalStreams[0]) => {
+      if (!item) return;
+      const terrainFrame = document.querySelector("#terrain-frame");
+      const arcgisFrame = document.querySelector("#arcgis-frame");
+      activePhysicalStreamId = item.id;
+      physicalStreamItems?.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("is-selected", button.dataset.physicalStream === item.id);
+      });
+      if (physicalAlertCode) physicalAlertCode.textContent = item.id.replace("高市", "");
+      if (physicalDemCode) physicalDemCode.textContent = item.id;
+      if (physicalDemFrame) {
+        const nextSrc = `../df064-terrain-sandbox-mini.html?id=${encodeURIComponent(item.id)}&alert=red&mode=simulate`;
+        physicalDemFrame.src = nextSrc;
+        physicalDemFrame.title = `${item.id} 20m DEM 沙盤`;
+      }
+      terrainFrame?.contentWindow?.postMessage({ type: "laonong:select-stream", id: item.id }, "*");
+      arcgisFrame?.contentWindow?.postMessage({ type: "laonong:select-stream", id: item.id }, "*");
+    };
+    window.selectPhysicalStream = selectPhysicalStream;
+
+    const buildRadarGrid = () => {
+      if (!radarEchoGrid || radarEchoGrid.children.length) return;
+      const cols = 28;
+      const rows = 16;
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < cols; x += 1) {
+          const nx = x / (cols - 1);
+          const ny = y / (rows - 1);
+          const bandA = Math.exp(-((ny - (0.34 + Math.sin(nx * 7.2) * 0.08)) ** 2) / 0.012);
+          const bandB = Math.exp(-((ny - (0.56 + Math.cos(nx * 5.4) * 0.1)) ** 2) / 0.018);
+          const core = Math.exp(-(((nx - 0.54) ** 2) / 0.034 + ((ny - 0.48) ** 2) / 0.026));
+          const value = Math.max(bandA * 0.72, bandB * 0.58, core);
+          const cell = document.createElement("i");
+          cell.className = "radar-cell";
+          cell.style.animationDelay = `${-(x * 0.07 + y * 0.11).toFixed(2)}s`;
+          if (value > 0.78) cell.classList.add("l4");
+          else if (value > 0.52) cell.classList.add("l3");
+          else if (value > 0.28) cell.classList.add("l2");
+          else if (value > 0.12) cell.classList.add("l1");
+          radarEchoGrid.append(cell);
+        }
+      }
+    };
+
+    const anchorTargets = {
+      "high-tree": {
+        anchor: document.querySelector("#map-video-anchor-high-tree"),
+        card: document.querySelector("#observation-stack-high-tree")
+      },
+      baolai: {
+        anchor: document.querySelector("#map-video-anchor-baolai"),
+        card: document.querySelector("#observation-stack-baolai")
+      }
+    };
+
+    const refreshStationImage = () => {
+      const freshUrl = `${wraImageUrl}&_=${Date.now()}`;
+      if (mapStationVideo) mapStationVideo.src = freshUrl;
+      if (baolaiStationVideo) baolaiStationVideo.src = `${baolaiImageUrl}?_=${Date.now()}`;
+      if (t2078StationVideo) t2078StationVideo.src = `${t2078ImageUrl}?_=${Date.now()}`;
+      if (t2082StationVideo) t2082StationVideo.src = `${t2082ImageUrl}?_=${Date.now()}`;
+    };
+
+    const setRiverWaterActive = (active) => {
+      const arcgisFrame = document.querySelector("#arcgis-frame");
+      riverWaterButton?.classList.toggle("is-active", active);
+      document.body.classList.toggle("is-river-water-mode", active);
+      if (terrainExtractLabel) {
+        terrainExtractLabel.textContent = active
+          ? "River Extraction → Water Data Injection"
+          : "Real Terrain → Extract 20m DTM Analysis Layer";
+      }
+      arcgisFrame?.contentWindow?.postMessage({ type: "laonong:toggle-river-water", active }, "*");
+    };
+
+    const setRiverTerrainActive = (active) => {
+      const frame = document.querySelector("#terrain-frame");
+      const arcgisFrame = document.querySelector("#arcgis-frame");
+      riverTerrainButton?.classList.toggle("is-active", active);
+      if (active) {
+        setRiverWaterActive(false);
+        raiseTerrainButton?.classList.remove("is-active");
+        rainfallFieldButton?.classList.remove("is-active");
+        rainfallChartPanel?.classList.remove("is-visible");
+        document.body.classList.add("is-analysis-terrain");
+        if (terrainExtractLabel) terrainExtractLabel.textContent = "River Terrain → 20m DTM Valley Cut";
+        arcgisFrame?.contentWindow?.postMessage({ type: "laonong:enter-analysis" }, "*");
+        frame?.contentWindow?.postMessage({ type: "laonong:river-terrain" }, "*");
+      } else {
+        document.body.classList.remove("is-analysis-terrain");
+        if (terrainExtractLabel) terrainExtractLabel.textContent = "Real Terrain → Extract 20m DTM Analysis Layer";
+        arcgisFrame?.contentWindow?.postMessage({ type: "laonong:exit-analysis" }, "*");
+        frame?.contentWindow?.postMessage({ type: "laonong:collapse-terrain" }, "*");
+      }
+    };
+
+    const closePhysicalSim = () => {
+      physicalSimTimers.forEach((timer) => clearTimeout(timer));
+      physicalSimTimers = [];
+      physicalAlert?.classList.remove("is-visible");
+      physicalSimPanel?.classList.remove("is-visible", "show-dem", "show-analysis", "show-video");
+      physicalDemCallout?.classList.remove("is-visible");
+      physicalStreamList?.classList.remove("is-visible");
+      physicalAlert?.setAttribute("aria-hidden", "true");
+      physicalSimPanel?.setAttribute("aria-hidden", "true");
+      physicalStreamList?.setAttribute("aria-hidden", "true");
+      physicalSceneVideo?.pause();
+    };
+
+    raiseTerrainButton?.addEventListener("click", () => {
+      const frame = document.querySelector("#terrain-frame");
+      const arcgisFrame = document.querySelector("#arcgis-frame");
+      const active = raiseTerrainButton.classList.toggle("is-active");
+      if (active) riverTerrainButton?.classList.remove("is-active");
+      if (active) setRiverWaterActive(false);
+      if (active) document.body.classList.remove("is-river-water-mode");
+      if (active && terrainExtractLabel) terrainExtractLabel.textContent = "Real Terrain → Extract 20m DTM Analysis Layer";
+      document.body.classList.toggle("is-analysis-terrain", active);
+      arcgisFrame?.contentWindow?.postMessage({ type: active ? "laonong:enter-analysis" : "laonong:exit-analysis" }, "*");
+      frame?.contentWindow?.postMessage({ type: active ? "laonong:raise-terrain" : "laonong:collapse-terrain" }, "*");
+      if (!active) {
+        rainfallFieldButton?.classList.remove("is-active");
+        rainfallChartPanel?.classList.remove("is-visible");
+        frame?.contentWindow?.postMessage({ type: "laonong:hide-rainfall" }, "*");
+      }
+    });
+    rainfallFieldButton?.addEventListener("click", () => {
+      const frame = document.querySelector("#terrain-frame");
+      const active = rainfallFieldButton.classList.toggle("is-active");
+      rainfallChartPanel?.classList.remove("is-visible");
+      if (active) {
+        void rainfallChartPanel?.offsetWidth;
+        rainfallChartPanel?.classList.add("is-visible");
+      }
+      frame?.contentWindow?.postMessage({ type: active ? "laonong:reveal-rainfall" : "laonong:hide-rainfall" }, "*");
+    });
+    riverWaterButton?.addEventListener("click", () => {
+      const frame = document.querySelector("#terrain-frame");
+      const arcgisFrame = document.querySelector("#arcgis-frame");
+      const active = !riverWaterButton.classList.contains("is-active");
+      if (active) {
+        raiseTerrainButton?.classList.remove("is-active");
+        document.body.classList.remove("is-analysis-terrain");
+        arcgisFrame?.contentWindow?.postMessage({ type: "laonong:exit-analysis" }, "*");
+        frame?.contentWindow?.postMessage({ type: "laonong:collapse-terrain" }, "*");
+      }
+      setRiverWaterActive(active);
+    });
+    riverTerrainButton?.addEventListener("click", () => {
+      setRiverTerrainActive(!riverTerrainButton.classList.contains("is-active"));
+    });
+    stationVideoButton?.addEventListener("click", () => {
+      const active = stationVideoButton.classList.toggle("is-active");
+      observationOverlays.forEach((node) => node?.classList.toggle("is-visible", active));
+      clearInterval(stationRefreshTimer);
+      if (active) {
+        refreshStationImage();
+        stationRefreshTimer = setInterval(refreshStationImage, 60000);
+      }
+    });
+    radarEchoButton?.addEventListener("click", () => {
+      const active = radarEchoButton.classList.toggle("is-active");
+      if (active) buildRadarGrid();
+      radarEchoLayer?.classList.toggle("is-visible", active);
+    });
+
+    basemapButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        basemapButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+        document.querySelector("#arcgis-frame")?.contentWindow?.postMessage({
+          type: "laonong:set-basemap",
+          basemap: button.dataset.basemap
+        }, "*");
+      });
+    });
+
+    document.querySelector("#terrain-frame")?.addEventListener("load", () => {
+      if (!activePhysicalStreamId) return;
+      document.querySelector("#terrain-frame")?.contentWindow?.postMessage({
+        type: "laonong:select-stream",
+        id: activePhysicalStreamId
+      }, "*");
+    });
+
+    document.querySelector("#arcgis-frame")?.addEventListener("load", () => {
+      if (!activePhysicalStreamId) return;
+      document.querySelector("#arcgis-frame")?.contentWindow?.postMessage({
+        type: "laonong:select-stream",
+        id: activePhysicalStreamId
+      }, "*");
+    });
+
+    physicalSimButton?.addEventListener("click", () => {
+      const active = physicalSimButton.classList.toggle("is-active");
+      closePhysicalSim();
+      if (!active) return;
+
+      physicalAlert?.classList.add("is-visible");
+      physicalAlert?.setAttribute("aria-hidden", "false");
+      renderPhysicalStreamList();
+      selectPhysicalStream(physicalStreams[0]);
+
+      physicalSimTimers.push(setTimeout(() => {
+        physicalStreamList?.classList.add("is-visible");
+        physicalStreamList?.setAttribute("aria-hidden", "false");
+      }, 900));
+
+      physicalSimTimers.push(setTimeout(() => {
+        physicalSimPanel?.classList.add("is-visible");
+        physicalSimPanel?.setAttribute("aria-hidden", "false");
+      }, 1200));
+
+      physicalSimTimers.push(setTimeout(() => {
+        physicalSimPanel?.classList.add("show-dem");
+        physicalDemCallout?.classList.add("is-visible");
+      }, 1600));
+
+      physicalSimTimers.push(setTimeout(() => {
+        physicalSimPanel?.classList.add("show-analysis");
+      }, 2400));
+
+      physicalSimTimers.push(setTimeout(() => {
+        physicalSimPanel?.classList.add("show-video");
+        if (physicalSceneVideo) {
+          physicalSceneVideo.currentTime = 0;
+          physicalSceneVideo.play().catch(() => {});
+        }
+      }, 3200));
+    });
+
+    addEventListener("message", (event) => {
+      if (event.data?.type !== "laonong:observation-anchor-positions") return;
+      const frame = document.querySelector("#terrain-frame");
+      const frameRect = frame?.getBoundingClientRect();
+      const stageRect = document.querySelector(".holo-table")?.getBoundingClientRect();
+      if (!frameRect || !stageRect) return;
+      event.data.anchors?.forEach((anchor) => {
+        const target = anchorTargets[anchor.id];
+        if (!target || !anchor.visible) return;
+        const x = ((frameRect.left - stageRect.left + anchor.x) / stageRect.width) * 100;
+        const y = ((frameRect.top - stageRect.top + anchor.y) / stageRect.height) * 100;
+        target.anchor.style.left = `${x}%`;
+        target.anchor.style.top = `${y}%`;
+      });
+    });
+  </script>
+</body>
+</html>

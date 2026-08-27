@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"
+xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Folder>
+  <name maxLines="1">fx</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <Folder><name><![CDATA[Frame_legend]]></name><visibility>1</visibility><ScreenOverlay><visibility>1</visibility><overlayXY x="0" y="0" xunits="fraction" yunits="fraction" /><screenXY x="0" y="0" xunits="fraction" yunits="fraction" /><Icon><href>Frame_legend.png</href></Icon></ScreenOverlay></Folder>
+<Folder>
+<name maxLines="1">Frame_1: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T02:00:00Z</begin>
+        <end>2026-05-27T03:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_1</name>
+    <Icon>
+      <href>Frame_1.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_2: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T03:00:00Z</begin>
+        <end>2026-05-27T04:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_2</name>
+    <Icon>
+      <href>Frame_2.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_3: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T04:00:00Z</begin>
+        <end>2026-05-27T05:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_3</name>
+    <Icon>
+      <href>Frame_3.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_4: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T05:00:00Z</begin>
+        <end>2026-05-27T06:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_4</name>
+    <Icon>
+      <href>Frame_4.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_5: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T06:00:00Z</begin>
+        <end>2026-05-27T07:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_5</name>
+    <Icon>
+      <href>Frame_5.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_6: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T07:00:00Z</begin>
+        <end>2026-05-27T08:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_6</name>
+    <Icon>
+      <href>Frame_6.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_7: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T08:00:00Z</begin>
+        <end>2026-05-27T09:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_7</name>
+    <Icon>
+      <href>Frame_7.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_8: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T09:00:00Z</begin>
+        <end>2026-05-27T10:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_8</name>
+    <Icon>
+      <href>Frame_8.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_9: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T10:00:00Z</begin>
+        <end>2026-05-27T11:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_9</name>
+    <Icon>
+      <href>Frame_9.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_10: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T11:00:00Z</begin>
+        <end>2026-05-27T12:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_10</name>
+    <Icon>
+      <href>Frame_10.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_11: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T12:00:00Z</begin>
+        <end>2026-05-27T13:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_11</name>
+    <Icon>
+      <href>Frame_11.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_12: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T13:00:00Z</begin>
+        <end>2026-05-27T14:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_12</name>
+    <Icon>
+      <href>Frame_12.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_13: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T14:00:00Z</begin>
+        <end>2026-05-27T15:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_13</name>
+    <Icon>
+      <href>Frame_13.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_14: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T15:00:00Z</begin>
+        <end>2026-05-27T16:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_14</name>
+    <Icon>
+      <href>Frame_14.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_15: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T16:00:00Z</begin>
+        <end>2026-05-27T17:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_15</name>
+    <Icon>
+      <href>Frame_15.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_16: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T17:00:00Z</begin>
+        <end>2026-05-27T18:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_16</name>
+    <Icon>
+      <href>Frame_16.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_17: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T18:00:00Z</begin>
+        <end>2026-05-27T19:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_17</name>
+    <Icon>
+      <href>Frame_17.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_18: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T19:00:00Z</begin>
+        <end>2026-05-27T20:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_18</name>
+    <Icon>
+      <href>Frame_18.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_19: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T20:00:00Z</begin>
+        <end>2026-05-27T21:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_19</name>
+    <Icon>
+      <href>Frame_19.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_20: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T21:00:00Z</begin>
+        <end>2026-05-27T22:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_20</name>
+    <Icon>
+      <href>Frame_20.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_21: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T22:00:00Z</begin>
+        <end>2026-05-27T23:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_21</name>
+    <Icon>
+      <href>Frame_21.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_22: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-27T23:00:00Z</begin>
+        <end>2026-05-28T00:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_22</name>
+    <Icon>
+      <href>Frame_22.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_23: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-28T00:00:00Z</begin>
+        <end>2026-05-28T01:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_23</name>
+    <Icon>
+      <href>Frame_23.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+<Folder>
+<name maxLines="1">Frame_24: Image</name>
+  <Snippet maxLines="1"><![CDATA[]]>
+  </Snippet>
+  <GroundOverlay>
+    <TimeSpan>
+        <begin>2026-05-28T01:00:00Z</begin>
+        <end>2026-05-28T02:00:00Z</end>
+    </TimeSpan>
+    <name maxLines="1">Frame_24</name>
+    <Icon>
+      <href>Frame_24.png</href>
+      <viewBoundScale>1.0</viewBoundScale>
+    </Icon>
+    <LatLonBox>
+      <north>23.228542</north>
+      <south>23.205635</south> 
+      <east>120.809707</east>
+      <west>120.798565</west>
+       <rotation>0</rotation> 
+     </LatLonBox>
+   </GroundOverlay> 
+ </Folder>
+ </Folder>
+ </kml>

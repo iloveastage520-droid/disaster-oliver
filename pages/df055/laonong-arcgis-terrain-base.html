@@ -46,6 +46,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.120.0/Cesium.js"></script>
   <script>
     const CesiumLib = window.Cesium;
+    const pageParams = new URLSearchParams(location.search);
+    const initialBasemap = pageParams.get("basemap") || "dark-terrain";
+    const initialFocus = pageParams.get("focus") || "overview";
     const statusEl = document.querySelector("#status");
     const TERRAIN_URL = "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer";
     const basinUrl = "../../data/laonong-subbasin-boundary.geojson";
@@ -57,24 +60,125 @@
         id: "fx",
         label: "fx 復興",
         frameBase: "../../assets/wbchen-water/fx",
+        kmlUrl: "../../assets/wbchen-water/fx/doc.kml",
         bounds: { west: 120.798565, south: 23.205635, east: 120.809707, north: 23.228542 }
       },
       {
         id: "qhrwl",
         label: "qhrwl 上游",
         frameBase: "../../assets/wbchen-water/qhrwl",
+        kmlUrl: "../../assets/wbchen-water/qhrwl/doc.kml",
         bounds: { west: 120.746121, south: 23.138360, east: 120.792648, north: 23.195253 }
       },
       {
         id: "blrwl",
         label: "blrwl 寶山",
         frameBase: "../../assets/wbchen-water",
+        kmlUrl: "../../assets/wbchen-water/doc.kml",
         bounds: { west: 120.687049, south: 23.092029, east: 120.723166, north: 23.128971 }
       }
     ];
 
     function setStatus(text) {
       statusEl.textContent = text;
+    }
+
+    function readKmlTag(text, tag) {
+      const match = text.match(new RegExp(`<${tag}>\\s*([^<]+)`, "i"));
+      return match ? Number(match[1].trim()) : null;
+    }
+
+    const waterFrameCache = new Map();
+
+    function preloadWaterFrames() {
+      waterLayers.forEach((layer) => {
+        const frames = [];
+        for (let index = 1; index <= 24; index += 1) {
+          const source = `${layer.frameBase}/Frame_${index}.png`;
+          const image = new Image();
+          image.src = source;
+          frames.push({ source, image });
+        }
+        waterFrameCache.set(layer.id, frames);
+      });
+    }
+
+    function getWaterFrame(layer, frame) {
+      return waterFrameCache.get(layer.id)?.[frame - 1] || {
+        source: `${layer.frameBase}/Frame_${frame}.png`,
+        image: null
+      };
+    }
+
+    function setWaterAnimationFrame(frame) {
+      riverWaterFrame = frame;
+      riverWaterEntities.forEach((entity) => {
+        const match = waterLayers.find((layer) => entity.name?.startsWith(layer.label));
+        if (!match) return;
+        const nextFrame = getWaterFrame(match, frame);
+        const imageSource = nextFrame.source;
+        if (entity.rectangle?.material?.image?.setValue) {
+          entity.rectangle.material.image.setValue(imageSource);
+        } else if (entity.rectangle?.material) {
+          entity.rectangle.material.image = imageSource;
+        }
+        if (entity.label?.text?.setValue) {
+          entity.label.text.setValue(`${match.label}｜淹水資料 ${String(frame).padStart(2, "0")} / 24`);
+        }
+        if (entity.billboard?.image?.setValue) {
+          entity.billboard.image.setValue(imageSource);
+        } else if (entity.billboard) {
+          entity.billboard.image = imageSource;
+        }
+      });
+      activeViewer?.scene?.requestRender?.();
+    }
+
+    function stopRiverWaterAnimation() {
+      if (riverWaterAnimationId) {
+        window.cancelAnimationFrame(riverWaterAnimationId);
+        riverWaterAnimationId = 0;
+      }
+      riverWaterFrameStartedAt = 0;
+    }
+
+    function startRiverWaterAnimation() {
+      stopRiverWaterAnimation();
+      riverWaterFrameStartedAt = performance.now();
+      riverWaterFrame = 0;
+      setWaterAnimationFrame(1);
+      const frameDuration = 1350;
+      const totalFrames = 24;
+      const tick = (now) => {
+        if (!riverWaterActive) {
+          riverWaterAnimationId = 0;
+          return;
+        }
+        const elapsed = now - riverWaterFrameStartedAt;
+        const nextFrame = (Math.floor(elapsed / frameDuration) % totalFrames) + 1;
+        if (nextFrame !== riverWaterFrame) setWaterAnimationFrame(nextFrame);
+        riverWaterAnimationId = window.requestAnimationFrame(tick);
+      };
+      riverWaterAnimationId = window.requestAnimationFrame(tick);
+    }
+
+    async function loadWaterLayerMetadata() {
+      await Promise.all(waterLayers.map(async (layer) => {
+        if (!layer.kmlUrl) return;
+        try {
+          const text = await fetch(layer.kmlUrl).then((response) => response.text());
+          const bounds = {
+            west: readKmlTag(text, "west"),
+            south: readKmlTag(text, "south"),
+            east: readKmlTag(text, "east"),
+            north: readKmlTag(text, "north")
+          };
+          const valid = Object.values(bounds).every(Number.isFinite);
+          if (valid) layer.bounds = bounds;
+        } catch (error) {
+          console.warn(`Unable to read ${layer.id} water KML`, error);
+        }
+      }));
     }
 
     const basemapSettings = {
@@ -113,15 +217,19 @@
     let baseLayer;
     const riverWaterEntities = [];
     const debrisStreamEntities = [];
-    let riverWaterTimer = 0;
+    let riverWaterAnimationId = 0;
     let riverWaterFrame = 1;
+    let riverWaterFrameStartedAt = 0;
     let riverWaterRevealStart = null;
     let riverWaterActive = false;
     let raisedRiverWaterReady = false;
     let riverWaterCameraTarget = null;
     let riverWaterCameraHeading = CesiumLib.Math.toRadians(24);
     let riverWaterCameraOrbiting = false;
+    let floodAnchorPostTick = 0;
     const riverWaterBuildingEntities = [];
+    let activeViewer = null;
+    let flashFloodRiverActive = false;
 
     function easeOutCubic(value) {
       return 1 - Math.pow(1 - value, 3);
@@ -137,6 +245,41 @@
       if (!riverWaterActive || !riverWaterRevealStart) return 0;
       const seconds = CesiumLib.JulianDate.secondsDifference(time, riverWaterRevealStart);
       return easeOutCubic(Math.max(0, Math.min(1, (seconds - delay) / duration)));
+    }
+
+    function flashFloodPulse(time, offset = 0) {
+      if (!flashFloodRiverActive) return 0;
+      const seconds = CesiumLib.JulianDate.secondsDifference(time, CesiumLib.JulianDate.fromDate(new Date(0)));
+      return 0.5 + 0.5 * Math.sin(seconds * 0.9 + offset);
+    }
+
+    function setFlashFloodRiverVisible(active) {
+      flashFloodRiverActive = active;
+      activeViewer?.scene?.requestRender?.();
+    }
+
+    function postFloodDataAnchorPositions(viewer) {
+      if (!riverWaterActive) return;
+      const anchors = waterLayers.map((layer) => {
+        const center = centerOfBounds(layer.bounds);
+        const position = CesiumLib.Cartesian3.fromDegrees(center.lon, center.lat, 80);
+        const projected = CesiumLib.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, position);
+        return {
+          id: layer.id,
+          x: projected?.x || 0,
+          y: projected?.y || 0,
+          visible: Boolean(projected)
+        };
+      });
+      parent.postMessage({ type: "laonong:flood-data-anchor-positions", source: "arcgis", anchors }, "*");
+    }
+
+    function postFloodDataAnchorPositionsThrottled(viewer) {
+      if (!riverWaterActive) return;
+      const now = performance.now();
+      if (now - floodAnchorPostTick < 100) return;
+      floodAnchorPostTick = now;
+      postFloodDataAnchorPositions(viewer);
     }
 
     function raisedWaterHeight(time, baseHeight, lift = 1120) {
@@ -412,9 +555,16 @@
           name: `荖濃溪河床 ${index + 1}`,
           polygon: {
             hierarchy: CesiumLib.Cartesian3.fromDegreesArray(positions),
-            material: CesiumLib.Color.fromCssColorString("#082f49").withAlpha(0.42),
+            material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
+              const pulse = flashFloodPulse(time, index * 0.45);
+              const alpha = flashFloodRiverActive ? 0.52 + pulse * 0.16 : 0.42;
+              return CesiumLib.Color.fromCssColorString(flashFloodRiverActive ? "#0e7490" : "#082f49").withAlpha(alpha);
+            }, false)),
             outline: true,
-            outlineColor: CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(0.34),
+            outlineColor: new CesiumLib.CallbackProperty((time) => {
+              const pulse = flashFloodPulse(time, index * 0.55);
+              return CesiumLib.Color.fromCssColorString("#7dd3fc").withAlpha(flashFloodRiverActive ? 0.58 + pulse * 0.28 : 0.34);
+            }, false),
             heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND
           }
         });
@@ -425,7 +575,8 @@
             material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
               const seconds = CesiumLib.JulianDate.secondsDifference(time, shimmerStart);
               const wave = 0.5 + 0.5 * Math.sin(seconds * 0.85 + index * 0.55);
-              return CesiumLib.Color.fromCssColorString("#22d3ee").withAlpha(0.08 + wave * 0.11);
+              const floodLift = flashFloodRiverActive ? 0.22 : 0;
+              return CesiumLib.Color.fromCssColorString("#22d3ee").withAlpha(0.08 + floodLift + wave * (flashFloodRiverActive ? 0.18 : 0.11));
             }, false)),
             outline: false,
             heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND
@@ -435,12 +586,18 @@
           name: `荖濃溪河岸光邊 ${index + 1}`,
           polyline: {
             positions: CesiumLib.Cartesian3.fromDegreesArray(positions),
-            width: 2.8,
+            width: new CesiumLib.CallbackProperty((time) => {
+              const pulse = flashFloodPulse(time, index * 0.65);
+              return flashFloodRiverActive ? 6.5 + pulse * 2.8 : 2.8;
+            }, false),
             clampToGround: true,
             material: new CesiumLib.PolylineGlowMaterialProperty({
               glowPower: 0.22,
               taperPower: 0.7,
-              color: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.72)
+              color: new CesiumLib.CallbackProperty((time) => {
+                const pulse = flashFloodPulse(time, index * 0.75);
+                return CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(flashFloodRiverActive ? 0.78 + pulse * 0.18 : 0.72);
+              }, false)
             })
           }
         });
@@ -462,7 +619,7 @@
           name: "升起真實荖濃溪河道水面",
           polygon: {
             hierarchy: CesiumLib.Cartesian3.fromDegreesArray(positions),
-            height: new CesiumLib.CallbackProperty((time) => raisedWaterHeight(time, 12, 1120), false),
+            heightReference: CesiumLib.HeightReference.CLAMP_TO_GROUND,
             material: new CesiumLib.ColorMaterialProperty(new CesiumLib.CallbackProperty((time) => {
               const seconds = CesiumLib.JulianDate.secondsDifference(time, start);
               const wave = 0.5 + 0.5 * Math.sin(seconds * 1.2);
@@ -477,15 +634,19 @@
         riverWaterEntities.push(viewer.entities.add({
           name: "真實河道資訊光邊",
           polyline: {
-            positions: new CesiumLib.CallbackProperty((time) => {
-              const height = raisedWaterHeight(time, 16, 1155);
-              return CesiumLib.Cartesian3.fromDegreesArrayHeights(outer.flatMap(([lon, lat]) => [lon, lat, height]));
+            positions: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            clampToGround: true,
+            width: new CesiumLib.CallbackProperty((time) => {
+              const pulse = 0.5 + 0.5 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 0.9);
+              return 4 + riverWaterPhaseProgress(time, 0.25, 2.2) * (12 + pulse * 4);
             }, false),
-            width: new CesiumLib.CallbackProperty((time) => 2.2 + riverWaterPhaseProgress(time, 0.25, 2.2) * 9, false),
             material: new CesiumLib.PolylineGlowMaterialProperty({
               glowPower: 0.18,
               taperPower: 0.68,
-              color: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.46)
+              color: new CesiumLib.CallbackProperty((time) => {
+                const pulse = 0.5 + 0.5 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 1.15);
+                return CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.34 + pulse * 0.18);
+              }, false)
             })
           },
           show: false
@@ -493,15 +654,19 @@
         riverWaterEntities.push(viewer.entities.add({
           name: "真實河道外層霓虹水道",
           polyline: {
-            positions: new CesiumLib.CallbackProperty((time) => {
-              const height = raisedWaterHeight(time, 14, 1138);
-              return CesiumLib.Cartesian3.fromDegreesArrayHeights(outer.flatMap(([lon, lat]) => [lon, lat, height]));
+            positions: CesiumLib.Cartesian3.fromDegreesArray(positions),
+            clampToGround: true,
+            width: new CesiumLib.CallbackProperty((time) => {
+              const pulse = 0.5 + 0.5 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 0.7);
+              return 8 + riverWaterPhaseProgress(time, 0.15, 2.4) * (24 + pulse * 6);
             }, false),
-            width: new CesiumLib.CallbackProperty((time) => 5 + riverWaterPhaseProgress(time, 0.15, 2.4) * 18, false),
             material: new CesiumLib.PolylineGlowMaterialProperty({
-              glowPower: 0.1,
+              glowPower: 0.14,
               taperPower: 0.72,
-              color: CesiumLib.Color.fromCssColorString("#0891b2").withAlpha(0.24)
+              color: new CesiumLib.CallbackProperty((time) => {
+                const pulse = 0.5 + 0.5 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 0.92);
+                return CesiumLib.Color.fromCssColorString("#0891b2").withAlpha(0.2 + pulse * 0.16);
+              }, false)
             })
           },
           show: false
@@ -517,10 +682,13 @@
               const reveal = riverWaterPhaseProgress(time, 0, 2.8);
               const count = Math.max(2, Math.floor(segment.length * reveal));
               const visibleLine = segment.slice(0, count);
-              const height = raisedWaterHeight(time, 42, 1190);
-              return CesiumLib.Cartesian3.fromDegreesArrayHeights(visibleLine.flatMap(({ lon, lat }) => [lon, lat, height]));
+              return CesiumLib.Cartesian3.fromDegreesArray(visibleLine.flatMap(({ lon, lat }) => [lon, lat]));
             }, false),
-            width: 4.5,
+            clampToGround: true,
+            width: new CesiumLib.CallbackProperty((time) => {
+              const pulse = 0.5 + 0.5 * Math.sin(CesiumLib.JulianDate.secondsDifference(time, start) * 1.25 + segmentIndex);
+              return 5.5 + pulse * 2.5;
+            }, false),
             material: new CesiumLib.PolylineGlowMaterialProperty({
               glowPower: 0.24,
               taperPower: 0.72,
@@ -538,32 +706,44 @@
       waterLayers.forEach((layer, index) => {
         riverWaterEntities.push(viewer.entities.add({
           name: `${layer.label} wbchen 水資料`,
-          rectangle: {
-            coordinates: CesiumLib.Rectangle.fromDegrees(layer.bounds.west, layer.bounds.south, layer.bounds.east, layer.bounds.north),
-            height: new CesiumLib.CallbackProperty((time) => raisedWaterHeight(time, 24 + index * 3, 1180 + index * 22), false),
-            material: new CesiumLib.ImageMaterialProperty({
-              image: `${layer.frameBase}/Frame_1.png`,
-              transparent: true,
-              color: new CesiumLib.CallbackProperty((time) => CesiumLib.Color.WHITE.withAlpha(riverWaterPhaseProgress(time, 1.0 + index * 0.18, 1.8) * 0.66), false)
-            }),
-            outline: false
+          billboard: {
+            image: `${layer.frameBase}/Frame_1.png`,
+            width: 260,
+            height: 164,
+            verticalOrigin: CesiumLib.VerticalOrigin.BOTTOM,
+            horizontalOrigin: CesiumLib.HorizontalOrigin.CENTER,
+            pixelOffset: new CesiumLib.Cartesian2(index % 2 ? 48 : -42, -20 - index * 12),
+            color: new CesiumLib.CallbackProperty((time) => {
+              const reveal = riverWaterPhaseProgress(time, 0.7 + index * 0.2, 1.8);
+              const seconds = CesiumLib.JulianDate.secondsDifference(time, start);
+              const breathe = 0.82 + Math.sin(seconds * 1.15 + index) * 0.1;
+              return CesiumLib.Color.WHITE.withAlpha(reveal * breathe);
+            }, false),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           label: {
-            text: layer.label,
-            font: "900 18px 'Noto Sans TC', sans-serif",
+            text: `${layer.label}｜淹水資料`,
+            font: "900 17px 'Noto Sans TC', sans-serif",
             fillColor: CesiumLib.Color.WHITE,
             outlineColor: CesiumLib.Color.BLACK.withAlpha(0.75),
             outlineWidth: 4,
-            pixelOffset: new CesiumLib.Cartesian2(0, -32),
+            pixelOffset: new CesiumLib.Cartesian2(index % 2 ? 48 : -42, -198 - index * 12),
             showBackground: true,
-            backgroundColor: CesiumLib.Color.fromCssColorString("#083344").withAlpha(0.74),
-            backgroundPadding: new CesiumLib.Cartesian2(9, 6),
+            backgroundColor: CesiumLib.Color.fromCssColorString("#020617").withAlpha(0.82),
+            backgroundPadding: new CesiumLib.Cartesian2(12, 7),
+            disableDepthTestDistance: Number.POSITIVE_INFINITY
+          },
+          point: {
+            pixelSize: new CesiumLib.CallbackProperty((time) => 10 + riverWaterPhaseProgress(time, 0.4 + index * 0.16, 1.5) * 7, false),
+            color: CesiumLib.Color.fromCssColorString("#67e8f9").withAlpha(0.9),
+            outlineColor: CesiumLib.Color.WHITE.withAlpha(0.86),
+            outlineWidth: 2,
             disableDepthTestDistance: Number.POSITIVE_INFINITY
           },
           position: CesiumLib.Cartesian3.fromDegrees(
             (layer.bounds.west + layer.bounds.east) / 2,
             (layer.bounds.south + layer.bounds.north) / 2,
-            1220 + index * 22
+            1305 + index * 36
           ),
           show: false
         }));
@@ -637,28 +817,22 @@
       riverWaterActive = active;
       riverWaterRevealStart = active ? CesiumLib.JulianDate.now() : null;
       riverWaterCameraOrbiting = false;
-      viewer.scene.globe.show = !active;
-      if (baseLayer) baseLayer.alpha = active ? 0 : 1;
+      viewer.scene.globe.show = true;
+      if (baseLayer) baseLayer.alpha = 1;
       riverWaterEntities.forEach((entity) => {
-        entity.show = active;
+        const isWbchenWaterFrame = waterLayers.some((layer) => entity.name?.startsWith(layer.label));
+        const isBuilding = entity.name?.includes("低模建物");
+        entity.show = active && !isWbchenWaterFrame && !isBuilding;
       });
-      debrisStreamEntities.forEach((entity) => {
-        entity.show = !active;
-      });
-      window.clearInterval(riverWaterTimer);
+      stopRiverWaterAnimation();
       if (!active) {
+        riverWaterFrame = 0;
+        setWaterAnimationFrame(1);
         viewer.camera.lookAtTransform(CesiumLib.Matrix4.IDENTITY);
         return;
       }
-      riverWaterFrame = 1;
-      riverWaterTimer = window.setInterval(() => {
-        riverWaterFrame = riverWaterFrame >= 24 ? 1 : riverWaterFrame + 1;
-        riverWaterEntities.forEach((entity) => {
-          const match = waterLayers.find((layer) => entity.name?.startsWith(layer.label));
-          if (!match || !entity.rectangle?.material) return;
-          entity.rectangle.material.image = `${match.frameBase}/Frame_${riverWaterFrame}.png`;
-        });
-      }, 620);
+      startRiverWaterAnimation();
+      postFloodDataAnchorPositions(viewer);
       const fxCenter = centerOfBounds(waterLayers[0].bounds);
       riverWaterCameraTarget = CesiumLib.Cartesian3.fromDegrees(fxCenter.lon, fxCenter.lat, 1180);
       riverWaterCameraHeading = CesiumLib.Math.toRadians(24);
@@ -671,15 +845,36 @@
         },
         duration: 1.4,
         complete: () => {
-          riverWaterCameraOrbiting = true;
+          riverWaterCameraOrbiting = false;
+          postFloodDataAnchorPositions(viewer);
         },
         cancel: () => {
-          riverWaterCameraOrbiting = true;
+          riverWaterCameraOrbiting = false;
+          postFloodDataAnchorPositions(viewer);
         }
       });
     }
 
     function setOverviewCamera(viewer, duration = 0) {
+      const closeDebrisFocus = initialFocus === "debris";
+      if (closeDebrisFocus) {
+        const target = CesiumLib.Cartesian3.fromDegrees(120.6929, 23.0758, 620);
+        const offset = new CesiumLib.HeadingPitchRange(
+          CesiumLib.Math.toRadians(34),
+          CesiumLib.Math.toRadians(-42),
+          3900
+        );
+        if (duration > 0) {
+          viewer.camera.flyToBoundingSphere(new CesiumLib.BoundingSphere(target, 520), {
+            duration,
+            offset
+          });
+        } else {
+          viewer.camera.lookAt(target, offset);
+          viewer.camera.lookAtTransform(CesiumLib.Matrix4.IDENTITY);
+        }
+        return;
+      }
       const view = {
         destination: CesiumLib.Cartesian3.fromDegrees(120.755, 23.155, 18500),
         orientation: {
@@ -723,16 +918,19 @@
         shouldAnimate: true,
         terrainProvider: new CesiumLib.EllipsoidTerrainProvider()
       });
+      activeViewer = viewer;
       viewer.imageryLayers.removeAll();
-      setBasemap(viewer, "dark-terrain");
+      setBasemap(viewer, initialBasemap);
       viewer.scene.backgroundColor = CesiumLib.Color.fromCssColorString("#020617");
       viewer.scene.globe.baseColor = CesiumLib.Color.fromCssColorString("#030712");
       viewer.scene.globe.depthTestAgainstTerrain = false;
       viewer.scene.globe.enableLighting = true;
       viewer.scene.postProcessStages.fxaa.enabled = true;
       viewer.clock.onTick.addEventListener(() => updateRiverWaterCamera(viewer));
+      viewer.scene.postRender.addEventListener(() => postFloodDataAnchorPositionsThrottled(viewer));
       bindManualCameraOverride(viewer);
       setOverviewCamera(viewer);
+      preloadWaterFrames();
 
       if (CesiumLib.ArcGISTiledElevationTerrainProvider) {
         viewer.terrainProvider = await CesiumLib.ArcGISTiledElevationTerrainProvider.fromUrl(TERRAIN_URL);
@@ -744,6 +942,7 @@
         fetch(torrentsUrl).then((r) => r.json()),
         fetch(realBuildingsUrl).then((r) => r.json())
       ]);
+      await loadWaterLayerMetadata();
 
       const basinRing = basin.features?.[0]?.geometry?.coordinates?.[0] || [];
       viewer.entities.add({
@@ -810,6 +1009,10 @@
         }
         if (event.data?.type === "laonong:toggle-river-water") {
           setRaisedRiverWaterVisible(viewer, Boolean(event.data.active));
+          return;
+        }
+        if (event.data?.type === "laonong:set-flash-flood-river") {
+          setFlashFloodRiverVisible(Boolean(event.data.active));
           return;
         }
         if (event.data?.type !== "laonong:select-stream") return;

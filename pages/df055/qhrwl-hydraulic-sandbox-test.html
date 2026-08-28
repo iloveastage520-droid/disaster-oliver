@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QHRWL Hydraulic Sandbox Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+        radial-gradient(circle at 48% 42%, rgba(14, 165, 233, 0.16), transparent 38%),
+        linear-gradient(135deg, #c8d8cc 0%, #b7cbbd 48%, #aebfd0 100%);
+      background-size: 46px 46px, 46px 46px, auto, auto;
+      color: #0f172a;
+      font-family: Inter, "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    }
+    #scene { position: fixed; inset: 0; }
+    .title, .panel, .status {
+      position: fixed;
+      z-index: 5;
+      border: 1px solid rgba(14, 116, 144, 0.26);
+      background: rgba(248, 250, 252, 0.88);
+      box-shadow: 0 18px 54px rgba(15, 23, 42, 0.14);
+    }
+    .title { top: 24px; left: 26px; min-width: 410px; padding: 16px 18px; }
+    .title small, .panel h2 {
+      color: #0369a1;
+      font-size: 14px;
+      font-weight: 950;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .title h1 { margin: 5px 0 0; font-size: 34px; line-height: 1.08; }
+    .panel { right: 26px; top: 24px; width: 350px; transition: transform 0.28s ease, opacity 0.28s ease; }
+    .panel.is-collapsed { transform: translateX(calc(100% - 48px)); }
+    .panel.is-collapsed .readout,
+    .panel.is-collapsed .controls,
+    .panel.is-collapsed .note { opacity: 0; pointer-events: none; }
+    .panel.is-collapsed .panel-title { opacity: 0; }
+    .panel-toggle {
+      position: absolute;
+      left: 8px;
+      top: 12px;
+      z-index: 2;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-color: rgba(14, 116, 144, 0.42);
+      background: rgba(14, 116, 144, 0.88);
+      font-size: 18px;
+      line-height: 1;
+    }
+    .panel header, .readout, .controls, .note { padding: 14px 16px; border-bottom: 1px solid rgba(14, 116, 144, 0.16); }
+    .panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-left: 52px; min-height: 56px; }
+    .panel h2 { margin: 0; }
+    .readout { display: grid; gap: 9px; font-size: 14px; font-weight: 850; }
+    .row { display: flex; justify-content: space-between; gap: 16px; }
+    .row span:first-child { color: rgba(15, 23, 42, 0.62); }
+    .controls { display: grid; gap: 12px; }
+    button {
+      height: 42px;
+      border: 1px solid rgba(14, 116, 144, 0.38);
+      background: rgba(14, 116, 144, 0.88);
+      color: white;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      color: rgba(15, 23, 42, 0.68);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .control-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .control-value {
+      color: #0369a1;
+      font-variant-numeric: tabular-nums;
+    }
+    input[type="range"] { width: 100%; }
+    .note, .status {
+      color: rgba(15, 23, 42, 0.72);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+    .status { left: 26px; bottom: 24px; max-width: 760px; padding: 12px 14px; }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <section class="title">
+    <small>WBCHEN / QHRWL TRIANGULAR SANDBOX</small>
+    <h1>QHRWL Hydraulic Sandbox Test</h1>
+  </section>
+  <aside class="panel" id="controlPanel">
+    <header><h2 class="panel-title">Water + Terrain</h2><button class="panel-toggle" id="panelToggle" type="button" aria-label="收合右側控制面板">›</button></header>
+    <div class="readout">
+      <div class="row"><span>Frame</span><span id="frameText">-- / 24</span></div>
+      <div class="row"><span>Wet Nodes</span><span id="wetText">--</span></div>
+      <div class="row"><span>Median Depth</span><span id="medianText">--</span></div>
+      <div class="row"><span>Max Depth</span><span id="maxText">--</span></div>
+      <div class="row"><span>DEM Elevation</span><span id="heightText">--</span></div>
+      <div class="row"><span>Mesh</span><span id="meshText">loading</span></div>
+      <div class="row"><span>Camera Yaw</span><span id="yawText">--</span></div>
+      <div class="row"><span>Camera Pitch</span><span id="pitchText">--</span></div>
+      <div class="row"><span>Camera Distance</span><span id="distanceText">--</span></div>
+    </div>
+    <div class="controls">
+      <button id="toggleBtn">PAUSE</button>
+      <label><span class="control-head">Playback Speed <strong class="control-value" id="speedValue">0.65</strong></span><input id="speedRange" type="range" min="0.2" max="2.2" step="0.1" value="0.65"></label>
+      <label><span class="control-head">Terrain Relief <strong class="control-value" id="reliefValue">0.95</strong></span><input id="reliefRange" type="range" min="0.2" max="2.2" step="0.05" value="0.95"></label>
+      <label><span class="control-head">Water Height <strong class="control-value" id="waterValue">13</strong></span><input id="waterRange" type="range" min="2" max="28" step="0.5" value="13"></label>
+      <label><span class="control-head">Flow Motion <strong class="control-value" id="flowValue">0.55</strong></span><input id="flowRange" type="range" min="0" max="2.4" step="0.1" value="0.55"></label>
+      <label><span class="control-head">Terrain Opacity <strong class="control-value" id="terrainOpacityValue">0.62</strong></span><input id="terrainOpacityRange" type="range" min="0.2" max="1" step="0.02" value="0.62"></label>
+      <label><span class="control-head">Water Opacity <strong class="control-value" id="waterOpacityValue">0.90</strong></span><input id="waterOpacityRange" type="range" min="0.2" max="1" step="0.02" value="0.90"></label>
+      <label><span class="control-head">Water Depth Test <strong class="control-value" id="depthTestValue">OFF</strong></span><input id="depthTestRange" type="range" min="0" max="1" step="1" value="0"></label>
+      <button id="resetBtn">RESET VIEW</button>
+    </div>
+    <div class="note">這版使用 `qhrwl_2026082720.nc` 三角網格本身的 XY / ele / elev，把上游段地形做成整塊沙盤，水面依水深貼在山谷上方。</div>
+  </aside>
+  <div class="status">目標：測試 qhrwl 上游段「山谷沙盤 + 三角網格水資料」。若效果好，後續可把這套資料定位回 WGS84/Cesium。</div>
+
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script>
+    const DATA_URL = "../../data/qhrwl-hydraulic-mesh.json";
+    const $ = (id) => document.getElementById(id);
+    const canvas = $("scene");
+    const controlPanel = $("controlPanel");
+    const panelToggle = $("panelToggle");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0xb8c8bd, 0.0022);
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 5000);
+    scene.add(new THREE.HemisphereLight(0xf8fafc, 0x9cae9d, 1.45));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.45);
+    sun.position.set(260, 420, 180);
+    scene.add(sun);
+
+    let data, expandedNodes, expandedWater, terrainPositions, waterPositions, terrainMesh, waterMesh, wireMesh;
+    let flowParticles = [];
+    let yaw = -0.58, pitch = 0.52, distance = 1450, target = new THREE.Vector3();
+    let dragging = false, lastX = 0, lastY = 0, playing = true, frameFloat = 0, lastTime = performance.now();
+
+    function syncControlValues() {
+      $("speedValue").textContent = Number($("speedRange").value).toFixed(2);
+      $("reliefValue").textContent = Number($("reliefRange").value).toFixed(2);
+      $("waterValue").textContent = Number($("waterRange").value).toFixed(1);
+      $("flowValue").textContent = Number($("flowRange").value).toFixed(2);
+      $("terrainOpacityValue").textContent = Number($("terrainOpacityRange").value).toFixed(2);
+      $("waterOpacityValue").textContent = Number($("waterOpacityRange").value).toFixed(2);
+      $("depthTestValue").textContent = Number($("depthTestRange").value) ? "ON" : "OFF";
+      $("yawText").textContent = yaw.toFixed(2);
+      $("pitchText").textContent = pitch.toFixed(2);
+      $("distanceText").textContent = Math.round(distance).toLocaleString();
+    }
+
+    function applyRenderControls() {
+      if (terrainMesh) {
+        terrainMesh.material.opacity = Number($("terrainOpacityRange").value);
+        terrainMesh.material.needsUpdate = true;
+      }
+      if (waterMesh) {
+        waterMesh.material.opacity = Number($("waterOpacityRange").value);
+        waterMesh.material.depthTest = Boolean(Number($("depthTestRange").value));
+        waterMesh.material.needsUpdate = true;
+      }
+    }
+
+    function updateCamera() {
+      const cp = Math.cos(pitch);
+      camera.position.set(target.x + Math.sin(yaw) * cp * distance, target.y + Math.sin(pitch) * distance, target.z + Math.cos(yaw) * cp * distance);
+      camera.lookAt(target);
+    }
+
+    function terrainColor(relZ, stats, datum) {
+      const low = stats.p05 - datum;
+      const high = stats.p95 - datum;
+      const t = Math.max(0, Math.min(1, (relZ - low) / (high - low || 1)));
+      if (t < 0.42) return [0.06 + t * 0.22, 0.42 + t * 0.40, 0.38 + t * 0.12];
+      if (t < 0.75) return [0.34 + t * 0.45, 0.64 + t * 0.22, 0.28];
+      return [0.86, 0.84, 0.48 + t * 0.15];
+    }
+
+    function build() {
+      expandedNodes = [];
+      expandedWater = data.waterDepth.map(() => []);
+      data.triangles.forEach((tri) => {
+        tri.forEach((nodeIndex) => {
+          expandedNodes.push(data.nodes[nodeIndex]);
+          data.waterDepth.forEach((frame, frameIndex) => expandedWater[frameIndex].push(frame[nodeIndex]));
+        });
+      });
+      const count = expandedNodes.length;
+      terrainPositions = new Float32Array(count * 3);
+      waterPositions = new Float32Array(count * 3);
+      const terrainColors = new Float32Array(count * 3);
+      const waterColors = new Float32Array(count * 3);
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      const relief = Number($("reliefRange").value);
+      expandedNodes.forEach((node, i) => {
+        const x = node[0];
+        const z = -node[1];
+        terrainPositions[i * 3] = x;
+        terrainPositions[i * 3 + 1] = node[2] * relief;
+        terrainPositions[i * 3 + 2] = z;
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+        terrainColors.set(terrainColor(node[2], data.stats.terrainElevation, data.terrainDatumMedian), i * 3);
+        waterColors.set([0.02, 0.24, 0.95], i * 3);
+      });
+      const terrainGeometry = new THREE.BufferGeometry();
+      terrainGeometry.setAttribute("position", new THREE.BufferAttribute(terrainPositions, 3));
+      terrainGeometry.setAttribute("color", new THREE.BufferAttribute(terrainColors, 3));
+      terrainGeometry.computeVertexNormals();
+      terrainMesh = new THREE.Mesh(terrainGeometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: true, opacity: Number($("terrainOpacityRange").value), depthWrite: true }));
+      terrainMesh.renderOrder = 1;
+      scene.add(terrainMesh);
+
+      wireMesh = new THREE.LineSegments(new THREE.WireframeGeometry(terrainGeometry), new THREE.LineBasicMaterial({ color: 0x155e75, transparent: true, opacity: 0.045 }));
+      scene.add(wireMesh);
+
+      const waterGeometry = new THREE.BufferGeometry();
+      waterGeometry.setAttribute("position", new THREE.BufferAttribute(waterPositions, 3));
+      waterGeometry.setAttribute("color", new THREE.BufferAttribute(waterColors, 3));
+      waterMesh = new THREE.Mesh(waterGeometry, new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: Number($("waterOpacityRange").value),
+        depthWrite: false,
+        depthTest: Boolean(Number($("depthTestRange").value))
+      }));
+      waterMesh.renderOrder = 10;
+      scene.add(waterMesh);
+
+      flowParticles = [];
+      const particleGeometry = new THREE.SphereGeometry(1.45, 10, 6);
+      const candidates = data.nodes
+        .map((node, index) => ({ node, index, depth: Math.max(...data.waterDepth.map((frame) => frame[index] || 0)) }))
+        .filter((item) => item.depth > 0.12)
+        .sort((a, b) => a.node[1] - b.node[1]);
+      const particleCount = Math.min(28, candidates.length);
+      for (let i = 0; i < particleCount; i += 1) {
+        const particle = new THREE.Mesh(
+          particleGeometry,
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.42, depthWrite: false })
+        );
+        particle.userData.phase = i / particleCount;
+        particle.userData.candidates = candidates;
+        scene.add(particle);
+        flowParticles.push(particle);
+      }
+
+      const grid = new THREE.GridHelper(1450, 34, 0x94a3b8, 0xcbd5e1);
+      grid.material.transparent = true;
+      grid.material.opacity = 0.28;
+      grid.position.y = -36;
+      scene.add(grid);
+      target.set((minX + maxX) / 2, 8, (minZ + maxZ) / 2);
+      updateCamera();
+    }
+
+    function applyFrame(frame, mix, now) {
+      const a = expandedWater[frame];
+      const b = expandedWater[(frame + 1) % expandedWater.length];
+      const relief = Number($("reliefRange").value);
+      const waterScale = Number($("waterRange").value);
+      const flowMotion = Number($("flowRange").value);
+      for (let i = 0; i < expandedNodes.length; i += 1) {
+        const node = expandedNodes[i];
+        const depth = a[i] * (1 - mix) + b[i] * mix;
+        const visible = depth > 0.05 ? depth : 0;
+        const wave = Math.sin(node[0] * 0.045 - node[1] * 0.025 + now * 0.0014) * Math.min(visible * 2.2, 2.8);
+        terrainPositions[i * 3 + 1] = node[2] * relief;
+        waterPositions[i * 3] = node[0];
+        waterPositions[i * 3 + 1] = visible ? node[2] * relief + Math.max(6.5, Math.pow(visible, 0.72) * waterScale) + wave : -24;
+        waterPositions[i * 3 + 2] = -node[1];
+      }
+      const candidates = flowParticles[0]?.userData.candidates || [];
+      flowParticles.forEach((particle, index) => {
+        if (!candidates.length || flowMotion <= 0) {
+          particle.visible = false;
+          return;
+        }
+        const t = (particle.userData.phase + now * 0.000055 * flowMotion) % 1;
+        const sampleIndex = Math.min(candidates.length - 1, Math.floor(t * candidates.length));
+        const item = candidates[sampleIndex];
+        const depth = data.waterDepth[frame][item.index] || 0;
+        particle.visible = depth > 0.08;
+        const pulse = 0.55 + 0.45 * Math.sin(now * 0.006 + index);
+        particle.material.opacity = 0.12 + pulse * 0.32;
+        particle.scale.setScalar(0.55 + depth * 0.28);
+        particle.position.set(
+          item.node[0],
+          item.node[2] * relief + Math.max(4, Math.pow(depth, 0.72) * waterScale) + 5,
+          -item.node[1]
+        );
+      });
+      terrainMesh.geometry.attributes.position.needsUpdate = true;
+      terrainMesh.geometry.computeVertexNormals();
+      waterMesh.geometry.attributes.position.needsUpdate = true;
+      waterMesh.geometry.computeVertexNormals();
+      $("frameText").textContent = `${String(frame + 1).padStart(2, "0")} / ${data.stats.frameCount}`;
+      $("wetText").textContent = data.stats.wetNodeCount[frame].toLocaleString();
+      $("medianText").textContent = `${data.stats.medianWetDepth[frame]} m`;
+      $("maxText").textContent = `${data.stats.maxWaterDepth[frame]} m`;
+    }
+
+    async function init() {
+      data = await fetch(DATA_URL).then((r) => {
+        if (!r.ok) throw new Error(`Load failed: ${r.status}`);
+        return r.json();
+      });
+      $("meshText").textContent = `${data.stats.nodeCount.toLocaleString()} / ${data.stats.triangleCount.toLocaleString()}`;
+      const h = data.stats.terrainElevation;
+      $("heightText").textContent = `${h.min} - ${h.max} m`;
+      build();
+      requestAnimationFrame(animate);
+    }
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const delta = Math.min(80, now - lastTime);
+      lastTime = now;
+      if (playing && data) frameFloat = (frameFloat + delta * 0.001 * Number($("speedRange").value)) % data.stats.frameCount;
+      if (data && waterMesh) {
+        const frame = Math.floor(frameFloat);
+        applyFrame(frame, frameFloat - frame, now);
+      }
+      renderer.render(scene, camera);
+    }
+
+    canvas.addEventListener("pointerdown", (event) => {
+      dragging = true; lastX = event.clientX; lastY = event.clientY; canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      yaw -= (event.clientX - lastX) * 0.006;
+      pitch = Math.max(-0.95, Math.min(1.38, pitch - (event.clientY - lastY) * 0.005));
+      lastX = event.clientX; lastY = event.clientY; updateCamera();
+      syncControlValues();
+    });
+    canvas.addEventListener("pointerup", () => { dragging = false; });
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      distance = Math.max(160, Math.min(4200, distance + event.deltaY * 0.8));
+      updateCamera();
+      syncControlValues();
+    }, { passive: false });
+    $("toggleBtn").addEventListener("click", () => {
+      playing = !playing;
+      $("toggleBtn").textContent = playing ? "PAUSE" : "PLAY";
+    });
+    $("resetBtn").addEventListener("click", () => {
+      yaw = -0.58; pitch = 0.52; distance = 1450; updateCamera(); syncControlValues();
+    });
+    panelToggle.addEventListener("click", () => {
+      const collapsed = controlPanel.classList.toggle("is-collapsed");
+      panelToggle.textContent = collapsed ? "‹" : "›";
+      panelToggle.setAttribute("aria-label", collapsed ? "展開右側控制面板" : "收合右側控制面板");
+    });
+    ["speedRange", "reliefRange", "waterRange", "flowRange", "terrainOpacityRange", "waterOpacityRange", "depthTestRange"].forEach((id) => {
+      $(id).addEventListener("input", () => {
+        syncControlValues();
+        applyRenderControls();
+      });
+    });
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    syncControlValues();
+    init().catch((error) => {
+      document.querySelector(".status").textContent = `載入失敗：${error.message}`;
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

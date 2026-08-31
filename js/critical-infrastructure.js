@@ -83,8 +83,8 @@ const viewer = new CesiumLib.Viewer("critical-container", {
 
 const basemaps = {
   dark: {
-    url: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-    credit: "CartoDB Dark Matter, OpenStreetMap",
+    url: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    credit: "Esri Dark Gray Canvas",
     maximumLevel: 20
   },
   "google-hybrid": {

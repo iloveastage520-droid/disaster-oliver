@@ -420,8 +420,8 @@
     .map-video {
       position: absolute;
       z-index: 4;
-      width: min(270px, 20vw);
-      min-width: 220px;
+      width: min(320px, 23vw);
+      min-width: 250px;
       border: 1px solid rgba(93, 255, 202, .34);
       border-radius: 8px;
       overflow: hidden;
@@ -603,7 +603,7 @@
         inset: 10% 5% 8% 5%;
       }
 
-      .map-video { width: 220px; min-width: 0; }
+      .map-video { width: 240px; min-width: 0; }
     }
   </style>
 </head>
@@ -1263,8 +1263,8 @@
         const slot = slots[card.dataset.slot] || { x: .5, y: .5 };
         const screenX = slot.x;
         const screenY = slot.y;
-        const x = Math.min(width - 170, Math.max(170, width * screenX));
-        const y = Math.min(height - 130, Math.max(130, height * screenY));
+        const x = Math.min(width - 190, Math.max(190, width * screenX));
+        const y = Math.min(height - 145, Math.max(145, height * screenY));
         const float = Math.sin(frame * .028 + screenX * 12 + screenY * 8) * 4;
         const scale = .96;
         card.style.transform = `translate(${x}px, ${y + float}px) translate(-50%, -50%) scale(${scale})`;

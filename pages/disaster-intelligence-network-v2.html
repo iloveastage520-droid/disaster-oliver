@@ -1362,7 +1362,8 @@
     function drawNodes() {
       ctx.save();
       const bootElapsed = performance.now() - bootStart;
-      const labelReveal = Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
+      const cctvEnabled = stage?.classList.contains('cctv-enabled');
+      const labelReveal = cctvEnabled ? 0 : Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
       for (const node of ordered) {
         const p = project(node);

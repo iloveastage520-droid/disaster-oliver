@@ -1445,6 +1445,8 @@
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
       for (const node of ordered) {
         const p = project(node);
+        const textBudget = labelReveal * nodes.length;
+        const stagedLabelReady = node.layer === 0 || node.id <= textBudget;
         const pulse = 1 + Math.sin(frame * .035 + node.id) * .12;
         const radius = node.radius * pulse * p.scale;
         ctx.shadowBlur = (node.layer === 0 ? 18 : 5) * p.glow;
@@ -1457,7 +1459,7 @@
         ctx.fill();
         ctx.stroke();
 
-        if (labelReveal > 0 && (node.layer === 0 || node.isCategory || p.depth > .72) && p.scale > .66) {
+        if (labelReveal > 0 && stagedLabelReady && (node.layer === 0 || node.isCategory || p.depth > .72) && p.scale > .66) {
           ctx.shadowBlur = 0;
           const nodeDelay = ((node.id * 37) % 900) / 900;
           const localReveal = Math.max(0, Math.min(1, (labelReveal - nodeDelay * .34) / .66));

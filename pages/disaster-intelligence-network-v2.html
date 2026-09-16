@@ -717,6 +717,8 @@
     let typedDetailCount = 0;
     let typedDetailPause = 0;
     let narrativeMode = narrativeSegments[0].mode;
+    let narrativeCycleStart = performance.now();
+    const narrativeCycleMs = 60000;
     const monitoringSources = [
       { label: '颱風情資', value: 15, unit: '項', color: '#20f7ff', examples: ['颱風路徑資訊', '颱風與衛星觀測', '動態大氣觀測', '濁度監測', '近1小時最大風速', '風速風向觀測', '風速風向預報', '歷史颱風資訊儀表板', '降雨及淹水CAP示警', '三維雷達迴波展示', '降雨及土石流CAP示警', '各國預報路徑(2D)', '水位與水庫CAP示警', '三維動態風場預報', '本日情勢(即時)'] },
       { label: '在地防災資訊', value: 21, unit: '項', color: '#5dffca', examples: ['災害示警資訊', '即時氣溫', '天氣概況', '飛航動態', '即時觀測風速', '景點即時影像', '降雨觀測', '降水預報(系集)', '空氣品質監測(地圖)', '空氣品質監測(測站)', '園區供水情勢', '交通串流及異常監測', '鐵路情勢', '火山監測綜合指標', '水庫水情', '離島水庫水情', '火山監測指標', '離島能見度', '環境輻射監測', '林火天氣指數', '鐵路風險(即時)'] },
@@ -937,6 +939,7 @@
       typedDetailCount = 0;
       typedDetailPause = 0;
       narrativeMode = narrativeSegments[0].mode;
+      narrativeCycleStart = performance.now();
       detail.textContent = '';
     }
 
@@ -1053,6 +1056,24 @@
 
     function updateNarrativeTyping() {
       if (!detail) return;
+      const elapsed = performance.now() - narrativeCycleStart;
+      if (elapsed > narrativeCycleMs) {
+        narrativeCycleStart = performance.now();
+        typedDetailCount = 0;
+        typedDetailPause = 12;
+        narrativeMode = narrativeSegments[0].mode;
+        detail.textContent = '';
+        return;
+      }
+
+      if (elapsed > narrativeCycleMs - 4200) {
+        const fade = Math.max(0, (narrativeCycleMs - elapsed) / 4200);
+        detail.style.opacity = String(.24 + fade * .76);
+        narrativeMode = 'archive';
+        return;
+      }
+
+      detail.style.opacity = '1';
       if (typedDetailPause > 0) {
         typedDetailPause -= 1;
         return;
@@ -1122,7 +1143,9 @@
     function drawSynapseVeil() {
       const cx = width * 0.54;
       const cy = height * 0.52;
-      const radius = Math.min(width, height) * .44;
+      const cycleProgress = ((performance.now() - narrativeCycleStart) % narrativeCycleMs) / narrativeCycleMs;
+      const lifePulse = .94 + Math.sin(cycleProgress * Math.PI * 2) * .06;
+      const radius = Math.min(width, height) * .44 * lifePulse;
       const mode = neuralModeStyle();
       ctx.save();
       ctx.translate(cx, cy);
@@ -1251,7 +1274,8 @@
       const cx = width * 0.54;
       const cy = height * 0.52;
       if (node.layer === 0) return { x: node.x, y: node.y, scale: 1, glow: 1 };
-      const sphere = Math.min(width, height) * .48;
+      const breath = 1 + Math.sin(frame * .006) * .035;
+      const sphere = Math.min(width, height) * .48 * breath;
       const yaw = rotation * 1.25;
       const pitch = Math.sin(rotation * .7) * .34;
       const cosy = Math.cos(yaw);
@@ -1277,7 +1301,8 @@
     function projectSpherePoint(sx, sy, sz) {
       const cx = width * 0.54;
       const cy = height * 0.52;
-      const sphere = Math.min(width, height) * .48;
+      const breath = 1 + Math.sin(frame * .006) * .035;
+      const sphere = Math.min(width, height) * .48 * breath;
       const yaw = rotation * 1.25;
       const pitch = Math.sin(rotation * .7) * .34;
       const cosy = Math.cos(yaw);
@@ -1442,17 +1467,18 @@
       const bootElapsed = performance.now() - bootStart;
       const cctvEnabled = stage?.classList.contains('cctv-enabled');
       const labelReveal = cctvEnabled ? 0 : Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
+      const breathGlow = .88 + Math.sin(frame * .006) * .12;
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
       for (const node of ordered) {
         const p = project(node);
         const textBudget = labelReveal * nodes.length;
         const stagedLabelReady = node.layer === 0 || node.id <= textBudget;
         const pulse = 1 + Math.sin(frame * .035 + node.id) * .12;
-        const radius = node.radius * pulse * p.scale;
+        const radius = node.radius * pulse * p.scale * (node.layer === 0 ? 1 + Math.sin(frame * .01) * .035 : 1);
         ctx.shadowBlur = (node.layer === 0 ? 18 : 5) * p.glow;
         ctx.shadowColor = node.color;
-        ctx.fillStyle = hexToRgba(node.color, (node.layer === 0 ? .24 : .055 + node.energy * .09) * p.glow);
-        ctx.strokeStyle = hexToRgba(node.color, (node.layer === 0 ? .64 : .24) * p.glow);
+        ctx.fillStyle = hexToRgba(node.color, (node.layer === 0 ? .24 : .055 + node.energy * .09) * p.glow * breathGlow);
+        ctx.strokeStyle = hexToRgba(node.color, (node.layer === 0 ? .64 : .24) * p.glow * breathGlow);
         ctx.lineWidth = node.layer === 0 ? 1.4 : .85;
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);

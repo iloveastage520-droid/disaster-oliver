@@ -760,6 +760,7 @@
     let frame = 0;
     let videoCycle = -1;
     let activeCctvCard = null;
+    let bootStart = performance.now();
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -801,6 +802,7 @@
     }
 
     function buildGraph() {
+      bootStart = performance.now();
       const text = promptInput?.value.trim() || '災害情資網';
       const random = seeded(text);
       const terms = termsFrom(text);
@@ -1359,6 +1361,8 @@
 
     function drawNodes() {
       ctx.save();
+      const bootElapsed = performance.now() - bootStart;
+      const labelReveal = Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
       for (const node of ordered) {
         const p = project(node);
@@ -1374,8 +1378,11 @@
         ctx.fill();
         ctx.stroke();
 
-        if ((node.layer === 0 || node.isCategory || p.depth > .72) && p.scale > .66) {
+        if (labelReveal > 0 && (node.layer === 0 || node.isCategory || p.depth > .72) && p.scale > .66) {
           ctx.shadowBlur = 0;
+          const nodeDelay = ((node.id * 37) % 900) / 900;
+          const localReveal = Math.max(0, Math.min(1, (labelReveal - nodeDelay * .34) / .66));
+          if (localReveal <= 0) continue;
           const frontBoost = .74 + p.depth * .72;
           const fontSize = (node.layer === 0 ? 18 : node.isCategory ? 12.5 : 10.8) * Math.min(1.35, p.scale * frontBoost);
           ctx.font = `${fontSize}px ui-sans-serif, system-ui`;
@@ -1386,12 +1393,12 @@
           const padX = 5;
           const labelW = metrics.width + padX * 2;
           const labelH = fontSize + 8;
-          ctx.fillStyle = `rgba(3, 7, 12, ${node.isCategory ? .62 : .46 + p.depth * .14})`;
+          ctx.fillStyle = `rgba(3, 7, 12, ${(node.isCategory ? .62 : .46 + p.depth * .14) * localReveal})`;
           ctx.fillRect(p.x - labelW / 2, labelY - labelH / 2, labelW, labelH);
           ctx.lineWidth = 3;
-          ctx.strokeStyle = 'rgba(3, 7, 12, .88)';
+          ctx.strokeStyle = `rgba(3, 7, 12, ${.88 * localReveal})`;
           ctx.strokeText(node.label, p.x, labelY);
-          ctx.fillStyle = node.layer === 0 ? '#d9f6f7' : `rgba(217, 246, 247, ${.36 + p.depth * .42})`;
+          ctx.fillStyle = node.layer === 0 ? `rgba(217, 246, 247, ${localReveal})` : `rgba(217, 246, 247, ${(.36 + p.depth * .42) * localReveal})`;
           ctx.fillText(node.label, p.x, labelY);
         }
       }

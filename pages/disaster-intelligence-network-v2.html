@@ -723,6 +723,7 @@
     let narrativeMode = narrativeSegments[0].mode;
     let narrativeCycleStart = performance.now();
     const narrativeCycleMs = 60000;
+    let cctvShellUntil = 0;
     const monitoringSources = [
       { label: '颱風情資', value: 15, unit: '項', color: '#20f7ff', examples: ['颱風路徑資訊', '颱風與衛星觀測', '動態大氣觀測', '濁度監測', '近1小時最大風速', '風速風向觀測', '風速風向預報', '歷史颱風資訊儀表板', '降雨及淹水CAP示警', '三維雷達迴波展示', '降雨及土石流CAP示警', '各國預報路徑(2D)', '水位與水庫CAP示警', '三維動態風場預報', '本日情勢(即時)'] },
       { label: '在地防災資訊', value: 21, unit: '項', color: '#5dffca', examples: ['災害示警資訊', '即時氣溫', '天氣概況', '飛航動態', '即時觀測風速', '景點即時影像', '降雨觀測', '降水預報(系集)', '空氣品質監測(地圖)', '空氣品質監測(測站)', '園區供水情勢', '交通串流及異常監測', '鐵路情勢', '火山監測綜合指標', '水庫水情', '離島水庫水情', '火山監測指標', '離島能見度', '環境輻射監測', '林火天氣指數', '鐵路風險(即時)'] },
@@ -1089,6 +1090,7 @@
         detail.textContent = narrativeText.slice(0, typedDetailCount);
         const { mode, boundary } = narrativeModeFromIndex(typedDetailCount);
         narrativeMode = mode;
+        if (mode === 'cctv') cctvShellUntil = Math.max(cctvShellUntil, performance.now() + 8000);
         if (boundary) typedDetailPause = mode === 'cctv' ? 420 : 20;
       }
     }
@@ -1179,7 +1181,7 @@
     }
 
     function drawCctvOuterShell() {
-      if (stage?.classList.contains('cctv-enabled') || narrativeMode !== 'cctv') return;
+      if (stage?.classList.contains('cctv-enabled') || performance.now() > cctvShellUntil) return;
       const cx = width * 0.54;
       const cy = height * 0.52;
       const rx = Math.min(width, height) * .48 * 1.42;
@@ -1420,7 +1422,7 @@
       };
       for (const card of videoCards) {
         const cctvEnabled = stage?.classList.contains('cctv-enabled');
-        const narrativeCctv = !cctvEnabled && (narrativeMode === 'cctv' || typedDetailPause > 80);
+        const narrativeCctv = !cctvEnabled && performance.now() <= cctvShellUntil;
         if (narrativeCctv) {
           const index = videoCards.indexOf(card);
           const y = -0.62 + (index / Math.max(1, videoCards.length - 1)) * 1.24;

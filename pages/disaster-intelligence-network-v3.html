@@ -1077,14 +1077,14 @@
 
     function lifeBreath(speed = 1, phase = 0) {
       const slow = Math.sin(frame * .0052 * speed + phase);
-      const heart = Math.sin(frame * .021 * speed + phase * 1.7);
-      return 1 + slow * .028 + Math.max(0, heart) * .008 + heartBeat() * .024;
+      return 1 + slow * .022 + heartBeat() * .026;
     }
 
-    function heartBeat(offset = 0) {
-      const beatFrame = (frame + offset) % 94;
-      const first = Math.exp(-Math.pow((beatFrame - 12) / 4.2, 2));
-      const second = Math.exp(-Math.pow((beatFrame - 25) / 5.8, 2)) * .62;
+    function heartBeat() {
+      const bpmFrames = 86;
+      const beatFrame = frame % bpmFrames;
+      const first = Math.exp(-Math.pow((beatFrame - 10) / 3.4, 2));
+      const second = Math.exp(-Math.pow((beatFrame - 21) / 4.2, 2)) * .52;
       return first + second;
     }
 
@@ -1701,7 +1701,7 @@
         const b = findNode(pulse.link.b);
         if (!a || !b) continue;
         const alive = Math.max(nodeLife(a), nodeLife(b));
-        const beat = heartBeat(pulse.link.a % 17);
+        const beat = heartBeat();
         pulse.t = (pulse.t + pulse.speed * (.72 + neuralModeStyle().wave * .12 + alive * .8 + beat * .9)) % 1;
         const pa = project(a);
         const pb = project(b);

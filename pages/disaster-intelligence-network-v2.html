@@ -1088,7 +1088,7 @@
         detail.textContent = narrativeText.slice(0, typedDetailCount);
         const { mode, boundary } = narrativeModeFromIndex(typedDetailCount);
         narrativeMode = mode;
-        if (boundary) typedDetailPause = 20;
+        if (boundary) typedDetailPause = mode === 'cctv' ? 130 : 20;
       }
     }
 
@@ -1398,7 +1398,7 @@
       };
       for (const card of videoCards) {
         const cctvEnabled = stage?.classList.contains('cctv-enabled');
-        const narrativeCctv = !cctvEnabled && narrativeMode === 'cctv';
+        const narrativeCctv = !cctvEnabled && (narrativeMode === 'cctv' || typedDetailPause > 80);
         if (narrativeCctv) {
           const index = videoCards.indexOf(card);
           const y = -0.62 + (index / Math.max(1, videoCards.length - 1)) * 1.24;

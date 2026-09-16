@@ -1050,6 +1050,7 @@
       simulate();
       drawNeuralShell();
       drawSynapseVeil();
+      drawCctvOuterShell();
       drawLinks();
       drawPulses();
       drawNodes();
@@ -1173,6 +1174,27 @@
           ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + Math.sin(a * 3) * 10, x2, y2);
           ctx.stroke();
         }
+      }
+      ctx.restore();
+    }
+
+    function drawCctvOuterShell() {
+      if (stage?.classList.contains('cctv-enabled') || narrativeMode !== 'cctv') return;
+      const cx = width * 0.54;
+      const cy = height * 0.52;
+      const rx = Math.min(width, height) * .48 * 1.42;
+      const ry = Math.min(width, height) * .48 * 1.02;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rotation * .42);
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 3; i += 1) {
+        ctx.strokeStyle = `rgba(255, 207, 156, ${.09 - i * .022})`;
+        ctx.lineWidth = .7;
+        ctx.setLineDash([8 + i * 3, 18 + i * 6]);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx * (1 - i * .07), ry * (1 - i * .1), i * .34, 0, Math.PI * 2);
+        ctx.stroke();
       }
       ctx.restore();
     }
@@ -1406,9 +1428,13 @@
           const angle = index * 2.399963;
           const p = projectSpherePoint(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
           const visible = p.depth > .34;
-          const scale = .34 + p.depth * .22;
-          card.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${scale})`;
-          card.style.opacity = visible ? String(.12 + p.depth * .58) : '0';
+          const cx = width * .54;
+          const cy = height * .52;
+          const shellX = cx + (p.x - cx) * 1.42;
+          const shellY = cy + (p.y - cy) * 1.36;
+          const scale = .24 + p.depth * .18;
+          card.style.transform = `translate(${shellX}px, ${shellY}px) translate(-50%, -50%) scale(${scale})`;
+          card.style.opacity = visible ? String(.14 + p.depth * .54) : '0';
           card.style.zIndex = String(8 + Math.round(p.depth * 7));
           card.style.pointerEvents = 'none';
           continue;

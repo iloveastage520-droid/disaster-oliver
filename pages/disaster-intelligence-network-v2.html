@@ -471,6 +471,10 @@
       opacity: .9;
     }
 
+    .map-video {
+      filter: saturate(.82) brightness(.86);
+    }
+
     .live-frame {
       position: absolute;
       inset: 0;
@@ -1394,6 +1398,21 @@
       };
       for (const card of videoCards) {
         const cctvEnabled = stage?.classList.contains('cctv-enabled');
+        const narrativeCctv = !cctvEnabled && narrativeMode === 'cctv';
+        if (narrativeCctv) {
+          const index = videoCards.indexOf(card);
+          const y = -0.62 + (index / Math.max(1, videoCards.length - 1)) * 1.24;
+          const radius = Math.sqrt(Math.max(0, 1 - y * y));
+          const angle = index * 2.399963;
+          const p = projectSpherePoint(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+          const visible = p.depth > .34;
+          const scale = .34 + p.depth * .22;
+          card.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${scale})`;
+          card.style.opacity = visible ? String(.12 + p.depth * .58) : '0';
+          card.style.zIndex = String(8 + Math.round(p.depth * 7));
+          card.style.pointerEvents = 'none';
+          continue;
+        }
         const slot = slots[card.dataset.slot] || { x: .5, y: .5 };
         const screenX = slot.x;
         const screenY = slot.y;

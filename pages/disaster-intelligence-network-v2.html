@@ -358,6 +358,17 @@
       text-shadow: 0 0 16px rgba(0, 0, 0, .9);
     }
 
+    .detail::after {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 1.05em;
+      margin-left: 4px;
+      vertical-align: -2px;
+      background: rgba(121, 228, 190, .7);
+      animation: caretBlink 1s steps(1) infinite;
+    }
+
     .taiwan-frame {
       position: absolute;
       inset: 7% 9% 7% 9%;
@@ -561,6 +572,10 @@
       to { transform: translateY(420%); }
     }
 
+    @keyframes caretBlink {
+      50% { opacity: .18; }
+    }
+
     @keyframes orbit-shell {
       from { transform: rotate(0deg) scale(1); }
       50% { transform: rotate(180deg) scale(.96); }
@@ -690,6 +705,18 @@
     const videoCards = [...document.querySelectorAll('.map-video')];
 
     const palette = ['#20f7ff', '#5dffca', '#ffc857', '#ff5377', '#8b7cff'];
+    const narrativeSegments = [
+      { text: '彙整了各機關災害監測資料超過620類，', mode: 'archive' },
+      { text: '攀爬社群媒體資料超過20家，', mode: 'social' },
+      { text: '氣象及雨量站：1,620、河川水位站：350、', mode: 'hydro' },
+      { text: '淹水感測器：2,469、空品感測器：10,999、地震監測器：147、', mode: 'sensor' },
+      { text: '全國CCTV：222,000隻、', mode: 'cctv' },
+      { text: '老人福利機構：1,194處、原民會原鄉部落567處', mode: 'care' }
+    ];
+    const narrativeText = narrativeSegments.map((segment) => segment.text).join('');
+    let typedDetailCount = 0;
+    let typedDetailPause = 0;
+    let narrativeMode = narrativeSegments[0].mode;
     const monitoringSources = [
       { label: '颱風情資', value: 15, unit: '項', color: '#20f7ff', examples: ['颱風路徑資訊', '颱風與衛星觀測', '動態大氣觀測', '濁度監測', '近1小時最大風速', '風速風向觀測', '風速風向預報', '歷史颱風資訊儀表板', '降雨及淹水CAP示警', '三維雷達迴波展示', '降雨及土石流CAP示警', '各國預報路徑(2D)', '水位與水庫CAP示警', '三維動態風場預報', '本日情勢(即時)'] },
       { label: '在地防災資訊', value: 21, unit: '項', color: '#5dffca', examples: ['災害示警資訊', '即時氣溫', '天氣概況', '飛航動態', '即時觀測風速', '景點即時影像', '降雨觀測', '降水預報(系集)', '空氣品質監測(地圖)', '空氣品質監測(測站)', '園區供水情勢', '交通串流及異常監測', '鐵路情勢', '火山監測綜合指標', '水庫水情', '離島水庫水情', '火山監測指標', '離島能見度', '環境輻射監測', '林火天氣指數', '鐵路風險(即時)'] },
@@ -907,7 +934,10 @@
       if (linkCount) linkCount.textContent = String(links.length).padStart(3, '0');
       if (depthCount) depthCount.textContent = String(layerCount).padStart(2, '0');
       if (coreText) coreText.textContent = '災害情資網';
-      detail.textContent = '彙整了各機關災害監測資料超過620類，攀爬社群媒體資料超過20家，氣象及雨量站：1,620、河川水位站：350、淹水感測器：2,469、空品感測器：10,999、地震監測器：147、全國CCTV：222,000隻、老人福利機構：1,194處、原民會原鄉部落567處';
+      typedDetailCount = 0;
+      typedDetailPause = 0;
+      narrativeMode = narrativeSegments[0].mode;
+      detail.textContent = '';
     }
 
     function islandBounds() {
@@ -1017,7 +1047,51 @@
       drawPulses();
       drawNodes();
       updateVideoCards();
+      updateNarrativeTyping();
       requestAnimationFrame(tick);
+    }
+
+    function updateNarrativeTyping() {
+      if (!detail) return;
+      if (typedDetailPause > 0) {
+        typedDetailPause -= 1;
+        return;
+      }
+      if (typedDetailCount < narrativeText.length) {
+        const step = frame % 5 === 0 ? 2 : 1;
+        typedDetailCount = Math.min(narrativeText.length, typedDetailCount + step);
+        detail.textContent = narrativeText.slice(0, typedDetailCount);
+        const { mode, boundary } = narrativeModeFromIndex(typedDetailCount);
+        narrativeMode = mode;
+        if (boundary) typedDetailPause = 20;
+      }
+    }
+
+    function narrativeModeFromIndex(index) {
+      let cursor = 0;
+      for (const segment of narrativeSegments) {
+        cursor += segment.text.length;
+        if (index <= cursor) {
+          return { mode: segment.mode, boundary: index === cursor };
+        }
+      }
+      return { mode: narrativeSegments[narrativeSegments.length - 1].mode, boundary: false };
+    }
+
+    function neuralModeStyle() {
+      const styles = {
+        archive: { color: [88, 215, 222], accent: [121, 228, 190], spin: .34, density: 1, wave: 1 },
+        social: { color: [139, 124, 255], accent: [121, 228, 190], spin: -.42, density: 1.18, wave: 1.25 },
+        hydro: { color: [76, 163, 232], accent: [88, 215, 222], spin: .55, density: 1.3, wave: .92 },
+        sensor: { color: [121, 228, 190], accent: [255, 200, 87], spin: -.62, density: 1.46, wave: 1.42 },
+        cctv: { color: [255, 207, 156], accent: [88, 215, 222], spin: .7, density: 1.08, wave: 1.8 },
+        care: { color: [255, 155, 194], accent: [202, 168, 255], spin: -.36, density: .96, wave: 1.15 }
+      };
+      return styles[narrativeMode] || styles.archive;
+    }
+
+    function rgb(values, alpha) {
+      return `rgba(${values[0]}, ${values[1]}, ${values[2]}, ${alpha})`;
     }
 
     function drawBackground() {
@@ -1049,19 +1123,20 @@
       const cx = width * 0.54;
       const cy = height * 0.52;
       const radius = Math.min(width, height) * .44;
+      const mode = neuralModeStyle();
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate(rotation * .34);
+      ctx.rotate(rotation * mode.spin);
       ctx.translate(-cx, -cy);
       ctx.globalCompositeOperation = 'lighter';
       for (let ring = 0; ring < 5; ring += 1) {
         const r = radius * (.34 + ring * .135);
-        const count = 13 + ring * 4;
-        ctx.strokeStyle = `rgba(121, 228, 190, ${.045 - ring * .004})`;
+        const count = Math.round((13 + ring * 4) * mode.density);
+        ctx.strokeStyle = rgb(mode.accent, .04 - ring * .0035);
         ctx.lineWidth = .55;
         for (let i = 0; i < count; i += 1) {
-          const a = (Math.PI * 2 * i) / count + frame * .0018 * (ring + 1);
-          const b = a + .22 + Math.sin(frame * .006 + i) * .05;
+          const a = (Math.PI * 2 * i) / count + frame * .0018 * (ring + 1) * mode.wave;
+          const b = a + .22 + Math.sin(frame * .006 * mode.wave + i) * .05;
           const x1 = cx + Math.cos(a) * r;
           const y1 = cy + Math.sin(a) * r * .74;
           const x2 = cx + Math.cos(b) * (r + 18);
@@ -1079,6 +1154,7 @@
       const cx = width * 0.54;
       const cy = height * 0.52;
       const island = islandBounds();
+      const mode = neuralModeStyle();
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(Math.sin(rotation * .8) * .055);
@@ -1086,7 +1162,7 @@
 
       for (let i = 0; i < 5; i += 1) {
         const inset = 1 - i * .105;
-        ctx.strokeStyle = `rgba(88, 215, 222, ${i === 0 ? .42 : .12 - i * .018})`;
+        ctx.strokeStyle = rgb(mode.color, i === 0 ? .34 : .1 - i * .015);
         ctx.lineWidth = i === 0 ? 1.6 : .75;
         ctx.shadowBlur = i === 0 ? 10 : 0;
         ctx.shadowColor = '#58d7de';
@@ -1103,8 +1179,8 @@
 
       ctx.setLineDash([]);
       ctx.shadowBlur = 6;
-      ctx.shadowColor = '#79e4be';
-      ctx.strokeStyle = 'rgba(121, 228, 190, .16)';
+      ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
+      ctx.strokeStyle = rgb(mode.accent, .14);
       ctx.lineWidth = .7;
       ctx.beginPath();
       ctx.moveTo(cx, cy - island.h * .49);
@@ -1310,6 +1386,7 @@
     function drawLinks() {
       ctx.save();
       ctx.lineCap = 'round';
+      const mode = neuralModeStyle();
       for (const link of links) {
         const a = findNode(link.a);
         const b = findNode(link.b);
@@ -1317,7 +1394,7 @@
         const pa = project(a);
         const pb = project(b);
         const alpha = Math.min(.16, (.018 + link.strength * .15) * Math.min(pa.glow, pb.glow));
-        ctx.strokeStyle = `rgba(121, 228, 190, ${alpha})`;
+        ctx.strokeStyle = rgb(mode.accent, alpha);
         ctx.lineWidth = (link.strength > .25 ? .72 : .34) * Math.min(pa.scale, pb.scale);
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
@@ -1326,7 +1403,7 @@
         ctx.quadraticCurveTo(mx, my, pb.x, pb.y);
         ctx.stroke();
         if (link.strength > .2) {
-          ctx.strokeStyle = `rgba(88, 215, 222, ${alpha * .42})`;
+          ctx.strokeStyle = rgb(mode.color, alpha * .42);
           ctx.lineWidth = .18;
           ctx.beginPath();
           ctx.moveTo(pa.x, pa.y);
@@ -1340,6 +1417,7 @@
     function drawPulses() {
       ctx.save();
       ctx.shadowBlur = 5;
+      const mode = neuralModeStyle();
       for (const pulse of pulses) {
         const a = findNode(pulse.link.a);
         const b = findNode(pulse.link.b);
@@ -1349,9 +1427,9 @@
         const pb = project(b);
         const x = pa.x + (pb.x - pa.x) * pulse.t;
         const y = pa.y + (pb.y - pa.y) * pulse.t;
-        ctx.shadowColor = pulse.color;
-        ctx.fillStyle = pulse.color;
-        ctx.globalAlpha = .16 + Math.sin(frame * .05 + pulse.t * 8) * .04;
+        ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
+        ctx.fillStyle = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
+        ctx.globalAlpha = .14 + Math.sin(frame * .05 * mode.wave + pulse.t * 8) * .04;
         ctx.beginPath();
         ctx.arc(x, y, 1.25, 0, Math.PI * 2);
         ctx.fill();

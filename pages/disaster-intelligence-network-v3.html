@@ -308,6 +308,29 @@
       background: linear-gradient(135deg, var(--cyan), var(--mint));
     }
 
+    .text-toggle {
+      position: absolute;
+      top: 70px;
+      right: 22px;
+      z-index: 20;
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid rgba(68, 223, 255, .36);
+      border-radius: 8px;
+      color: #dffcff;
+      background: rgba(4, 12, 18, .68);
+      box-shadow: 0 0 16px rgba(68, 223, 255, .1);
+      backdrop-filter: blur(12px);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .stage.text-hidden .text-toggle {
+      color: #031015;
+      background: linear-gradient(135deg, var(--cyan), var(--mint));
+    }
+
     canvas {
       position: absolute;
       inset: 0;
@@ -636,6 +659,7 @@
       </div>
     </div>
     <button class="cctv-toggle" id="cctvToggle" type="button" aria-pressed="false">開啟 CCTV</button>
+    <button class="text-toggle" id="textToggle" type="button" aria-pressed="true">關閉文字</button>
     <canvas id="map"></canvas>
     <div class="taiwan-frame" aria-hidden="true">
       <div class="frame-label">Neural Taiwan Boundary<small>V3 呼吸式神經網路視覺</small></div>
@@ -698,6 +722,7 @@
     const ctx = canvas.getContext('2d');
     const stage = document.querySelector('.stage');
     const cctvToggle = document.getElementById('cctvToggle');
+    const textToggle = document.getElementById('textToggle');
     const promptInput = document.getElementById('prompt');
     const generateButton = document.getElementById('generate');
     const nodeCount = document.getElementById('nodeCount');
@@ -1747,7 +1772,8 @@
       ctx.save();
       const bootElapsed = performance.now() - bootStart;
       const cctvEnabled = stage?.classList.contains('cctv-enabled');
-      const labelReveal = cctvEnabled ? 0 : Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
+      const textHidden = stage?.classList.contains('text-hidden');
+      const labelReveal = (cctvEnabled || textHidden) ? 0 : Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
       const breathGlow = .98 + (lifeBreath(.9, 0) - .95) * 2.35;
       const coreBeat = heartBeat();
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
@@ -1831,6 +1857,11 @@
       cctvToggle.setAttribute('aria-pressed', String(enabled));
       if (enabled) playAllCctvCards();
       else stopCctvFrames();
+    });
+    textToggle?.addEventListener('click', () => {
+      const hidden = stage.classList.toggle('text-hidden');
+      textToggle.textContent = hidden ? '開啟文字' : '關閉文字';
+      textToggle.setAttribute('aria-pressed', String(!hidden));
     });
     videoCards.forEach((card) => {
       card.addEventListener('click', (event) => {

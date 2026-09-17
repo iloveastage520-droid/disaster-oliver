@@ -7,15 +7,15 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #03070b;
+      --bg: #020917;
       --ink: #d9f6f7;
       --muted: #78939c;
       --dim: #334b55;
-      --cyan: #58d7de;
-      --mint: #79e4be;
-      --amber: #ffc857;
-      --rose: #ff5377;
-      --violet: #8b7cff;
+      --cyan: #44dfff;
+      --mint: #52f0a5;
+      --amber: #52f0a5;
+      --rose: #38e8ff;
+      --violet: #4e7cff;
       --panel: rgba(5, 12, 18, .72);
       --line: rgba(103, 213, 219, .14);
       --line-strong: rgba(103, 213, 219, .26);
@@ -42,9 +42,9 @@
       background:
         linear-gradient(90deg, rgba(88, 215, 222, .045) 1px, transparent 1px),
         linear-gradient(rgba(88, 215, 222, .035) 1px, transparent 1px),
-        radial-gradient(circle at 72% 48%, rgba(88, 215, 222, .075), transparent 35%),
-        radial-gradient(circle at 24% 20%, rgba(118, 118, 180, .09), transparent 28%),
-        #03070b;
+        radial-gradient(circle at 72% 48%, rgba(43, 130, 255, .11), transparent 35%),
+        radial-gradient(circle at 24% 20%, rgba(57, 255, 164, .075), transparent 28%),
+        #020917;
       background-size: 42px 42px, 42px 42px, auto, auto, auto;
     }
 
@@ -708,7 +708,7 @@
     const clock = document.getElementById('clock');
     const videoCards = [...document.querySelectorAll('.map-video')];
 
-    const palette = ['#20f7ff', '#5dffca', '#ffc857', '#ff5377', '#8b7cff'];
+    const palette = ['#38e8ff', '#49f39d', '#2f8dff', '#74f8d4', '#6ba7ff'];
     const narrativeSegments = [
       { text: '彙整了各機關災害監測資料超過620類，', mode: 'archive' },
       { text: '攀爬社群媒體資料超過20家，', mode: 'social' },
@@ -730,22 +730,22 @@
       { label: '颱風情資', value: 15, unit: '項', color: '#20f7ff', examples: ['颱風路徑資訊', '颱風與衛星觀測', '動態大氣觀測', '濁度監測', '近1小時最大風速', '風速風向觀測', '風速風向預報', '歷史颱風資訊儀表板', '降雨及淹水CAP示警', '三維雷達迴波展示', '降雨及土石流CAP示警', '各國預報路徑(2D)', '水位與水庫CAP示警', '三維動態風場預報', '本日情勢(即時)'] },
       { label: '在地防災資訊', value: 21, unit: '項', color: '#5dffca', examples: ['災害示警資訊', '即時氣溫', '天氣概況', '飛航動態', '即時觀測風速', '景點即時影像', '降雨觀測', '降水預報(系集)', '空氣品質監測(地圖)', '空氣品質監測(測站)', '園區供水情勢', '交通串流及異常監測', '鐵路情勢', '火山監測綜合指標', '水庫水情', '離島水庫水情', '火山監測指標', '離島能見度', '環境輻射監測', '林火天氣指數', '鐵路風險(即時)'] },
       { label: '豪大雨情資', value: 13, unit: '項', color: '#4db8ff', examples: ['淹水示警', '淹水警戒資訊', '淹水感測', '河川水位監測', '河川水位預報', '當日累積雨量', '土石流與大規模崩塌監控', '水庫水位', '雨量示警', '積淹水情資', '災害潛勢地圖', '淹水模擬', '雷達回波'] },
-      { label: '災害潛勢', value: 11, unit: '項', color: '#ffc857', examples: ['淹水潛勢', '坡地災害潛勢', '各級學校災害潛勢', '緊急機構災害潛勢', '火山潛勢', '坡地災害潛勢(新竹)', '淹水潛勢(新竹)', '海嘯溢淹潛勢', '斷層帶周邊分析', '土石流潛勢', '樹木潛勢'] },
-      { label: '民生資訊', value: 9, unit: '項', color: '#8b7cff', examples: ['停水即時資訊', '停話資訊', '綜合資訊(即時)', '鐵路通阻', '桃園市地下管線', '避難收容處所', '警政CCTV', '化學槽車即時動態', '汙染擴散模擬'] },
-      { label: '地震情資', value: 10, unit: '項', color: '#ff8a5b', examples: ['五日內地震分布3D', '全球地震監測', '歷史地震清單', '一週內地震', '地震資訊儀表板', '地震示警', '震後建物評估', '活動斷層分布', '最新地震資訊', '0403花蓮地震'] },
-      { label: '災情研判', value: 7, unit: '項', color: '#ff5377', examples: ['災情管理', '公民回報', '道路阻斷資訊', '即時影像', '災害情資綜整', 'EMIC與社群通報災情', '慈濟災情通報'] },
-      { label: '堰塞湖情資', value: 14, unit: '項', color: '#9cffd1', examples: ['萬里溪堰塞湖', '馬太鞍溪堰塞湖', '萬里溪堰塞湖分析', '加走寮溪堰塞湖', 'Wanli Barrier Lake', '馬太鞍堰塞湖', '堰塞湖上下游沖淤變化', '堰塞湖前後三維變化', '馬太鞍溪堰塞湖歷程', '馬太鞍堰塞湖歷史影像比對', '萬里溪堰塞湖航拍', '災後影像0925_中大太遙', '災後影像0927_航遙測分署', '災後影像0928_航遙測分署'] },
-      { label: '地礦與變位', value: 4, unit: '項', color: '#f6d365', examples: ['地礦中心變位監測', '立霧山位移監測', '立霧溪位移監測', '0403地震新生崩塌地'] },
-      { label: '醫療與保全', value: 5, unit: '項', color: '#ffcf9c', examples: ['災害事件救援統計儀表板', '全台醫療院所即時病床', '老人福利機構1194', '原民會原鄉部落567處', '傷亡失蹤人口'] },
-      { label: '海象與人流', value: 8, unit: '項', color: '#7ee7ff', examples: ['海象預警', '風機船舶海象預警', '潮位監測', '0403潮位觀測', '景點人流監測', '熱區人流監測', '熱門景點人流', '人流查詢'] },
-      { label: '歷史災害事件', value: 9, unit: '項', color: '#caa8ff', examples: ['2025_馬太鞍溪堰塞湖', '2025_丹娜絲颱風', '2024_凱米颱風', '2024_0403花蓮地震', '2023_0911豪雨事件', '2023_杜蘇芮颱風', '2021_秀巒崩塌事件', '0822豪雨', '0621台鐵事件'] },
-      { label: '樺加沙颱風', value: 12, unit: '項', color: '#ff9bc2', examples: ['避難收容規劃', '堰塞湖上下游沖淤變化', '堰塞湖前後三維變化', '馬太鞍溪堰塞湖歷程', '災後影像0925_中大太遙', '災後影像0925_航遙測分署', '災後影像0925_NCDR', '災後影像0927_航遙測分署', '災後影像0928_航遙測分署', '影響範圍_電子地圖', '傷亡失蹤人口', '馬太鞍光復鄉災情'] },
-      { label: '鳳凰颱風', value: 1, unit: '項', color: '#ff9bc2', examples: ['公民回報'] },
-      { label: '0403花蓮地震', value: 7, unit: '項', color: '#ff8a5b', examples: ['High Risk Building', '中橫公路災況_0403', '中橫公路災況_0407', '主震及餘震分佈', '萬里溪堰塞湖航拍', '0403地震新生崩塌地', '0403潮位觀測'] },
-      { label: '農業與文資', value: 14, unit: '項', color: '#b8ff7e', examples: ['荔枝椿象分布', '農業1', '農業2', '農業3', '近期盛產作物', '農情調查', '友善有機農田', '文資消防設施查詢', '文資火災預防', '文資專屬', '文資颱風風力示警', '文資事件通報', '文資落雷潛勢', '毒化物存放場域'] },
-      { label: '寒害情勢', value: 1, unit: '項', color: '#b9f2ff', examples: ['低溫預警'] },
-      { label: '乾旱情勢', value: 1, unit: '項', color: '#f6d365', examples: ['供水情勢'] },
-      { label: '開發測試使用', value: 29, unit: '項', color: '#a6b7ff', examples: ['荔枝椿象分布', '農業1', '農業2', 'CCTV', '農業3', '樹木潛勢', 'story map', '火山主題圖', '桃園市供水情勢', '化學槽車2', '測試_地下管1', 'UAVtest', '文資消防設施查詢', '通用表單測試', '崩塌測試', 'Ian測試0206', 'Alvin測試', '總CCTV', '5大監測', '颱風風場', '鑲嵌測試', '通用StreamLa', '電線桿測試', '長網址', '近期盛產作物', '特定災點查詢鄰近保戶', '農情調查', 'TEST', '長期觀測儀表板'] },
+      { label: '災害潛勢', value: 11, unit: '項', color: '#52f0a5', examples: ['淹水潛勢', '坡地災害潛勢', '各級學校災害潛勢', '緊急機構災害潛勢', '火山潛勢', '坡地災害潛勢(新竹)', '淹水潛勢(新竹)', '海嘯溢淹潛勢', '斷層帶周邊分析', '土石流潛勢', '樹木潛勢'] },
+      { label: '民生資訊', value: 9, unit: '項', color: '#4e7cff', examples: ['停水即時資訊', '停話資訊', '綜合資訊(即時)', '鐵路通阻', '桃園市地下管線', '避難收容處所', '警政CCTV', '化學槽車即時動態', '汙染擴散模擬'] },
+      { label: '地震情資', value: 10, unit: '項', color: '#5cc6ff', examples: ['五日內地震分布3D', '全球地震監測', '歷史地震清單', '一週內地震', '地震資訊儀表板', '地震示警', '震後建物評估', '活動斷層分布', '最新地震資訊', '0403花蓮地震'] },
+      { label: '災情研判', value: 7, unit: '項', color: '#38e8ff', examples: ['災情管理', '公民回報', '道路阻斷資訊', '即時影像', '災害情資綜整', 'EMIC與社群通報災情', '慈濟災情通報'] },
+      { label: '堰塞湖情資', value: 14, unit: '項', color: '#52f0a5', examples: ['萬里溪堰塞湖', '馬太鞍溪堰塞湖', '萬里溪堰塞湖分析', '加走寮溪堰塞湖', 'Wanli Barrier Lake', '馬太鞍堰塞湖', '堰塞湖上下游沖淤變化', '堰塞湖前後三維變化', '馬太鞍溪堰塞湖歷程', '馬太鞍堰塞湖歷史影像比對', '萬里溪堰塞湖航拍', '災後影像0925_中大太遙', '災後影像0927_航遙測分署', '災後影像0928_航遙測分署'] },
+      { label: '地礦與變位', value: 4, unit: '項', color: '#74f8d4', examples: ['地礦中心變位監測', '立霧山位移監測', '立霧溪位移監測', '0403地震新生崩塌地'] },
+      { label: '醫療與保全', value: 5, unit: '項', color: '#6ba7ff', examples: ['災害事件救援統計儀表板', '全台醫療院所即時病床', '老人福利機構1194', '原民會原鄉部落567處', '傷亡失蹤人口'] },
+      { label: '海象與人流', value: 8, unit: '項', color: '#44dfff', examples: ['海象預警', '風機船舶海象預警', '潮位監測', '0403潮位觀測', '景點人流監測', '熱區人流監測', '熱門景點人流', '人流查詢'] },
+      { label: '歷史災害事件', value: 9, unit: '項', color: '#6ba7ff', examples: ['2025_馬太鞍溪堰塞湖', '2025_丹娜絲颱風', '2024_凱米颱風', '2024_0403花蓮地震', '2023_0911豪雨事件', '2023_杜蘇芮颱風', '2021_秀巒崩塌事件', '0822豪雨', '0621台鐵事件'] },
+      { label: '樺加沙颱風', value: 12, unit: '項', color: '#38e8ff', examples: ['避難收容規劃', '堰塞湖上下游沖淤變化', '堰塞湖前後三維變化', '馬太鞍溪堰塞湖歷程', '災後影像0925_中大太遙', '災後影像0925_航遙測分署', '災後影像0925_NCDR', '災後影像0927_航遙測分署', '災後影像0928_航遙測分署', '影響範圍_電子地圖', '傷亡失蹤人口', '馬太鞍光復鄉災情'] },
+      { label: '鳳凰颱風', value: 1, unit: '項', color: '#38e8ff', examples: ['公民回報'] },
+      { label: '0403花蓮地震', value: 7, unit: '項', color: '#5cc6ff', examples: ['High Risk Building', '中橫公路災況_0403', '中橫公路災況_0407', '主震及餘震分佈', '萬里溪堰塞湖航拍', '0403地震新生崩塌地', '0403潮位觀測'] },
+      { label: '農業與文資', value: 14, unit: '項', color: '#52f0a5', examples: ['荔枝椿象分布', '農業1', '農業2', '農業3', '近期盛產作物', '農情調查', '友善有機農田', '文資消防設施查詢', '文資火災預防', '文資專屬', '文資颱風風力示警', '文資事件通報', '文資落雷潛勢', '毒化物存放場域'] },
+      { label: '寒害情勢', value: 1, unit: '項', color: '#74f8d4', examples: ['低溫預警'] },
+      { label: '乾旱情勢', value: 1, unit: '項', color: '#74f8d4', examples: ['供水情勢'] },
+      { label: '開發測試使用', value: 29, unit: '項', color: '#6ba7ff', examples: ['荔枝椿象分布', '農業1', '農業2', 'CCTV', '農業3', '樹木潛勢', 'story map', '火山主題圖', '桃園市供水情勢', '化學槽車2', '測試_地下管1', 'UAVtest', '文資消防設施查詢', '通用表單測試', '崩塌測試', 'Ian測試0206', 'Alvin測試', '總CCTV', '5大監測', '颱風風場', '鑲嵌測試', '通用StreamLa', '電線桿測試', '長網址', '近期盛產作物', '特定災點查詢鄰近保戶', '農情調查', 'TEST', '長期觀測儀表板'] },
       { label: '功能展示', value: 27, unit: '項', color: '#d8fffb', examples: ['南京三民捷運站切面', '雙北淹水潛勢建物套色', '天氣展示', '道路邊坡災情', '天氣展示(含測站)', '淹水潛勢建物套色', '凱米淹水', '0621台鐵事件', '交通監測', '雷達回波', '道路阻斷', '監測資料', '動態船舶監測', '鐵路風險', '歷史颱風示警', '凱米淹水1', '毒化物存放場域', '海岸CCTV', '文資火災預防', 'Sentinel-2', '測試', '馬太鞍堰塞湖歷史影像比對', '友善有機農田', '（功能說明）萬里溪監測', '文資專屬', '土石流潛勢', '韌性評估'] },
       { label: '線上支援', value: 1, unit: '項', color: '#ffffff', examples: ['線上支援'] }
     ];
@@ -1147,12 +1147,12 @@
 
     function neuralModeStyle() {
       const styles = {
-        archive: { color: [88, 215, 222], accent: [121, 228, 190], spin: .34, density: 1, wave: 1 },
-        social: { color: [139, 124, 255], accent: [121, 228, 190], spin: -.42, density: 1.18, wave: 1.25 },
-        hydro: { color: [76, 163, 232], accent: [88, 215, 222], spin: .55, density: 1.3, wave: .92 },
-        sensor: { color: [121, 228, 190], accent: [255, 200, 87], spin: -.62, density: 1.46, wave: 1.42 },
-        cctv: { color: [255, 207, 156], accent: [88, 215, 222], spin: .7, density: 1.08, wave: 1.8 },
-        care: { color: [255, 155, 194], accent: [202, 168, 255], spin: -.36, density: .96, wave: 1.15 }
+        archive: { color: [68, 223, 255], accent: [82, 240, 165], spin: .34, density: 1, wave: 1 },
+        social: { color: [78, 124, 255], accent: [68, 223, 255], spin: -.42, density: 1.18, wave: 1.25 },
+        hydro: { color: [47, 141, 255], accent: [82, 240, 165], spin: .55, density: 1.3, wave: .92 },
+        sensor: { color: [82, 240, 165], accent: [68, 223, 255], spin: -.62, density: 1.46, wave: 1.42 },
+        cctv: { color: [92, 198, 255], accent: [82, 240, 165], spin: .7, density: 1.08, wave: 1.8 },
+        care: { color: [116, 248, 212], accent: [107, 167, 255], spin: -.36, density: .96, wave: 1.15 }
       };
       return styles[narrativeMode] || styles.archive;
     }
@@ -1188,15 +1188,15 @@
       const cx = width * 0.54;
       const cy = height * 0.52;
       const gradient = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(width, height) * .55);
-      gradient.addColorStop(0, 'rgba(88, 215, 222, .105)');
-      gradient.addColorStop(.44, 'rgba(139, 124, 255, .044)');
+      gradient.addColorStop(0, 'rgba(68, 223, 255, .13)');
+      gradient.addColorStop(.44, 'rgba(47, 141, 255, .075)');
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
       ctx.save();
       ctx.globalAlpha = .115;
-      ctx.strokeStyle = '#58d7de';
+      ctx.strokeStyle = '#44dfff';
       ctx.lineWidth = 1;
       const gap = 42;
       const drift = (frame * .16) % gap;
@@ -1223,8 +1223,8 @@
       ctx.globalAlpha = Math.min(1, fade * 1.12);
 
       const sea = ctx.createRadialGradient(cx, cy, Math.min(width, height) * .12, cx, cy, Math.min(width, height) * .62);
-      sea.addColorStop(0, 'rgba(50, 112, 124, .15)');
-      sea.addColorStop(.55, 'rgba(22, 58, 75, .2)');
+      sea.addColorStop(0, 'rgba(33, 101, 180, .18)');
+      sea.addColorStop(.55, 'rgba(12, 52, 120, .24)');
       sea.addColorStop(1, 'rgba(0, 5, 11, 0)');
       ctx.fillStyle = sea;
       ctx.fillRect(0, 0, width, height);
@@ -1239,10 +1239,10 @@
       ctx.clip();
 
       const land = ctx.createLinearGradient(bounds.cx - bounds.w * .35, bounds.cy - bounds.h * .42, bounds.cx + bounds.w * .32, bounds.cy + bounds.h * .42);
-      land.addColorStop(0, 'rgba(44, 118, 87, .56)');
-      land.addColorStop(.36, 'rgba(90, 130, 86, .5)');
-      land.addColorStop(.62, 'rgba(134, 130, 84, .44)');
-      land.addColorStop(1, 'rgba(43, 101, 110, .48)');
+      land.addColorStop(0, 'rgba(32, 126, 102, .58)');
+      land.addColorStop(.36, 'rgba(55, 146, 104, .52)');
+      land.addColorStop(.62, 'rgba(38, 116, 135, .48)');
+      land.addColorStop(1, 'rgba(25, 92, 160, .5)');
       ctx.fillStyle = land;
       ctx.fillRect(bounds.cx - bounds.w * .56, bounds.cy - bounds.h * .52, bounds.w * 1.12, bounds.h * 1.04);
 
@@ -1252,7 +1252,7 @@
         const x = bounds.cx + Math.sin(i * 1.8) * bounds.w * .08 + (t - .5) * bounds.w * .42;
         const y1 = bounds.cy - bounds.h * .45 + t * bounds.h * .18;
         const y2 = bounds.cy + bounds.h * .48 - t * bounds.h * .16;
-        ctx.strokeStyle = `rgba(207, 206, 147, ${.021 + Math.sin(i) * .006})`;
+        ctx.strokeStyle = `rgba(112, 244, 177, ${.025 + Math.sin(i) * .007})`;
         ctx.lineWidth = .55;
         ctx.beginPath();
         ctx.moveTo(x, y1);
@@ -1260,14 +1260,14 @@
         ctx.stroke();
       }
 
-      ctx.strokeStyle = 'rgba(220, 238, 186, .18)';
+      ctx.strokeStyle = 'rgba(127, 255, 197, .2)';
       ctx.lineWidth = 1.1;
       ctx.beginPath();
       ctx.moveTo(bounds.cx - bounds.w * .13, bounds.cy - bounds.h * .43);
       ctx.bezierCurveTo(bounds.cx + bounds.w * .08, bounds.cy - bounds.h * .18, bounds.cx + bounds.w * .03, bounds.cy + bounds.h * .1, bounds.cx + bounds.w * .1, bounds.cy + bounds.h * .42);
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(255, 236, 177, .16)';
+      ctx.strokeStyle = 'rgba(122, 219, 255, .18)';
       ctx.lineWidth = .75;
       for (let i = 0; i < 8; i += 1) {
         const y = bounds.cy - bounds.h * .34 + i * bounds.h * .095;
@@ -1313,7 +1313,7 @@
         const p = lonLatToTaiwanPoint(label.lon, label.lat, bounds, .94);
         ctx.fillStyle = `rgba(232, 255, 252, ${.28 * fade})`;
         ctx.fillText(label.name, p.x, p.y - 9);
-        ctx.fillStyle = `rgba(255, 236, 168, ${.34 * fade})`;
+        ctx.fillStyle = `rgba(108, 247, 177, ${.34 * fade})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 1.45, 0, Math.PI * 2);
         ctx.fill();

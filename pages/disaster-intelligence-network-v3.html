@@ -1223,8 +1223,8 @@
       ctx.globalAlpha = fade;
 
       const sea = ctx.createRadialGradient(cx, cy, Math.min(width, height) * .12, cx, cy, Math.min(width, height) * .62);
-      sea.addColorStop(0, 'rgba(31, 75, 86, .08)');
-      sea.addColorStop(.55, 'rgba(11, 35, 47, .13)');
+      sea.addColorStop(0, 'rgba(42, 96, 107, .12)');
+      sea.addColorStop(.55, 'rgba(17, 48, 63, .17)');
       sea.addColorStop(1, 'rgba(0, 5, 11, 0)');
       ctx.fillStyle = sea;
       ctx.fillRect(0, 0, width, height);
@@ -1239,10 +1239,10 @@
       ctx.clip();
 
       const land = ctx.createLinearGradient(bounds.cx - bounds.w * .35, bounds.cy - bounds.h * .42, bounds.cx + bounds.w * .32, bounds.cy + bounds.h * .42);
-      land.addColorStop(0, 'rgba(23, 74, 58, .36)');
-      land.addColorStop(.36, 'rgba(54, 88, 58, .32)');
-      land.addColorStop(.62, 'rgba(88, 86, 57, .27)');
-      land.addColorStop(1, 'rgba(20, 62, 70, .28)');
+      land.addColorStop(0, 'rgba(36, 102, 76, .5)');
+      land.addColorStop(.36, 'rgba(78, 116, 76, .44)');
+      land.addColorStop(.62, 'rgba(119, 116, 74, .38)');
+      land.addColorStop(1, 'rgba(35, 88, 96, .42)');
       ctx.fillStyle = land;
       ctx.fillRect(bounds.cx - bounds.w * .56, bounds.cy - bounds.h * .52, bounds.w * 1.12, bounds.h * 1.04);
 
@@ -1252,7 +1252,7 @@
         const x = bounds.cx + Math.sin(i * 1.8) * bounds.w * .08 + (t - .5) * bounds.w * .42;
         const y1 = bounds.cy - bounds.h * .45 + t * bounds.h * .18;
         const y2 = bounds.cy + bounds.h * .48 - t * bounds.h * .16;
-        ctx.strokeStyle = `rgba(177, 177, 122, ${.012 + Math.sin(i) * .004})`;
+        ctx.strokeStyle = `rgba(207, 206, 147, ${.021 + Math.sin(i) * .006})`;
         ctx.lineWidth = .55;
         ctx.beginPath();
         ctx.moveTo(x, y1);
@@ -1260,14 +1260,14 @@
         ctx.stroke();
       }
 
-      ctx.strokeStyle = 'rgba(194, 221, 173, .12)';
+      ctx.strokeStyle = 'rgba(220, 238, 186, .18)';
       ctx.lineWidth = 1.1;
       ctx.beginPath();
       ctx.moveTo(bounds.cx - bounds.w * .13, bounds.cy - bounds.h * .43);
       ctx.bezierCurveTo(bounds.cx + bounds.w * .08, bounds.cy - bounds.h * .18, bounds.cx + bounds.w * .03, bounds.cy + bounds.h * .1, bounds.cx + bounds.w * .1, bounds.cy + bounds.h * .42);
       ctx.stroke();
 
-      ctx.strokeStyle = 'rgba(255, 232, 168, .1)';
+      ctx.strokeStyle = 'rgba(255, 236, 177, .16)';
       ctx.lineWidth = .75;
       for (let i = 0; i < 8; i += 1) {
         const y = bounds.cy - bounds.h * .34 + i * bounds.h * .095;
@@ -1280,7 +1280,7 @@
 
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.strokeStyle = rgb(mode.color, .11 * fade);
+      ctx.strokeStyle = rgb(mode.color, .15 * fade);
       ctx.lineWidth = 1.2;
       ctx.shadowBlur = 12;
       ctx.shadowColor = `rgb(${mode.color[0]}, ${mode.color[1]}, ${mode.color[2]})`;
@@ -1311,9 +1311,9 @@
       ctx.textBaseline = 'middle';
       for (const label of labels) {
         const p = lonLatToTaiwanPoint(label.lon, label.lat, bounds, .94);
-        ctx.fillStyle = `rgba(223, 252, 255, ${.18 * fade})`;
+        ctx.fillStyle = `rgba(232, 255, 252, ${.28 * fade})`;
         ctx.fillText(label.name, p.x, p.y - 9);
-        ctx.fillStyle = `rgba(255, 232, 168, ${.22 * fade})`;
+        ctx.fillStyle = `rgba(255, 236, 168, ${.34 * fade})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 1.45, 0, Math.PI * 2);
         ctx.fill();

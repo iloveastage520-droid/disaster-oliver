@@ -1188,14 +1188,14 @@
       const cx = width * 0.54;
       const cy = height * 0.52;
       const gradient = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(width, height) * .55);
-      gradient.addColorStop(0, 'rgba(88, 215, 222, .075)');
-      gradient.addColorStop(.44, 'rgba(139, 124, 255, .028)');
+      gradient.addColorStop(0, 'rgba(88, 215, 222, .105)');
+      gradient.addColorStop(.44, 'rgba(139, 124, 255, .044)');
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
 
       ctx.save();
-      ctx.globalAlpha = .08;
+      ctx.globalAlpha = .115;
       ctx.strokeStyle = '#58d7de';
       ctx.lineWidth = 1;
       const gap = 42;
@@ -1220,11 +1220,11 @@
       const mode = neuralModeStyle();
 
       ctx.save();
-      ctx.globalAlpha = fade;
+      ctx.globalAlpha = Math.min(1, fade * 1.12);
 
       const sea = ctx.createRadialGradient(cx, cy, Math.min(width, height) * .12, cx, cy, Math.min(width, height) * .62);
-      sea.addColorStop(0, 'rgba(42, 96, 107, .12)');
-      sea.addColorStop(.55, 'rgba(17, 48, 63, .17)');
+      sea.addColorStop(0, 'rgba(50, 112, 124, .15)');
+      sea.addColorStop(.55, 'rgba(22, 58, 75, .2)');
       sea.addColorStop(1, 'rgba(0, 5, 11, 0)');
       ctx.fillStyle = sea;
       ctx.fillRect(0, 0, width, height);
@@ -1239,10 +1239,10 @@
       ctx.clip();
 
       const land = ctx.createLinearGradient(bounds.cx - bounds.w * .35, bounds.cy - bounds.h * .42, bounds.cx + bounds.w * .32, bounds.cy + bounds.h * .42);
-      land.addColorStop(0, 'rgba(36, 102, 76, .5)');
-      land.addColorStop(.36, 'rgba(78, 116, 76, .44)');
-      land.addColorStop(.62, 'rgba(119, 116, 74, .38)');
-      land.addColorStop(1, 'rgba(35, 88, 96, .42)');
+      land.addColorStop(0, 'rgba(44, 118, 87, .56)');
+      land.addColorStop(.36, 'rgba(90, 130, 86, .5)');
+      land.addColorStop(.62, 'rgba(134, 130, 84, .44)');
+      land.addColorStop(1, 'rgba(43, 101, 110, .48)');
       ctx.fillStyle = land;
       ctx.fillRect(bounds.cx - bounds.w * .56, bounds.cy - bounds.h * .52, bounds.w * 1.12, bounds.h * 1.04);
 
@@ -1337,7 +1337,7 @@
         const r = radius * (.34 + ring * .135);
         const count = Math.round((13 + ring * 4) * mode.density);
         const ringBreath = .82 + Math.sin(frame * .009 + ring * 1.4) * .18;
-        ctx.strokeStyle = rgb(mode.accent, (.035 - ring * .003) * ringBreath);
+        ctx.strokeStyle = rgb(mode.accent, (.045 - ring * .0032) * ringBreath);
         ctx.lineWidth = .42 + ringBreath * .18;
         for (let i = 0; i < count; i += 1) {
           const a = (Math.PI * 2 * i) / count + frame * .0018 * (ring + 1) * mode.wave;
@@ -1406,7 +1406,7 @@
       ctx.setLineDash([]);
       ctx.shadowBlur = 6;
       ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
-      ctx.strokeStyle = rgb(mode.accent, .14);
+      ctx.strokeStyle = rgb(mode.accent, .2);
       ctx.lineWidth = .7;
       ctx.beginPath();
       ctx.moveTo(cx, cy - island.h * .49);
@@ -1422,13 +1422,13 @@
         const y = cy + filament.baseY + Math.sin(filament.angle) * wave;
         const x2 = x + Math.cos(filament.angle + Math.PI / 2) * filament.length;
         const y2 = y + Math.sin(filament.angle + Math.PI / 2) * filament.length * .45;
-        ctx.strokeStyle = hexToRgba(filament.color, filament.alpha * .55);
+        ctx.strokeStyle = hexToRgba(filament.color, filament.alpha * .72);
         ctx.lineWidth = .45;
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x2, y2);
         ctx.stroke();
-        ctx.fillStyle = hexToRgba(filament.color, filament.alpha * .7);
+        ctx.fillStyle = hexToRgba(filament.color, filament.alpha * .88);
         ctx.beginPath();
         ctx.arc(x, y, 1.15, 0, Math.PI * 2);
         ctx.fill();
@@ -1642,7 +1642,7 @@
         const pb = project(b);
         const alive = Math.max(nodeLife(a), nodeLife(b));
         const synapseBreath = .82 + Math.sin(frame * .01 + link.a * .23 + link.b * .11) * .18;
-        const alpha = Math.min(.2, (.016 + link.strength * .14) * Math.min(pa.glow, pb.glow) * (1 + alive * .58) * synapseBreath);
+        const alpha = Math.min(.26, (.021 + link.strength * .16) * Math.min(pa.glow, pb.glow) * (1 + alive * .62) * synapseBreath);
         ctx.strokeStyle = rgb(mode.accent, alpha);
         ctx.lineWidth = (link.strength > .25 ? .68 : .32) * Math.min(pa.scale, pb.scale) * (1 + alive * .22);
         ctx.beginPath();
@@ -1669,7 +1669,7 @@
           ctx.globalCompositeOperation = 'lighter';
           ctx.shadowBlur = 10;
           ctx.shadowColor = `rgb(${mode.color[0]}, ${mode.color[1]}, ${mode.color[2]})`;
-          ctx.strokeStyle = rgb(mode.color, .045 + alive * .105);
+          ctx.strokeStyle = rgb(mode.color, .065 + alive * .13);
           ctx.lineWidth = .75 + alive * .65;
           ctx.beginPath();
           ctx.moveTo(q1.x, q1.y);
@@ -1716,7 +1716,7 @@
         ctx.lineCap = 'round';
         ctx.shadowBlur = 8 + alive * 12;
         ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
-        ctx.strokeStyle = rgb(mode.accent, .05 + alive * .16);
+        ctx.strokeStyle = rgb(mode.accent, .07 + alive * .19);
         ctx.lineWidth = 1 + alive * 1.25;
         ctx.beginPath();
         ctx.moveTo(tail.x, tail.y);
@@ -1724,7 +1724,7 @@
         ctx.stroke();
 
         ctx.fillStyle = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
-        ctx.globalAlpha = .12 + alive * .18 + beat * .08 + Math.sin(frame * .05 * mode.wave + pulse.t * 8) * .035;
+        ctx.globalAlpha = .17 + alive * .2 + beat * .1 + Math.sin(frame * .05 * mode.wave + pulse.t * 8) * .035;
         ctx.beginPath();
         ctx.arc(head.x, head.y, 1.05 + alive * .8 + beat * .55, 0, Math.PI * 2);
         ctx.fill();
@@ -1748,7 +1748,7 @@
       const bootElapsed = performance.now() - bootStart;
       const cctvEnabled = stage?.classList.contains('cctv-enabled');
       const labelReveal = cctvEnabled ? 0 : Math.max(0, Math.min(1, (bootElapsed - 2200) / 3000));
-      const breathGlow = .82 + (lifeBreath(.9, 0) - .95) * 2.2;
+      const breathGlow = .98 + (lifeBreath(.9, 0) - .95) * 2.35;
       const coreBeat = heartBeat();
       const ordered = [...nodes].sort((a, b) => project(a).scale - project(b).scale);
       for (const node of ordered) {
@@ -1760,8 +1760,8 @@
         const radius = node.radius * pulse * p.scale * (node.layer === 0 ? 1 + Math.sin(frame * .01) * .045 : 1);
         ctx.shadowBlur = (node.layer === 0 ? 20 + coreBeat * 16 : 4.5 + alive * 7 + coreBeat * 2) * p.glow;
         ctx.shadowColor = node.color;
-        ctx.fillStyle = hexToRgba(node.color, (node.layer === 0 ? .26 : .045 + node.energy * .075 + alive * .055) * p.glow * breathGlow);
-        ctx.strokeStyle = hexToRgba(node.color, (node.layer === 0 ? .68 : .2 + alive * .2) * p.glow * breathGlow);
+        ctx.fillStyle = hexToRgba(node.color, (node.layer === 0 ? .34 : .062 + node.energy * .09 + alive * .065) * p.glow * breathGlow);
+        ctx.strokeStyle = hexToRgba(node.color, (node.layer === 0 ? .78 : .27 + alive * .24) * p.glow * breathGlow);
         ctx.lineWidth = node.layer === 0 ? 1.45 : .72 + alive * .38;
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);

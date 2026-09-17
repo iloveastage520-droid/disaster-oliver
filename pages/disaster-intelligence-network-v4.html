@@ -1034,7 +1034,7 @@
 
     function coreCenter() {
       const bounds = islandBounds();
-      return lonLatToTaiwanPoint(120.68, 24.14, bounds, .79);
+      return lonLatToTaiwanPoint(121.56, 25.04, bounds, .8);
     }
 
     function regionalCores() {
@@ -1048,7 +1048,8 @@
     }
 
     function sphereCenter() {
-      return coreCenter();
+      const bounds = islandBounds();
+      return lonLatToTaiwanPoint(120.68, 24.14, bounds, .79);
     }
 
     function pointInPolygon(x, y, polygon) {

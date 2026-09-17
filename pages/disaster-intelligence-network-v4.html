@@ -945,7 +945,7 @@
       pulses = Array.from({ length: 12 }, () => ({
         link: links[Math.floor(random() * links.length)],
         t: random(),
-        speed: .0025 + random() * .0055,
+        speed: .0034 + random() * .0068,
         color: palette[Math.floor(random() * palette.length)]
       }));
 
@@ -1035,6 +1035,16 @@
     function coreCenter() {
       const bounds = islandBounds();
       return lonLatToTaiwanPoint(120.68, 24.14, bounds, .79);
+    }
+
+    function regionalCores() {
+      const bounds = islandBounds();
+      return [
+        { key: 'north', label: '北', main: false, color: [68, 223, 255], ...lonLatToTaiwanPoint(121.56, 25.04, bounds, .8) },
+        { key: 'central', label: '中', main: true, color: [82, 240, 165], ...lonLatToTaiwanPoint(120.68, 24.14, bounds, .79) },
+        { key: 'south', label: '南', main: false, color: [92, 198, 255], ...lonLatToTaiwanPoint(120.3, 22.62, bounds, .8) },
+        { key: 'east', label: '東', main: false, color: [116, 248, 212], ...lonLatToTaiwanPoint(121.35, 23.55, bounds, .78) }
+      ];
     }
 
     function sphereCenter() {
@@ -1384,6 +1394,18 @@
           ctx.moveTo(x1, y1);
           ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + Math.sin(a * 3) * 10, x2, y2);
           ctx.stroke();
+          if ((i + ring) % 3 === 0) {
+            const branchA = b + .38 + Math.sin(frame * .004 + i) * .12;
+            const branchR = r + 10 + Math.sin(frame * .006 + ring) * 7;
+            const bx = cx + Math.cos(branchA) * branchR;
+            const by = cy + Math.sin(branchA) * branchR * .74;
+            ctx.strokeStyle = rgb(mode.color, (.018 + ring * .002) * ringBreath);
+            ctx.lineWidth = .26;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.quadraticCurveTo((x2 + bx) * .5 + Math.sin(i) * 8, (y2 + by) * .5 + Math.cos(i) * 5, bx, by);
+            ctx.stroke();
+          }
         }
       }
       ctx.restore();
@@ -1697,10 +1719,10 @@
           const q2 = quadPoint(pa, mx, my, pb, t2);
           ctx.save();
           ctx.globalCompositeOperation = 'lighter';
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 14;
           ctx.shadowColor = `rgb(${mode.color[0]}, ${mode.color[1]}, ${mode.color[2]})`;
-          ctx.strokeStyle = rgb(mode.color, .065 + alive * .13);
-          ctx.lineWidth = .75 + alive * .65;
+          ctx.strokeStyle = rgb(mode.color, .085 + alive * .16);
+          ctx.lineWidth = .85 + alive * .82;
           ctx.beginPath();
           ctx.moveTo(q1.x, q1.y);
           ctx.quadraticCurveTo((q1.x + q2.x) * .5, (q1.y + q2.y) * .5, q2.x, q2.y);
@@ -1744,10 +1766,10 @@
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         ctx.lineCap = 'round';
-        ctx.shadowBlur = 8 + alive * 12;
+        ctx.shadowBlur = 10 + alive * 15;
         ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
-        ctx.strokeStyle = rgb(mode.accent, .07 + alive * .19);
-        ctx.lineWidth = 1 + alive * 1.25;
+        ctx.strokeStyle = rgb(mode.accent, .085 + alive * .22);
+        ctx.lineWidth = 1.1 + alive * 1.45;
         ctx.beginPath();
         ctx.moveTo(tail.x, tail.y);
         ctx.quadraticCurveTo((tail.x + head.x) * .5, (tail.y + head.y) * .5, head.x, head.y);
@@ -1774,33 +1796,68 @@
     }
 
     function drawCoreDataFlow() {
-      const { x: cx, y: cy } = coreCenter();
       const mode = neuralModeStyle();
       const beat = heartBeat();
-      const coreRadius = Math.min(width, height) * (.062 + beat * .012);
-      const outerRadius = Math.min(width, height) * .36;
-
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.lineCap = 'round';
 
-      for (let i = 0; i < 18; i += 1) {
-        const phase = (frame * .006 + i / 18) % 1;
-        const angle = i * 2.399963 + Math.sin(frame * .004 + i) * .22;
-        const startR = outerRadius * (.72 + (i % 5) * .055);
-        const endR = coreRadius * (1.2 + (i % 3) * .18);
-        const sx = cx + Math.cos(angle) * startR;
-        const sy = cy + Math.sin(angle) * startR * .72;
-        const ex = cx + Math.cos(angle + .7) * endR;
-        const ey = cy + Math.sin(angle + .7) * endR * .72;
-        const bend = Math.sin(frame * .01 + i) * 38;
+      const cores = regionalCores();
+      const mainCore = cores.find((core) => core.main) || cores[0];
+      drawRegionalCoreLinks(cores, mainCore, mode, beat);
+      for (const core of cores) drawRegionalCoreFlow(core, mode, beat);
+      ctx.restore();
+    }
+
+    function drawRegionalCoreLinks(cores, mainCore, mode, beat) {
+      for (const core of cores) {
+        if (core === mainCore) continue;
+        const travel = (frame * .012 + core.x * .0007) % 1;
+        const mx = (core.x + mainCore.x) * .5 + Math.sin(frame * .006 + core.y) * 28;
+        const my = (core.y + mainCore.y) * .5 + Math.cos(frame * .005 + core.x) * 20;
+        ctx.strokeStyle = rgb(mode.color, .07 + beat * .04);
+        ctx.lineWidth = 1.05;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = `rgb(${mode.color[0]}, ${mode.color[1]}, ${mode.color[2]})`;
+        ctx.beginPath();
+        ctx.moveTo(core.x, core.y);
+        ctx.quadraticCurveTo(mx, my, mainCore.x, mainCore.y);
+        ctx.stroke();
+
+        const head = quadPoint(core, mx, my, mainCore, travel);
+        const tail = quadPoint(core, mx, my, mainCore, Math.max(0, travel - .1));
+        ctx.strokeStyle = rgb(mode.accent, .16 + beat * .08);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(tail.x, tail.y);
+        ctx.lineTo(head.x, head.y);
+        ctx.stroke();
+      }
+    }
+
+    function drawRegionalCoreFlow(core, mode, beat) {
+      const coreScale = core.main ? 1 : .72;
+      const coreRadius = Math.min(width, height) * ((core.main ? .066 : .041) + beat * (core.main ? .014 : .008));
+      const outerRadius = Math.min(width, height) * (core.main ? .42 : .22);
+      const flowCount = core.main ? 24 : 13;
+
+      for (let i = 0; i < flowCount; i += 1) {
+        const phase = (frame * (core.main ? .009 : .011) + i / flowCount + core.x * .0005) % 1;
+        const angle = i * 2.399963 + Math.sin(frame * .004 + i + core.y * .003) * .22;
+        const startR = outerRadius * (.62 + (i % 7) * .052);
+        const endR = coreRadius * (1.15 + (i % 3) * .18);
+        const sx = core.x + Math.cos(angle) * startR;
+        const sy = core.y + Math.sin(angle) * startR * .72;
+        const ex = core.x + Math.cos(angle + .7) * endR;
+        const ey = core.y + Math.sin(angle + .7) * endR * .72;
+        const bend = Math.sin(frame * .012 + i) * (core.main ? 56 : 34);
         const mx = (sx + ex) * .5 + Math.cos(angle + Math.PI / 2) * bend;
         const my = (sy + ey) * .5 + Math.sin(angle + Math.PI / 2) * bend * .55;
         const flow = Math.sin((phase * Math.PI * 2)) * .5 + .5;
-        ctx.strokeStyle = rgb(i % 2 ? mode.accent : mode.color, .045 + flow * .07 + beat * .035);
-        ctx.lineWidth = .55 + flow * .75;
-        ctx.shadowBlur = 8 + flow * 10;
-        ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
+        ctx.strokeStyle = rgb(core.color, (core.main ? .05 : .035) + flow * (core.main ? .09 : .06) + beat * .04);
+        ctx.lineWidth = (.48 + flow * .9) * coreScale;
+        ctx.shadowBlur = 9 + flow * (core.main ? 14 : 8);
+        ctx.shadowColor = `rgb(${core.color[0]}, ${core.color[1]}, ${core.color[2]})`;
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.quadraticCurveTo(mx, my, ex, ey);
@@ -1808,32 +1865,51 @@
 
         const t = (phase + .28) % 1;
         const p = quadPoint({ x: sx, y: sy }, mx, my, { x: ex, y: ey }, 1 - t);
-        ctx.fillStyle = rgb(mode.accent, .16 + beat * .08);
+        const tail = quadPoint({ x: sx, y: sy }, mx, my, { x: ex, y: ey }, Math.max(0, 1 - t - .08));
+        ctx.strokeStyle = rgb(core.color, .08 + beat * .07);
+        ctx.lineWidth = (1.05 + flow * .7) * coreScale;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1.2 + flow * 1.1, 0, Math.PI * 2);
+        ctx.moveTo(tail.x, tail.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+
+        ctx.fillStyle = rgb(core.color, .18 + beat * .1);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (1.15 + flow * 1.2) * coreScale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = 0; i < (core.main ? 14 : 8); i += 1) {
+        const orbit = (frame * (core.main ? .018 : .022) + i / (core.main ? 14 : 8)) % 1;
+        const a = orbit * Math.PI * 2 + i * .71;
+        const r = coreRadius * (1.1 + (1 - orbit) * (core.main ? 4.2 : 3.2));
+        const x = core.x + Math.cos(a) * r;
+        const y = core.y + Math.sin(a) * r * .7;
+        ctx.fillStyle = rgb(core.color, .14 + beat * .1);
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(x, y, (1 + (1 - orbit) * 1.45) * coreScale, 0, Math.PI * 2);
         ctx.fill();
       }
 
       for (let i = 0; i < 3; i += 1) {
         const pulse = ((frame * .012 + i * .33) % 1);
-        ctx.strokeStyle = rgb(i === 0 ? mode.color : mode.accent, (.08 + beat * .05) * (1 - pulse));
-        ctx.lineWidth = .75;
+        ctx.strokeStyle = rgb(core.color, (.09 + beat * .07) * (1 - pulse));
+        ctx.lineWidth = core.main ? .9 : .62;
         ctx.setLineDash([5 + i * 3, 12 + i * 4]);
         ctx.beginPath();
-        ctx.ellipse(cx, cy, coreRadius * (1.4 + pulse * 3.8), coreRadius * (1 + pulse * 2.7), rotation * .35 + i * .6, 0, Math.PI * 2);
+        ctx.ellipse(core.x, core.y, coreRadius * (1.4 + pulse * (core.main ? 3.8 : 2.9)), coreRadius * (1 + pulse * (core.main ? 2.7 : 2)), rotation * .35 + i * .6, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      const coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 3.2);
-      coreGlow.addColorStop(0, rgb(mode.accent, .22 + beat * .16));
-      coreGlow.addColorStop(.38, rgb(mode.color, .1 + beat * .08));
+      const coreGlow = ctx.createRadialGradient(core.x, core.y, 0, core.x, core.y, coreRadius * 3.2);
+      coreGlow.addColorStop(0, rgb(core.color, (core.main ? .22 : .16) + beat * .15));
+      coreGlow.addColorStop(.38, rgb(mode.color, .08 + beat * .07));
       coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = coreGlow;
       ctx.beginPath();
-      ctx.arc(cx, cy, coreRadius * 3.2, 0, Math.PI * 2);
+      ctx.arc(core.x, core.y, coreRadius * 3.2, 0, Math.PI * 2);
       ctx.fill();
-
-      ctx.restore();
     }
 
     function drawNodes() {

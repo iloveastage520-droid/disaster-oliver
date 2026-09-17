@@ -843,7 +843,7 @@
       const random = seeded(text);
       const terms = termsFrom(text);
       const centerX = width * 0.54;
-      const centerY = height * 0.55;
+      const centerY = height * 0.58;
       const island = islandBounds();
       const layerCount = monitoringSources.length;
       nodes = [{
@@ -958,7 +958,7 @@
       const scale = Math.min(usableW / .62, usableH / .98);
       return {
         cx: width * .54,
-        cy: height * .55,
+        cy: height * .58,
         w: scale * .62,
         h: scale * .98
       };
@@ -1161,7 +1161,7 @@
       const beat = heartBeat();
       if (beat < .025) return;
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const mode = neuralModeStyle();
       const base = Math.min(width, height) * .49;
       ctx.save();
@@ -1186,7 +1186,7 @@
 
     function drawBackground() {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const gradient = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(width, height) * .55);
       gradient.addColorStop(0, 'rgba(68, 223, 255, .13)');
       gradient.addColorStop(.44, 'rgba(47, 141, 255, .075)');
@@ -1214,7 +1214,7 @@
       const fade = Math.max(0, Math.min(1, (elapsed - 3600) / 9000));
       if (fade <= 0) return;
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const bounds = islandBounds();
       const outline = taiwanOutline.map((p) => outlinePoint(p, bounds, .94));
       const mode = neuralModeStyle();
@@ -1323,7 +1323,7 @@
 
     function drawSynapseVeil() {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const cycleProgress = ((performance.now() - narrativeCycleStart) % narrativeCycleMs) / narrativeCycleMs;
       const lifePulse = .94 + Math.sin(cycleProgress * Math.PI * 2) * .06;
       const radius = Math.min(width, height) * .44 * lifePulse * lifeBreath(.72, .4);
@@ -1358,7 +1358,7 @@
     function drawCctvOuterShell() {
       if (stage?.classList.contains('cctv-enabled') || performance.now() > cctvShellUntil) return;
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const rx = Math.min(width, height) * .48 * 1.42;
       const ry = Math.min(width, height) * .48 * 1.02;
       ctx.save();
@@ -1378,7 +1378,7 @@
 
     function drawNeuralShell() {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const island = islandBounds();
       const mode = neuralModeStyle();
       ctx.save();
@@ -1438,7 +1438,7 @@
 
     function simulate() {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       rotation += .0026;
       for (const node of nodes) {
         if (node.layer === 0) {
@@ -1475,7 +1475,7 @@
 
     function project(node) {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       if (node.layer === 0) return { x: node.x, y: node.y, scale: 1, glow: 1 };
       const breath = lifeBreath(1, node.layer * .18);
       const sphere = Math.min(width, height) * .48 * breath;
@@ -1503,7 +1503,7 @@
 
     function projectSpherePoint(sx, sy, sz) {
       const cx = width * 0.54;
-      const cy = height * 0.55;
+      const cy = height * 0.58;
       const breath = lifeBreath(.92, .6);
       const sphere = Math.min(width, height) * .48 * breath;
       const yaw = rotation * 1.25;
@@ -1606,7 +1606,7 @@
           const p = projectSpherePoint(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
           const visible = p.depth > .34;
           const cx = width * .54;
-          const cy = height * .55;
+          const cy = height * .58;
           const shellX = cx + (p.x - cx) * 1.42;
           const shellY = cy + (p.y - cy) * 1.36;
           const scale = .24 + p.depth * .18;

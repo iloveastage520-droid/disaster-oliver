@@ -326,6 +326,49 @@
       text-transform: uppercase;
     }
 
+    .sensor-toggle {
+      position: absolute;
+      top: 118px;
+      right: 22px;
+      z-index: 20;
+      min-height: 36px;
+      padding: 0 14px;
+      border: 1px solid rgba(116, 248, 212, .36);
+      border-radius: 8px;
+      color: #dffcff;
+      background: rgba(4, 12, 18, .68);
+      box-shadow: 0 0 16px rgba(116, 248, 212, .1);
+      backdrop-filter: blur(12px);
+      font-size: 12px;
+      letter-spacing: .08em;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .sensor-thumb-map {
+      position: relative;
+      display: inline-block;
+      width: 24px;
+      height: 34px;
+      flex: 0 0 24px;
+      clip-path: polygon(46% 0, 68% 7%, 60% 19%, 74% 29%, 66% 42%, 77% 55%, 62% 70%, 56% 88%, 43% 100%, 31% 91%, 28% 72%, 17% 58%, 25% 43%, 20% 29%, 34% 17%);
+      background: linear-gradient(160deg, rgba(142, 255, 229, .88), rgba(55, 166, 208, .5));
+      box-shadow: 0 0 10px rgba(91, 236, 205, .4);
+    }
+
+    .sensor-thumb-map::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 22%, #d8fff4 0 1px, transparent 2px), radial-gradient(circle at 45% 45%, #d8fff4 0 1px, transparent 2px), radial-gradient(circle at 53% 68%, #d8fff4 0 1px, transparent 2px), radial-gradient(circle at 42% 84%, #d8fff4 0 1px, transparent 2px);
+    }
+
+    .stage.sensor-only .sensor-toggle {
+      color: #031015;
+      background: linear-gradient(135deg, var(--mint), var(--cyan));
+    }
+
     .stage.text-hidden .text-toggle {
       color: #031015;
       background: linear-gradient(135deg, var(--cyan), var(--mint));
@@ -337,6 +380,13 @@
       width: 100%;
       height: 100%;
       display: block;
+    }
+
+    #neuralWebgl {
+      z-index: 1;
+      pointer-events: none;
+      opacity: .82;
+      mix-blend-mode: screen;
     }
 
     .hud {
@@ -660,7 +710,9 @@
     </div>
     <button class="cctv-toggle" id="cctvToggle" type="button" aria-pressed="false">開啟 CCTV</button>
     <button class="text-toggle" id="textToggle" type="button" aria-pressed="true">關閉文字</button>
+    <button class="sensor-toggle" id="sensorToggle" type="button" aria-pressed="false"><span class="sensor-thumb-map" aria-hidden="true"></span><span>感測器台灣</span></button>
     <canvas id="map"></canvas>
+    <canvas id="neuralWebgl" aria-hidden="true"></canvas>
     <div class="taiwan-frame" aria-hidden="true">
       <div class="frame-label">Neural Taiwan Boundary<small>V4 AI 情資核心視覺</small></div>
     </div>
@@ -714,15 +766,18 @@
       <div class="map-video-meta"><strong>台中 高美濕地</strong><a href="https://www.youtube.com/watch?v=fjhg3gAnMFg" target="_blank" rel="noreferrer">YouTube</a></div>
     </article>
     <div class="scanline"></div>
-    <p class="detail" id="detail">彙整了各機關災害監測資料超過620類，攀爬社群媒體資料超過20家，氣象及雨量站：1,620、河川水位站：350、淹水感測器：2,469、空品感測器：10,999、地震監測器：147、全國CCTV：222,000隻、老人福利機構：1,194處、原民會原鄉部落567處</p>
+    <p class="detail" id="detail">彙整了各機關災害監測資料超過700類，攀爬社群媒體資料超過20家，氣象及雨量站：1,620、河川水位站：350、淹水感測器：2,469、空品感測器：10,999、地震監測器：147、全國CCTV：222,000隻、老人福利機構：1,194處、原民會原鄉部落567處</p>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script>
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
+    const neuralWebgl = document.getElementById('neuralWebgl');
     const stage = document.querySelector('.stage');
     const cctvToggle = document.getElementById('cctvToggle');
     const textToggle = document.getElementById('textToggle');
+    const sensorToggle = document.getElementById('sensorToggle');
     const promptInput = document.getElementById('prompt');
     const generateButton = document.getElementById('generate');
     const nodeCount = document.getElementById('nodeCount');
@@ -733,9 +788,168 @@
     const clock = document.getElementById('clock');
     const videoCards = [...document.querySelectorAll('.map-video')];
 
+    let neuralRenderer;
+    let neuralScene;
+    let neuralCamera;
+    let neuralGroup;
+    let neuralSynapses;
+    let neuralParticles;
+    let neuralLinks;
+    let morphParticles;
+    let morphStart = performance.now();
+    let sensorOnlyMode = false;
+    let sensorModeStartedAt = 0;
+    let sensorMeshPairs = null;
+
+    function initNeuralWebGL() {
+      if (!window.THREE) return;
+      neuralRenderer = new THREE.WebGLRenderer({ canvas: neuralWebgl, alpha: true, antialias: true });
+      neuralRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      neuralScene = new THREE.Scene();
+      neuralCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, .1, 10);
+      neuralCamera.position.z = 3;
+      neuralGroup = new THREE.Group();
+      neuralScene.add(neuralGroup);
+
+      const branchMaterial = new THREE.LineBasicMaterial({ color: 0x58d9e8, transparent: true, opacity: .18 });
+      const synapseMaterial = new THREE.PointsMaterial({ color: 0x75f6d5, size: .026, transparent: true, opacity: .38, sizeAttenuation: true });
+      const branchPoints = [];
+      const synapsePoints = [];
+      const seed = (value) => {
+        const x = Math.sin(value * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+      };
+      const addBranch = (start, angle, length, depth, branchId) => {
+        if (depth <= 0) return;
+        const end = start.clone().add(new THREE.Vector3(Math.cos(angle) * length, Math.sin(angle) * length, (seed(branchId + depth) - .5) * .11));
+        const curve = new THREE.LineCurve3(start, end);
+        const points = curve.getPoints(8);
+        for (let i = 0; i < points.length - 1; i += 1) branchPoints.push(points[i], points[i + 1]);
+        const tip = end.clone();
+        synapsePoints.push(tip.x, tip.y, tip.z);
+        const forks = depth > 1 ? (seed(branchId * 3 + depth) > .35 ? 2 : 1) : 0;
+        for (let i = 0; i < forks; i += 1) {
+          const forkAngle = angle + (i ? 1 : -1) * (.32 + seed(branchId + i * 9) * .5);
+          addBranch(end, forkAngle, length * (.52 + seed(branchId + i) * .14), depth - 1, branchId * 7 + i + 1);
+        }
+      };
+      for (let i = 0; i < 13; i += 1) {
+        const angle = (i / 13) * Math.PI * 2 + seed(i) * .25;
+        addBranch(new THREE.Vector3(0, 0, (seed(i + 20) - .5) * .1), angle, .29 + seed(i + 4) * .08, 3, i + 40);
+      }
+      const branchGeometry = new THREE.BufferGeometry().setFromPoints(branchPoints);
+      neuralGroup.add(new THREE.LineSegments(branchGeometry, branchMaterial));
+      const synapseGeometry = new THREE.BufferGeometry();
+      synapseGeometry.setAttribute('position', new THREE.Float32BufferAttribute(synapsePoints, 3));
+      neuralSynapses = new THREE.Points(synapseGeometry, synapseMaterial);
+      neuralGroup.add(neuralSynapses);
+
+      const particleData = [];
+      const particlePositions = [];
+      for (let i = 0; i < 58; i += 1) {
+        const angle = seed(i + 80) * Math.PI * 2;
+        const radius = Math.sqrt(seed(i + 120)) * .86;
+        const z = (seed(i + 160) - .5) * .82;
+        particleData.push({ angle, radius, z, speed: .00016 + seed(i + 200) * .00012 });
+        particlePositions.push(Math.cos(angle) * radius, Math.sin(angle) * radius, z);
+      }
+      const particleGeometry = new THREE.BufferGeometry();
+      particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(particlePositions, 3));
+      neuralParticles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: 0x8beee2, size: .018, transparent: true, opacity: .5 }));
+      neuralGroup.add(neuralParticles);
+      const linkGeometry = new THREE.BufferGeometry();
+      linkGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(58 * 12 * 3), 3));
+      neuralLinks = new THREE.LineSegments(linkGeometry, new THREE.LineBasicMaterial({ color: 0x4ab7c7, transparent: true, opacity: .12 }));
+      neuralGroup.add(neuralLinks);
+      neuralParticles.userData.particleData = particleData;
+
+      const morphCount = 260;
+      const morphPositions = new Float32Array(morphCount * 3);
+      const morphTargets = new Float32Array(morphCount * 3);
+      const morphStarts = new Float32Array(morphCount * 3);
+      for (let i = 0; i < morphCount; i += 1) {
+        const startAngle = seed(i + 700) * Math.PI * 2;
+        const startRadius = .18 + seed(i + 710) * .72;
+        morphStarts[i * 3] = Math.cos(startAngle) * startRadius;
+        morphStarts[i * 3 + 1] = Math.sin(startAngle) * startRadius;
+        morphStarts[i * 3 + 2] = (seed(i + 720) - .5) * .9;
+        const outlinePoint = taiwanOutline[Math.floor(seed(i + 730) * taiwanOutline.length)];
+        morphTargets[i * 3] = (outlinePoint.x - .5) * 1.35;
+        morphTargets[i * 3 + 1] = (.5 - outlinePoint.y) * 1.72;
+        morphTargets[i * 3 + 2] = (seed(i + 740) - .5) * .08;
+        morphPositions[i * 3] = morphStarts[i * 3];
+        morphPositions[i * 3 + 1] = morphStarts[i * 3 + 1];
+        morphPositions[i * 3 + 2] = morphStarts[i * 3 + 2];
+      }
+      const morphGeometry = new THREE.BufferGeometry();
+      morphGeometry.setAttribute('position', new THREE.Float32BufferAttribute(morphPositions, 3));
+      morphGeometry.setAttribute('target', new THREE.Float32BufferAttribute(morphTargets, 3));
+      morphGeometry.setAttribute('start', new THREE.Float32BufferAttribute(morphStarts, 3));
+      morphParticles = new THREE.Points(morphGeometry, new THREE.PointsMaterial({ color: 0x7cebd8, size: .014, transparent: true, opacity: .55 }));
+      neuralGroup.add(morphParticles);
+      morphStart = performance.now();
+      resizeNeuralWebGL();
+    }
+
+    function resizeNeuralWebGL() {
+      if (!neuralRenderer) return;
+      const rect = neuralWebgl.getBoundingClientRect();
+      neuralRenderer.setSize(rect.width, rect.height, false);
+    }
+
+    function renderNeuralWebGL(time) {
+      if (!neuralRenderer) return;
+      const pulse = 1 + Math.sin(time * .0022) * .018 + heartBeat() * .035;
+      neuralGroup.rotation.z = time * .000025;
+      neuralGroup.rotation.y = Math.sin(time * .00018) * .18;
+      neuralGroup.scale.setScalar(pulse);
+      neuralSynapses.material.opacity = .28 + heartBeat() * .13;
+      const morphTime = Math.max(0, Math.min(1, (time - morphStart) / 9200));
+      const morphEase = morphTime * morphTime * (3 - 2 * morphTime);
+      const morphPosition = morphParticles.geometry.attributes.position.array;
+      const morphTarget = morphParticles.geometry.attributes.target.array;
+      const morphStartPosition = morphParticles.geometry.attributes.start.array;
+      for (let i = 0; i < morphPosition.length; i += 1) {
+        morphPosition[i] = morphStartPosition[i] + (morphTarget[i] - morphStartPosition[i]) * morphEase;
+      }
+      morphParticles.geometry.attributes.position.needsUpdate = true;
+      morphParticles.material.opacity = .12 + morphTime * .42;
+      const particleData = neuralParticles.userData.particleData;
+      const positions = neuralParticles.geometry.attributes.position.array;
+      for (let i = 0; i < particleData.length; i += 1) {
+        const particle = particleData[i];
+        particle.angle += particle.speed * 16;
+        positions[i * 3] = Math.cos(particle.angle) * particle.radius;
+        positions[i * 3 + 1] = Math.sin(particle.angle) * particle.radius;
+        positions[i * 3 + 2] = particle.z + Math.sin(time * .001 + i) * .018;
+      }
+      neuralParticles.geometry.attributes.position.needsUpdate = true;
+      const linkPositions = neuralLinks.geometry.attributes.position.array;
+      let linkIndex = 0;
+      for (let i = 0; i < particleData.length && linkIndex < linkPositions.length - 5; i += 1) {
+        for (let j = i + 1; j < particleData.length && linkIndex < linkPositions.length - 5; j += 1) {
+          const dx = positions[i * 3] - positions[j * 3];
+          const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+          const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+          if (dx * dx + dy * dy + dz * dz > .11) continue;
+          linkPositions[linkIndex++] = positions[i * 3];
+          linkPositions[linkIndex++] = positions[i * 3 + 1];
+          linkPositions[linkIndex++] = positions[i * 3 + 2];
+          linkPositions[linkIndex++] = positions[j * 3];
+          linkPositions[linkIndex++] = positions[j * 3 + 1];
+          linkPositions[linkIndex++] = positions[j * 3 + 2];
+        }
+      }
+      while (linkIndex < linkPositions.length) linkPositions[linkIndex++] = 0;
+      neuralLinks.geometry.attributes.position.needsUpdate = true;
+      neuralRenderer.render(neuralScene, neuralCamera);
+    }
+
+    window.addEventListener('resize', resizeNeuralWebGL);
+
     const palette = ['#38e8ff', '#49f39d', '#2f8dff', '#74f8d4', '#6ba7ff'];
     const narrativeSegments = [
-      { text: '彙整了各機關災害監測資料超過620類，', mode: 'archive' },
+      { text: '彙整了各機關災害監測資料超過700類，', mode: 'archive' },
       { text: '攀爬社群媒體資料超過20家，', mode: 'social' },
       { text: '氣象及雨量站：1,620、河川水位站：350、', mode: 'hydro' },
       { text: '淹水感測器：2,469、空品感測器：10,999、地震監測器：147、', mode: 'sensor' },
@@ -810,6 +1024,7 @@
       { x: 0.9219, y: 0.2236 }, { x: 0.9194, y: 0.2047 }, { x: 0.9367, y: 0.2020 }, { x: 0.9021, y: 0.1818 },
       { x: 0.8983, y: 0.1504 }, { x: 0.9126, y: 0.1229 }, { x: 0.9490, y: 0.0997 }
     ];
+    initNeuralWebGL();
     let width = 0;
     let height = 0;
     let nodes = [];
@@ -1101,16 +1316,32 @@
       updateLifeFocus();
       simulate();
       drawSatelliteBase();
+      const introProgress = neuralIntroProgress();
+      if (detail) detail.style.opacity = introProgress > .78 ? String(Math.min(1, (introProgress - .78) * 4.5)) : '0';
+      if (sensorOnlyMode) {
+        const sensorReady = performance.now() - sensorModeStartedAt > 5500;
+        if (sensorReady) drawSensorSynapseClusters();
+        else drawSensorNeuralLayer(false);
+        updateVideoCards();
+        requestAnimationFrame(tick);
+        return;
+      }
       drawNeuralShell();
       drawSynapseVeil();
       drawHeartbeatField();
+      ctx.save();
+      ctx.globalAlpha = introProgress;
       drawCctvOuterShell();
       drawLinks();
       drawPulses();
       drawCoreDataFlow();
+      drawNeuralDendrites();
+      drawSensorNeuralLayer();
       drawNodes();
+      ctx.restore();
       updateVideoCards();
       updateNarrativeTyping();
+      renderNeuralWebGL(performance.now());
       requestAnimationFrame(tick);
     }
 
@@ -1120,6 +1351,11 @@
       const candidate = 1 + Math.floor(Math.random() * (nodes.length - 1));
       lifeFocusId = candidate;
       nextLifeFocusAt = now + 3200 + Math.random() * 2600;
+    }
+
+    function neuralIntroProgress() {
+      const elapsed = performance.now() - bootStart;
+      return Math.max(0, Math.min(1, (elapsed - 1800) / 7200));
     }
 
     function lifeBreath(speed = 1, phase = 0) {
@@ -1257,7 +1493,7 @@
 
     function drawSatelliteBase() {
       const elapsed = performance.now() - bootStart;
-      const fade = Math.max(0, Math.min(1, (elapsed - 3600) / 9000));
+      const fade = Math.max(0, Math.min(1, (elapsed - 10500) / 3000));
       if (fade <= 0) return;
       const cx = width * 0.54;
       const cy = height * 0.61;
@@ -1913,6 +2149,235 @@
       ctx.fill();
     }
 
+    function drawNeuralDendrites() {
+      const { x: cx, y: cy } = sphereCenter();
+      const mode = neuralModeStyle();
+      const beat = heartBeat();
+      const radius = Math.min(width, height) * .46 * lifeBreath(.8, .9);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      ctx.translate(cx, cy);
+      ctx.rotate(rotation * -.28);
+      ctx.translate(-cx, -cy);
+
+      for (let i = 0; i < 46; i += 1) {
+        const baseA = i * 2.399963 + Math.sin(frame * .004 + i) * .18;
+        const r1 = radius * (.22 + (i % 8) * .075);
+        const r2 = r1 + 20 + (i % 5) * 9;
+        const x1 = cx + Math.cos(baseA) * r1;
+        const y1 = cy + Math.sin(baseA) * r1 * .72;
+        const x2 = cx + Math.cos(baseA + .2) * r2;
+        const y2 = cy + Math.sin(baseA + .2) * r2 * .72;
+        const alive = .5 + Math.sin(frame * .018 + i) * .5;
+        ctx.strokeStyle = rgb(i % 2 ? mode.color : mode.accent, .025 + alive * .035 + beat * .015);
+        ctx.lineWidth = .28 + alive * .28;
+        ctx.shadowBlur = 5 + alive * 8;
+        ctx.shadowColor = `rgb(${mode.accent[0]}, ${mode.accent[1]}, ${mode.accent[2]})`;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo((x1 + x2) * .5 + Math.sin(i) * 16, (y1 + y2) * .5 + Math.cos(i) * 10, x2, y2);
+        ctx.stroke();
+
+        for (let j = 0; j < 2; j += 1) {
+          const forkA = baseA + (j === 0 ? -.42 : .46) + Math.sin(frame * .005 + i + j) * .08;
+          const forkR = r2 + 12 + j * 9;
+          const fx = cx + Math.cos(forkA) * forkR;
+          const fy = cy + Math.sin(forkA) * forkR * .72;
+          ctx.strokeStyle = rgb(mode.accent, .018 + alive * .022);
+          ctx.lineWidth = .2 + alive * .16;
+          ctx.beginPath();
+          ctx.moveTo(x2, y2);
+          ctx.quadraticCurveTo((x2 + fx) * .5, (y2 + fy) * .5 + Math.sin(i + j) * 6, fx, fy);
+          ctx.stroke();
+
+          if ((i + j) % 4 === 0) {
+            ctx.fillStyle = rgb(mode.accent, .1 + alive * .08);
+            ctx.beginPath();
+            ctx.arc(fx, fy, 1 + alive * .75, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    let floodSensorSites = null;
+    function drawSensorNeuralLayer(showNetwork = true) {
+      const bounds = islandBounds();
+      const outline = taiwanOutline.map((point) => outlinePoint(point, bounds, .9));
+      if (!floodSensorSites) {
+        floodSensorSites = [];
+        let seedValue = 41;
+        const next = () => {
+          const value = Math.sin(seedValue++ * 12.9898) * 43758.5453;
+          return value - Math.floor(value);
+        };
+        while (floodSensorSites.length < 180) {
+          const candidate = {
+            x: bounds.cx - bounds.w * .5 + next() * bounds.w,
+            y: bounds.cy - bounds.h * .5 + next() * bounds.h
+          };
+          if (pointInPolygon(candidate.x, candidate.y, outline)) floodSensorSites.push(candidate);
+        }
+      }
+      const cores = regionalCores();
+      const beat = heartBeat();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < floodSensorSites.length; i += 1) {
+        const site = floodSensorSites[i];
+        const pulse = (frame * .008 + i * .037) % 1;
+        const target = cores.reduce((best, core) => {
+          const distance = Math.hypot(site.x - core.x, site.y - core.y);
+          return distance < best.distance ? { core, distance } : best;
+        }, { core: cores[0], distance: Infinity }).core;
+        const bendX = (site.x + target.x) * .5 + Math.sin(frame * .004 + i) * 8;
+        const bendY = (site.y + target.y) * .5 + Math.cos(frame * .005 + i) * 8;
+        ctx.fillStyle = rgb([112, 245, 214], .16 + beat * .1);
+        ctx.beginPath();
+        ctx.arc(site.x, site.y, 1.1 + beat * .45, 0, Math.PI * 2);
+        ctx.fill();
+        if (!showNetwork) continue;
+        ctx.strokeStyle = rgb([78, 208, 190], .035 + beat * .018);
+        ctx.lineWidth = .55;
+        ctx.beginPath();
+        ctx.moveTo(site.x, site.y);
+        ctx.quadraticCurveTo(bendX, bendY, target.x, target.y);
+        ctx.stroke();
+        const hx = site.x + (target.x - site.x) * pulse;
+        const hy = site.y + (target.y - site.y) * pulse;
+        ctx.fillStyle = rgb([68, 223, 255], .22 + beat * .12);
+        ctx.beginPath();
+        ctx.arc(hx, hy, 1.2 + beat * .55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSensorNeuronMorphology() {
+      if (!floodSensorSites) return;
+      const beat = heartBeat();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < floodSensorSites.length; i += 1) {
+        const site = floodSensorSites[i];
+        const phase = frame * .006 + i * .19;
+        const radius = 4.5 + beat * 1.6 + Math.sin(phase) * .7;
+        ctx.fillStyle = rgb([112, 245, 214], .16 + beat * .12);
+        ctx.beginPath();
+        ctx.arc(site.x, site.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        for (let branch = 0; branch < 3; branch += 1) {
+          const angle = phase + branch * 2.094;
+          const length = 7 + (i % 5) * 1.6;
+          const bend = Math.sin(phase * 1.7 + branch) * 3;
+          const ex = site.x + Math.cos(angle) * length;
+          const ey = site.y + Math.sin(angle) * length;
+          const mx = site.x + Math.cos(angle + .28) * length * .52 + bend;
+          const my = site.y + Math.sin(angle + .28) * length * .52 - bend;
+          ctx.strokeStyle = rgb([76, 207, 220], .16 + beat * .06);
+          ctx.lineWidth = .55;
+          ctx.beginPath();
+          ctx.moveTo(site.x, site.y);
+          ctx.quadraticCurveTo(mx, my, ex, ey);
+          ctx.stroke();
+          ctx.fillStyle = rgb([68, 223, 255], .2 + beat * .1);
+          ctx.beginPath();
+          ctx.arc(ex, ey, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawSensorNetworkMesh() {
+      if (!floodSensorSites) return;
+      const beat = heartBeat();
+      if (!sensorMeshPairs) {
+        sensorMeshPairs = [];
+        for (let i = 0; i < floodSensorSites.length; i += 1) {
+          const nearest = floodSensorSites
+            .map((target, index) => ({ target, index, distance: Math.hypot(floodSensorSites[i].x - target.x, floodSensorSites[i].y - target.y) }))
+            .filter((entry) => entry.index !== i && entry.distance <= 62)
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 2);
+          for (const entry of nearest) {
+            if (entry.index > i) sensorMeshPairs.push([i, entry.index]);
+          }
+        }
+      }
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (let pair = 0; pair < sensorMeshPairs.length; pair += 1) {
+          const [sourceIndex, targetIndex] = sensorMeshPairs[pair];
+          const source = floodSensorSites[sourceIndex];
+          const target = floodSensorSites[targetIndex];
+          const bendX = (source.x + target.x) * .5 + Math.sin(frame * .003 + pair) * 4;
+          const bendY = (source.y + target.y) * .5 + Math.cos(frame * .004 + pair) * 4;
+          const phase = (frame * .009 + pair * .043) % 1;
+          ctx.strokeStyle = rgb([69, 190, 208], .09 + beat * .045);
+          ctx.lineWidth = .65;
+          ctx.beginPath();
+          ctx.moveTo(source.x, source.y);
+          ctx.quadraticCurveTo(bendX, bendY, target.x, target.y);
+          ctx.stroke();
+          const pulseX = source.x + (target.x - source.x) * phase;
+          const pulseY = source.y + (target.y - source.y) * phase;
+          ctx.fillStyle = rgb([134, 255, 226], .2 + beat * .13);
+          ctx.beginPath();
+          ctx.arc(pulseX, pulseY, 1.3 + beat * .45, 0, Math.PI * 2);
+          ctx.fill();
+      }
+      for (const source of floodSensorSites) {
+        ctx.fillStyle = rgb([91, 236, 205], .2 + beat * .1);
+        ctx.beginPath();
+        ctx.arc(source.x, source.y, 1.45 + beat * .55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawSensorSynapseClusters() {
+      if (!floodSensorSites) return;
+      const beat = heartBeat();
+      if (!sensorMeshPairs) drawSensorNetworkMesh();
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      for (let pair = 0; pair < sensorMeshPairs.length; pair += 1) {
+        const [sourceIndex, targetIndex] = sensorMeshPairs[pair];
+        const source = floodSensorSites[sourceIndex];
+        const target = floodSensorSites[targetIndex];
+        const shimmer = .045 + Math.max(0, Math.sin(frame * .018 + pair * .71)) * .055 + beat * .025;
+        ctx.strokeStyle = rgb([74, 178, 195], shimmer);
+        ctx.lineWidth = .5;
+        ctx.beginPath();
+        ctx.moveTo(source.x, source.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+      }
+      for (let i = 0; i < floodSensorSites.length; i += 1) {
+        const site = floodSensorSites[i];
+        const localPulse = Math.max(0, Math.sin(frame * .018 + i * .37));
+        ctx.fillStyle = rgb([91, 236, 205], .16 + localPulse * .12 + beat * .06);
+        ctx.beginPath();
+        ctx.arc(site.x, site.y, 1.25 + localPulse * .7 + beat * .3, 0, Math.PI * 2);
+        ctx.fill();
+        if (localPulse > .92) {
+          ctx.strokeStyle = rgb([112, 245, 214], .12 * (1 - localPulse) + .03);
+          ctx.lineWidth = .65;
+          ctx.beginPath();
+          ctx.arc(site.x, site.y, 4 + localPulse * 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
     function drawNodes() {
       ctx.save();
       const bootElapsed = performance.now() - bootStart;
@@ -1938,6 +2403,25 @@
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
+
+        if (node.layer > 0 && p.depth > .46 && p.scale > .62 && node.id % 3 === 0) {
+          const synapseCount = node.isCategory ? 4 : 2;
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.shadowBlur = 7 * p.glow;
+          ctx.shadowColor = node.color;
+          for (let s = 0; s < synapseCount; s += 1) {
+            const a = frame * .012 + node.id * .41 + s * Math.PI * .9;
+            const orbit = radius + 5 + s * 2.2 + Math.sin(frame * .025 + s) * 1.6;
+            const sx = p.x + Math.cos(a) * orbit;
+            const sy = p.y + Math.sin(a) * orbit * .72;
+            ctx.fillStyle = hexToRgba(node.color, (.09 + alive * .12) * p.glow);
+            ctx.beginPath();
+            ctx.arc(sx, sy, .9 + alive * .55, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
 
         if (node.layer === 0 && coreBeat > .04) {
           ctx.save();
@@ -2007,6 +2491,13 @@
       const hidden = stage.classList.toggle('text-hidden');
       textToggle.textContent = hidden ? '開啟文字' : '關閉文字';
       textToggle.setAttribute('aria-pressed', String(!hidden));
+    });
+    sensorToggle?.addEventListener('click', () => {
+      sensorOnlyMode = !sensorOnlyMode;
+      sensorModeStartedAt = performance.now();
+      stage.classList.toggle('sensor-only', sensorOnlyMode);
+      sensorToggle.querySelector('span:last-child').textContent = sensorOnlyMode ? '返回完整視圖' : '感測器台灣';
+      sensorToggle.setAttribute('aria-pressed', String(sensorOnlyMode));
     });
     videoCards.forEach((card) => {
       card.addEventListener('click', (event) => {
